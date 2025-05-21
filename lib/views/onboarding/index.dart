@@ -1,3 +1,4 @@
+import "package:back2u/views/home/index.dart";
 import "package:flutter/material.dart";
 
 class Onboarding extends StatefulWidget {
@@ -12,22 +13,34 @@ class _OnboardingState extends State<Onboarding> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Onboarding'),
-          centerTitle: true,
-        ),
-        body: const Center(
-          child: Text(
-            'Onboarding Page',
-            style: TextStyle(fontSize: 16),
-          ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            // Add your onPressed code here!
-            print("dont touch me.. or create a report");
-          },
-          child: const Icon(Icons.add),
+        body: Column(
+          children: [
+            Container(
+                height: 40,
+                width: double.infinity,
+                decoration: const BoxDecoration(color: Colors.blue),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        "skip",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  ],
+                )),
+            // escape button
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (context) => const Home()));
+                },
+                child: Text("To Home Page")),
+          ],
         ),
       ),
     );

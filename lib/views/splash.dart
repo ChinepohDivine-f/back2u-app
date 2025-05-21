@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:back2u/views/home/index.dart';
+import 'package:back2u/views/onboarding/index.dart';
 import 'package:flutter/material.dart';
 
 class Splash extends StatelessWidget {
@@ -14,7 +15,7 @@ class Splash extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const Home(),
+          builder: (context) => const Onboarding(),
         ),
       );
     });
