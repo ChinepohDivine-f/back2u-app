@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "393817612153",
+    "project_id": "back2u-74887",
+    "storage_bucket": "back2u-74887.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:393817612153:android:3af7fe1d90e1360597d9a8",
+        "android_client_info": {
+          "package_name": "com.example.back2u"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "393817612153-m35dbe3r0de117isa0voimggst8gi4pt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTQVPjGvfhstEdMPhul7QFYzQBtlUI8jI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "393817612153-m35dbe3r0de117isa0voimggst8gi4pt.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "393817612153-mint1mf6d4i6v4c6tceur2thg04qaqoi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.back2u"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

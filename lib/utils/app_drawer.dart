@@ -1,28 +1,38 @@
 import 'package:flutter/material.dart';
 
-
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
-           DrawerHeader(
+          DrawerHeader(
             decoration: BoxDecoration(
               color: colorScheme.primary,
             ),
-            child: const Text(
-              'Anonymous',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Anonymous',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      child: Icon(Icons.person), 
+                    ),
+                  ],
+                )
+              ],
             ),
           ),
           ListTile(
@@ -30,15 +40,26 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Home'),
             onTap: () {
               Navigator.pop(context); // Close the drawer
-              Navigator.pushReplacementNamed(context, '/home'); // Navigate to Home page
+              Navigator.pushReplacementNamed(
+                  context, '/home'); // Navigate to Home page
             },
           ),
           ListTile(
             leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
+            title: const Text('My Reports'),
             onTap: () {
               Navigator.pop(context); // Close the drawer
-              Navigator.pushReplacementNamed(context, '/settings'); // Navigate to Settings page
+              Navigator.pushReplacementNamed(
+                  context, '/settings'); // Navigate to Settings page
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Saved Reports'),
+            onTap: () {
+              Navigator.pop(context); // Close the drawer
+              Navigator.pushReplacementNamed(
+                  context, '/settings'); // Navigate to Settings page
             },
           ),
           const AboutListTile(

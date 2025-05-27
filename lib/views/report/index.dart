@@ -32,7 +32,7 @@ class Report extends StatelessWidget {
             const SizedBox(height: 40),
 
             // Lost Item Button (using ElevatedButton.icon)
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -46,11 +46,11 @@ class Report extends StatelessWidget {
                   color: colorScheme.onSecondaryContainer,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
+              style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.secondaryContainer, // A distinct color for 'Lost'
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.centerLeft, // Align content to the left
               ),
@@ -59,7 +59,7 @@ class Report extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Found Item Button (using ElevatedButton.icon)
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -73,11 +73,11 @@ class Report extends StatelessWidget {
                   color: colorScheme.onPrimaryContainer,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
+              style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.primaryContainer, // A distinct color for 'Found'
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.centerLeft, // Align content to the left
               ),

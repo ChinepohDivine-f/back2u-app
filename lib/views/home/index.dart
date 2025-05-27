@@ -13,6 +13,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 2,
     'incidentDate': DateTime(2023, 10, 15),
     'isResolved': false,
+    'reportDate': DateTime(2023, 10, 16), // Added reportDate
   },
   {
     'ownerName': 'Jane Smith',
@@ -22,6 +23,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 1,
     'incidentDate': DateTime(2023, 11, 3),
     'isResolved': false,
+    'reportDate': DateTime(2023, 11, 4), // Added reportDate
   },
   {
     'ownerName': 'Mike Johnson',
@@ -31,6 +33,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 3,
     'incidentDate': DateTime(2023, 11, 5),
     'isResolved': false,
+    'reportDate': DateTime(2023, 11, 6), // Added reportDate
   },
   {
     'ownerName': 'Sarah Williams',
@@ -40,6 +43,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 2,
     'incidentDate': DateTime(2023, 11, 10),
     'isResolved': false,
+    'reportDate': DateTime(2023, 11, 11), // Added reportDate
   },
   {
     'ownerName': 'David Miller',
@@ -49,6 +53,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 1,
     'incidentDate': DateTime(2023, 11, 12),
     'isResolved': false,
+    'reportDate': DateTime(2023, 11, 13), // Added reportDate
   },
   {
     'ownerName': 'Emily Johnson',
@@ -58,6 +63,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 2,
     'incidentDate': DateTime(2023, 11, 8),
     'isResolved': false,
+    'reportDate': DateTime(2023, 11, 9), // Added reportDate
   },
   {
     'ownerName': 'Robert Brown',
@@ -67,6 +73,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 0,
     'incidentDate': DateTime(2023, 10, 28),
     'isResolved': false,
+    'reportDate': DateTime(2023, 10, 29), // Added reportDate
   },
   {
     'ownerName': 'Lisa Chen',
@@ -76,6 +83,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 1,
     'incidentDate': DateTime(2023, 10, 25),
     'isResolved': false,
+    'reportDate': DateTime(2023, 10, 26), // Added reportDate
   },
   {
     'ownerName': 'Thomas Wilson',
@@ -85,6 +93,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 2,
     'incidentDate': DateTime(2023, 11, 1),
     'isResolved': false,
+    'reportDate': DateTime(2023, 11, 2), // Added reportDate
   },
   {
     'ownerName': 'Peter Jones',
@@ -94,6 +103,7 @@ final List<Map<String, dynamic>> cardData = [
     'imageCount': 1,
     'incidentDate': DateTime(2023, 9, 18),
     'isResolved': true,
+    'reportDate': DateTime(2023, 9, 19), // Added reportDate
   },
 ];
 
@@ -281,6 +291,7 @@ class _HomeState extends State<Home> {
           imageCount: item['imageCount'],
           incidentDate: item['incidentDate'],
           isResolved: item['isResolved'],
+          reportDate: item['reportDate'], // Pass reportDate to SimpleCard
         );
       },
     );

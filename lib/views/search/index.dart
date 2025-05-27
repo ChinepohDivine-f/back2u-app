@@ -8,7 +8,6 @@ import 'package:intl/intl.dart'; // For date formatting
 // I'm including it here for a self-contained example,
 // but in your actual project, it would be in its own file (e.g., simple_card.dart)
 
-
 // --- Report Data Model for Lost Documents (remains the same) ---
 class ReportData {
   final String ownerName;
@@ -19,6 +18,7 @@ class ReportData {
   final DateTime incidentDate;
   final int imageCount;
   final bool isResolved;
+  final DateTime reportDate; // New field for report date
 
   ReportData({
     required this.ownerName,
@@ -29,6 +29,7 @@ class ReportData {
     required this.incidentDate,
     this.imageCount = 0,
     this.isResolved = false,
+    required this.reportDate,
   });
 
   bool containsQuery(String query) {
@@ -51,6 +52,8 @@ final List<ReportData> _dummySystemData = [
     description: 'Lost near UB gate. Contains ID card and student card.',
     imageCount: 1,
     isResolved: false,
+    reportDate: DateTime(2025, 5, 11), // Added reportDate
+    // reportDate: DateTime(2025, 5, 11), // Added reportDate
   ),
   ReportData(
     ownerName: 'Passport - Jane Smith',
@@ -61,6 +64,7 @@ final List<ReportData> _dummySystemData = [
     description: 'Lost at Down Beach. Cameroonian passport.',
     imageCount: 2,
     isResolved: true,
+    reportDate: DateTime(2025, 5, 9), // Added reportDate
   ),
   ReportData(
     ownerName: 'Driving License - Peter Obi',
@@ -71,6 +75,7 @@ final List<ReportData> _dummySystemData = [
     description: 'Found near the main market, laminated.',
     imageCount: 0,
     isResolved: false,
+    reportDate: DateTime(2025, 5, 16), // Added reportDate
   ),
   ReportData(
     ownerName: 'Birth Certificate - Mary Anne',
@@ -81,6 +86,7 @@ final List<ReportData> _dummySystemData = [
     description: 'Original birth certificate, dated 1995.',
     imageCount: 1,
     isResolved: false,
+    reportDate: DateTime(2025, 5, 13), // Added reportDate
   ),
   ReportData(
     ownerName: 'University Diploma - David King',
@@ -91,6 +97,7 @@ final List<ReportData> _dummySystemData = [
     description: 'Lost after graduation ceremony.',
     imageCount: 1,
     isResolved: true,
+    reportDate: DateTime(2025, 5, 8), // Added reportDate
   ),
   ReportData(
     ownerName: 'Marriage Certificate - Fam. Nsom',
@@ -101,6 +108,7 @@ final List<ReportData> _dummySystemData = [
     description: 'Found near Ngoa-Ekelle. Sealed envelope.',
     imageCount: 3,
     isResolved: false,
+    reportDate: DateTime(2025, 5, 19), // Added reportDate
   ),
   ReportData(
     ownerName: 'GCE Certificate - Limbe',
@@ -111,6 +119,7 @@ final List<ReportData> _dummySystemData = [
     description: 'Found opposite UB Molyko main gate.',
     imageCount: 0,
     isResolved: false,
+    reportDate: DateTime(2025, 5, 18), // Added reportDate
   ),
   ReportData(
     ownerName: 'National ID - Aisha Bello',
@@ -121,28 +130,19 @@ final List<ReportData> _dummySystemData = [
     description: 'Lost at a café, in a brown wallet.',
     imageCount: 1,
     isResolved: false,
+    reportDate: DateTime(2025, 5, 10), // Added reportDate
   ),
   ReportData(
-    ownerName: 'Bank Passbook - MTN Mobile Money',
-    subCategory: 'Bank Passbook',
-    type: 'Found',
-    location: 'Kumba',
-    incidentDate: DateTime(2025, 5, 14),
-    description: 'Found near Amour Mezam, blue cover.',
-    imageCount: 1,
-    isResolved: false,
-  ),
-  ReportData(
-    ownerName: 'Passport - Michael K',
-    subCategory: 'Passport',
+    ownerName: 'Voter ID - Samuel Tchoupo',
+    subCategory: 'Voter ID',
     type: 'Lost',
     location: 'Buea',
-    incidentDate: DateTime(2025, 5, 6),
-    description: 'Lost near the university gate, contains a student visa.',
-    imageCount: 2,
+    incidentDate: DateTime(2025, 5, 14),
+    description: 'Lost during a political rally.',
+    imageCount: 0,
     isResolved: false,
-  ),
-];
+    reportDate: DateTime(2025, 5, 15), // Added reportDate
+  ),];
 
 // --- Main Search Page Widget ---
 class SearchPage extends StatefulWidget {
@@ -169,6 +169,7 @@ class _SearchPageState extends State<SearchPage> {
   List<String> get _documentTypes {
     return _dummySystemData.map((e) => e.subCategory).toSet().toList()..sort();
   }
+
   List<String> get _locations {
     return _dummySystemData.map((e) => e.location).toSet().toList()..sort();
   }
@@ -193,7 +194,12 @@ class _SearchPageState extends State<SearchPage> {
 
   void _loadSearchHistory() {
     setState(() {
-      _searchHistory = ['national id', 'passport', 'driving license', 'birth certificate'];
+      _searchHistory = [
+        'national id',
+        'passport',
+        'driving license',
+        'birth certificate'
+      ];
     });
   }
 
@@ -238,12 +244,20 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {
       _filteredData = _dummySystemData.where((item) {
         bool matchesQuery = item.containsQuery(query);
-        bool matchesFilterType = _filterType == null || item.type == _filterType;
-        bool matchesFilterDocumentType = _filterDocumentType == null || item.subCategory == _filterDocumentType;
-        bool matchesFilterLocation = _filterLocation == null || item.location == _filterLocation;
-        bool matchesFilterIsResolved = _filterIsResolved == null || item.isResolved == _filterIsResolved;
+        bool matchesFilterType =
+            _filterType == null || item.type == _filterType;
+        bool matchesFilterDocumentType = _filterDocumentType == null ||
+            item.subCategory == _filterDocumentType;
+        bool matchesFilterLocation =
+            _filterLocation == null || item.location == _filterLocation;
+        bool matchesFilterIsResolved =
+            _filterIsResolved == null || item.isResolved == _filterIsResolved;
 
-        return matchesQuery && matchesFilterType && matchesFilterDocumentType && matchesFilterLocation && matchesFilterIsResolved;
+        return matchesQuery &&
+            matchesFilterType &&
+            matchesFilterDocumentType &&
+            matchesFilterLocation &&
+            matchesFilterIsResolved;
       }).toList();
     });
   }
@@ -292,10 +306,15 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildReportsList() {
     if (_filteredData.isEmpty) {
       String message;
-      if (_currentQuery.isNotEmpty || _filterType != null || _filterDocumentType != null || _filterLocation != null || _filterIsResolved != null) {
+      if (_currentQuery.isNotEmpty ||
+          _filterType != null ||
+          _filterDocumentType != null ||
+          _filterLocation != null ||
+          _filterIsResolved != null) {
         message = 'No results found matching your criteria.';
       } else {
-        message = 'Start typing to search or use filters to find lost documents.';
+        message =
+            'Start typing to search or use filters to find lost documents.';
       }
       return Center(
         child: Padding(
@@ -315,7 +334,9 @@ class _SearchPageState extends State<SearchPage> {
       ),
       shrinkWrap: true,
       padding: const EdgeInsets.only(bottom: 40),
-      separatorBuilder: (context, index) => const SizedBox(height: 1,),
+      separatorBuilder: (context, index) => const SizedBox(
+        height: 1,
+      ),
       itemBuilder: (context, index) {
         final cardInfo = _filteredData[index];
         return SimpleCard(
@@ -326,6 +347,7 @@ class _SearchPageState extends State<SearchPage> {
           imageCount: cardInfo.imageCount,
           incidentDate: cardInfo.incidentDate,
           isResolved: cardInfo.isResolved,
+          reportDate: cardInfo.reportDate, // Use the new reportDate field
         );
       },
     );
@@ -333,7 +355,6 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
@@ -342,7 +363,6 @@ class _SearchPageState extends State<SearchPage> {
         elevation: 1,
         backgroundColor: colorScheme.primary, // Use primary color from theme
         foregroundColor: colorScheme.onPrimary,
-       
       ),
       body: Column(
         children: [
@@ -363,7 +383,8 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                       filled: true,
                       fillColor: Colors.grey.shade200,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 20),
                     ),
                     onSubmitted: (query) {
                       _performSearch(query);
@@ -385,7 +406,9 @@ class _SearchPageState extends State<SearchPage> {
               ],
             ),
           ),
-          if (_searchFocusNode.hasFocus && _searchController.text.isNotEmpty && _searchSuggestions.isNotEmpty)
+          if (_searchFocusNode.hasFocus &&
+              _searchController.text.isNotEmpty &&
+              _searchSuggestions.isNotEmpty)
             Expanded(
               child: ListView.builder(
                 shrinkWrap: true,
@@ -403,13 +426,16 @@ class _SearchPageState extends State<SearchPage> {
                 },
               ),
             )
-          else if (_searchFocusNode.hasFocus && _searchController.text.isEmpty && _searchHistory.isNotEmpty)
+          else if (_searchFocusNode.hasFocus &&
+              _searchController.text.isEmpty &&
+              _searchHistory.isNotEmpty)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
                     child: Text(
                       'Recent Searches',
                       style: Theme.of(context).textTheme.titleSmall,

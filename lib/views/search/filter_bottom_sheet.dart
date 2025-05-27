@@ -166,11 +166,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              TextButton(
+              FilledButton.tonal(
                 onPressed: _clearFilters,
                 child: const Text('Clear Filters'),
               ),
-              ElevatedButton(
+              FilledButton(
                 onPressed: () {
                   widget.onApplyFilters(
                     _tempFilterType,
