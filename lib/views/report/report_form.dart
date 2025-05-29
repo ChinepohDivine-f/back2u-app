@@ -3,9 +3,13 @@ import 'package:back2u/views/report/contact.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:back2u/models/report_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReportForm extends StatefulWidget {
-  const ReportForm({super.key});
+  final Report report;
+
+  const ReportForm({super.key, required this.report});
 
   @override
   State<ReportForm> createState() => _ReportFormState();
@@ -13,31 +17,63 @@ class ReportForm extends StatefulWidget {
 
 class _ReportFormState extends State<ReportForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _rewardAmountController = TextEditingController();
-  final _detailsController = TextEditingController();
-  
+
+  late TextEditingController _ownerNameController;
+  late TextEditingController _documentNameController;
+  late TextEditingController _rewardAmountController;
+  late TextEditingController _notesController;
+
   String? _selectedCategory;
   String? _selectedSubcategory;
   DateTime? _incidentDate;
   String? _selectedLocation;
-  List<XFile> _selectedImages = [];
+  String? _selectedSubLocation;
+  List<XFile> _selectedLocalImages = [];
   bool _addReward = false;
 
-  // Dummy data for dropdowns
-  final List<String> _categories = ['Legal', 'Identification', 'Education Documents'];
+  final List<String> _categories = ['Legal', 'Identification', 'Education Documents', 'Electronics', 'Keys', 'Bags', 'Other'];
   final Map<String, List<String>> _subcategories = {
-    'Legal': ['Bank statement', 'land document',],
-    'Identification': ['National Id', 'School Id', 'Passport'],
-    'Education Documents': ['Certificate', 'Transcript'],
+    'Legal': ['Bank statement', 'Land Document', 'Deed'],
+    'Identification': ['National ID', 'School ID', 'Passport', 'Driving License', 'Voter ID'],
+    'Education Documents': ['Certificate', 'Transcript', 'Diploma'],
+    'Electronics': ['Phone', 'Laptop', 'Tablet', 'Headphones'],
+    'Keys': ['Car Keys', 'House Keys', 'Office Keys'],
+    'Bags': ['Backpack', 'Handbag', 'Wallet'],
+    'Other': ['Umbrella', 'Jewelry', 'Watch'],
   };
   final List<String> _locations = ['Buea', 'Limbe', 'Kumba', 'Douala', 'Yaounde'];
+  final Map<String, List<String>> _subLocations = {
+    'Buea': ['Molyko', 'Great Soppo', 'Mile 17', 'Mile 4', 'UB'],
+    'Limbe': ['Down Beach', 'Mile 1', 'Mile 2', 'Mile 4', 'Bonadikombo'],
+    'Kumba': ['Kumba Town', 'Mabanda', 'Kosala'],
+    'Douala': ['Bonanjo', 'Akwa', 'Bali', 'Japoma'],
+    'Yaounde': ['Ngoa-Ekelle', 'Mokolo', 'Mfandena'],
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerNameController = TextEditingController(text: widget.report.ownerName);
+    _documentNameController = TextEditingController(text: widget.report.documentName);
+    _rewardAmountController = TextEditingController(text: widget.report.reward == '0' ? '' : widget.report.reward);
+    _notesController = TextEditingController(text: widget.report.notes);
+
+    _selectedCategory = widget.report.category.isNotEmpty ? widget.report.category : null;
+    _selectedSubcategory = widget.report.subcategory.isNotEmpty ? widget.report.subcategory : null;
+    // Ensure _incidentDate is valid before assigning, otherwise default to null
+    _incidentDate = widget.report.reportedDate.toDate().year > 2000 ? widget.report.reportedDate.toDate() : null;
+    _selectedLocation = widget.report.locationLost.isNotEmpty ? widget.report.locationLost : null;
+    _selectedSubLocation = widget.report.subLocationLost.isNotEmpty ? widget.report.subLocationLost : null;
+
+    _addReward = widget.report.reward.isNotEmpty && widget.report.reward != '0';
+  }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _ownerNameController.dispose();
+    _documentNameController.dispose();
     _rewardAmountController.dispose();
-    _detailsController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -46,7 +82,7 @@ class _ReportFormState extends State<ReportForm> {
       context: context,
       initialDate: _incidentDate ?? DateTime.now(),
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(), // Only allow dates up to current date
+      lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -58,7 +94,7 @@ class _ReportFormState extends State<ReportForm> {
         );
       },
     );
-    
+
     if (pickedDate != null && pickedDate != _incidentDate) {
       setState(() {
         _incidentDate = pickedDate;
@@ -70,11 +106,22 @@ class _ReportFormState extends State<ReportForm> {
     try {
       final ImagePicker picker = ImagePicker();
       final List<XFile>? images = await picker.pickMultiImage();
-      
+
       if (images != null && images.isNotEmpty) {
-        setState(() {
-          _selectedImages.addAll(images);
-        });
+        // Limit to max 2 images
+        if ((_selectedLocalImages.length + images.length) > 2) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('You can only upload a maximum of 2 images.')),
+          );
+          // Add only up to the limit
+          setState(() {
+            _selectedLocalImages.addAll(images.take(2 - _selectedLocalImages.length));
+          });
+        } else {
+          setState(() {
+            _selectedLocalImages.addAll(images);
+          });
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,11 +132,11 @@ class _ReportFormState extends State<ReportForm> {
 
   void _removeImage(int index) {
     setState(() {
-      _selectedImages.removeAt(index);
+      _selectedLocalImages.removeAt(index);
     });
   }
 
-  void _showAdditionalDetailsDialog(BuildContext context) {
+  void _showNotesDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -109,12 +156,12 @@ class _ReportFormState extends State<ReportForm> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Additional Details',
+                'Additional Notes',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               TextField(
-                controller: _detailsController,
+                controller: _notesController,
                 maxLines: 5,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
@@ -146,43 +193,50 @@ class _ReportFormState extends State<ReportForm> {
     );
   }
 
-  void _submitReport() {
-    if (_formKey.currentState!.validate()) {
-      // Gather all form data
-      final reportData = {
-        'name': _nameController.text,
-        'category': _selectedCategory,
-        'subcategory': _selectedSubcategory,
-        'incidentDate': _incidentDate != null ? DateFormat('yyyy-MM-dd').format(_incidentDate!) : null,
-        'location': _selectedLocation,
-        'imageCount': _selectedImages.length,
-        'additionalDetails': _detailsController.text,
-        'hasReward': _addReward,
-        'rewardAmount': _addReward ? _rewardAmountController.text : null,
-      };
-
-      // Log the report data (replace with your API call)
-      debugPrint('Report data: $reportData');
-
-      // Show success message
+  void _navigateToContactPage() {
+    // Manually trigger validation for the date picker if it's not handled by DropdownButtonFormField
+    if (_incidentDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Report submitted successfully!'),
-          backgroundColor: Colors.green,
+          content: Text('Please select the incident date.'),
+          backgroundColor: Colors.red,
         ),
       );
-      
-      // move to contact screen
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactPage()));
+      return;
+    }
 
-
-      // Reset form (optional)
-      _resetForm();
-    } else {
-      // Show validation message
+    // Image validation for "Found" reports
+    if (widget.report.type == 'Found' && _selectedLocalImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fix the errors in the form'),
+          content: Text('At least one image is required for Found reports.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_formKey.currentState!.validate()) {
+      final updatedReport = widget.report.copyWith(
+        ownerName: _ownerNameController.text,
+        documentName: _documentNameController.text,
+        category: _selectedCategory!,
+        subcategory: _selectedSubcategory!,
+        reportedDate: Timestamp.fromDate(_incidentDate!),
+        locationLost: _selectedLocation!,
+        subLocationLost: _selectedSubLocation ?? '',
+        notes: _notesController.text,
+        reward: _addReward ? _rewardAmountController.text : '0',
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ContactPage(report: updatedReport, localImageFiles: _selectedLocalImages)),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields and fix errors.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -192,29 +246,30 @@ class _ReportFormState extends State<ReportForm> {
   void _resetForm() {
     _formKey.currentState?.reset();
     setState(() {
-      _nameController.clear();
+      _ownerNameController.clear();
+      _documentNameController.clear();
       _rewardAmountController.clear();
-      _detailsController.clear();
+      _notesController.clear();
       _selectedCategory = null;
       _selectedSubcategory = null;
       _incidentDate = null;
       _selectedLocation = null;
-      _selectedImages = [];
+      _selectedSubLocation = null;
+      _selectedLocalImages = [];
       _addReward = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Report Lost document'),
-         centerTitle: true,
+        title: Text('${widget.report.type} Report - Details'),
+        centerTitle: true,
         elevation: 1,
-        backgroundColor: colorScheme.primary, // Use primary color from theme
+        backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         actions: [
           IconButton(
@@ -225,37 +280,52 @@ class _ReportFormState extends State<ReportForm> {
         ],
       ),
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(), // Dismiss keyboard on tap
+        onTap: () => FocusScope.of(context).unfocus(),
         child: Form(
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.all(15.0),
-            physics: BouncingScrollPhysics(),
+            physics: const BouncingScrollPhysics(),
             children: <Widget>[
-              // Name Field
+              // Owner's Name Field (Required)
               TextFormField(
-                controller: _nameController,
+                controller: _ownerNameController,
                 decoration: const InputDecoration(
-                  labelText: "Owner's name",
+                  labelText: "Owner's Name (or Name on Document)*",
                   border: OutlineInputBorder(),
-                  // prefixIcon: Icon(Icons.person_3),
                 ),
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
+                    return 'Please enter the owner\'s name or name on document';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // Category Dropdown
+              // Document Name/Item Name Field (Required)
+              // TextFormField(
+              //   controller: _documentNameController,
+              //   decoration: const InputDecoration(
+              //     labelText: "Document Name/Item Name (e.g., 'National ID', 'Blue Backpack')*",
+              //     border: OutlineInputBorder(),
+              //   ),
+              //   textInputAction: TextInputAction.next,
+              //   validator: (value) {
+              //     if (value == null || value.isEmpty) {
+              //       return 'Please enter the document/item name';
+              //     }
+              //     return null;
+              //   },
+              // ),
+              // const SizedBox(height: 16),
+
+              // Category Dropdown (Required)
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
-                  labelText: 'Document category',
+                  labelText: 'Category*',
                   border: OutlineInputBorder(),
-                  // prefixIcon: Icon(Icons.category_sharp),
                 ),
                 value: _selectedCategory,
                 items: _categories.map((category) {
@@ -267,7 +337,7 @@ class _ReportFormState extends State<ReportForm> {
                 onChanged: (value) {
                   setState(() {
                     _selectedCategory = value;
-                    _selectedSubcategory = null; // Reset subcategory when category changes
+                    _selectedSubcategory = null;
                   });
                 },
                 validator: (value) {
@@ -279,12 +349,11 @@ class _ReportFormState extends State<ReportForm> {
               ),
               const SizedBox(height: 16),
 
-              // Subcategory Dropdown
+              // Subcategory Dropdown (Required)
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
-                  labelText: 'Subcategory',
+                  labelText: 'Subcategory*',
                   border: OutlineInputBorder(),
-                  // prefixIcon: Icon(Icons.subject),
                 ),
                 value: _selectedSubcategory,
                 items: (_selectedCategory != null && _subcategories.containsKey(_selectedCategory))
@@ -303,7 +372,7 @@ class _ReportFormState extends State<ReportForm> {
                       }
                     : null,
                 validator: (value) {
-                  if (_selectedCategory != null && (value == null || value.isEmpty)) {
+                  if (value == null || value.isEmpty) {
                     return 'Please select a subcategory';
                   }
                   return null;
@@ -312,24 +381,27 @@ class _ReportFormState extends State<ReportForm> {
               ),
               const SizedBox(height: 16),
 
-              // Incident Date Picker
+              // Incident Date Picker (Required)
               InkWell(
                 onTap: () => _selectDate(context),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Incident Date',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.calendar_today_rounded),
+                  decoration: InputDecoration(
+                    labelText: 'Incident Date*',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.calendar_today_rounded),
+                    errorText: _incidentDate == null && (_formKey.currentState?.validate() ?? false)
+                        ? 'Please select the incident date'
+                        : null,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
                       Text(
-                        _incidentDate != null 
-                            ? DateFormat('yyyy-MM-dd').format(_incidentDate!) 
+                        _incidentDate != null
+                            ? DateFormat('MMM dd, yyyy').format(_incidentDate!)
                             : 'Select Date',
-                        style: _incidentDate == null 
-                            ? TextStyle(color: Colors.grey[600]) 
+                        style: _incidentDate == null
+                            ? TextStyle(color: Colors.grey[600])
                             : null,
                       ),
                       const Icon(Icons.arrow_drop_down),
@@ -337,20 +409,12 @@ class _ReportFormState extends State<ReportForm> {
                   ),
                 ),
               ),
-              if (_incidentDate == null) 
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0, left: 12.0),
-                  child: Text(
-                    'Please select the incident date',
-                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-                  ),
-                ),
               const SizedBox(height: 16),
 
-              // Location Dropdown
+              // Location Dropdown (Required)
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
-                  labelText: 'Location',
+                  labelText: 'Main Location*',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.location_on),
                 ),
@@ -364,187 +428,227 @@ class _ReportFormState extends State<ReportForm> {
                 onChanged: (value) {
                   setState(() {
                     _selectedLocation = value;
+                    _selectedSubLocation = null;
                   });
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please select a location';
+                    return 'Please select a main location';
                   }
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+
+              // Sub-Location Dropdown (Required)
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Sub-Location*',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_city),
+                ),
+                value: _selectedSubLocation,
+                items: (_selectedLocation != null && _subLocations.containsKey(_selectedLocation))
+                    ? _subLocations[_selectedLocation]!.map((sublocation) {
+                        return DropdownMenuItem<String>(
+                          value: sublocation,
+                          child: Text(sublocation),
+                        );
+                      }).toList()
+                    : [],
+                onChanged: _selectedLocation != null && _subLocations.containsKey(_selectedLocation)
+                    ? (value) {
+                        setState(() {
+                          _selectedSubLocation = value;
+                        });
+                      }
+                    : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a sub-location';
+                  }
+                  return null;
+                },
+                disabledHint: const Text('Select a main location first'),
+              ),
               const SizedBox(height: 24),
 
-              // Image Picker Section
-              Container(
-                // elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0,0,0,10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Images (Optional)',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              // Image Picker Section (no Card)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Images (${widget.report.type == 'Found' ? 'Required, ' : ''}Max 2)',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: _selectedLocalImages.length < 2 ? _pickImages : null, // Disable if 2 images already
+                      icon: const Icon(Icons.add_photo_alternate),
+                      label: Text(_selectedLocalImages.length < 2 ? 'Add Image' : 'Max 2 Images Uploaded'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: _pickImages,
-                        icon: const Icon(Icons.add_photo_alternate),
-                        label: const Text('Add Images'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    ),
+                    if (widget.report.type == 'Found' && _selectedLocalImages.isEmpty && (_formKey.currentState?.validate() ?? false))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          'At least one image is required for Found reports.',
+                          style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
                         ),
                       ),
-                      if (_selectedImages.isNotEmpty) const SizedBox(height: 12),
-                      if (_selectedImages.isNotEmpty)
-                        SizedBox(
-                          height: 120,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _selectedImages.length,
-                            itemBuilder: (context, index) {
-                              return Stack(
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(right: 8.0),
-                                    width: 120,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(
-                                        File(_selectedImages[index].path),
-                                        fit: BoxFit.cover,
-                                      ),
+                    if (_selectedLocalImages.isNotEmpty) const SizedBox(height: 16),
+                    if (_selectedLocalImages.isNotEmpty)
+                      SizedBox(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _selectedLocalImages.length,
+                          itemBuilder: (context, index) {
+                            return Stack(
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(right: 8.0),
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(_selectedLocalImages[index].path),
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                  Positioned(
-                                    top: 5,
-                                    right: 13,
-                                    child: GestureDetector(
-                                      onTap: () => _removeImage(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.7),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.close, size: 18, color: Colors.red),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 12,
+                                  child: GestureDetector(
+                                    onTap: () => _removeImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
                                       ),
+                                      child: const Icon(Icons.close, size: 18, color: Colors.white),
                                     ),
                                   ),
-                                ],
-                              );
-                            },
-                          ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
 
-              // Additional Details Button
+              // Additional Notes Button
               ElevatedButton.icon(
-                onPressed: () => _showAdditionalDetailsDialog(context),
+                onPressed: () => _showNotesDialog(context),
                 icon: const Icon(Icons.notes),
                 label: Text(
-                  _detailsController.text.isNotEmpty 
-                      ? 'Edit Additional Details' 
-                      : 'Add Additional Details',
+                  _notesController.text.isNotEmpty
+                      ? 'Edit Additional Notes'
+                      : 'Add Additional Notes (Optional)',
                 ),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
+                  foregroundColor: colorScheme.onSurface,
                 ),
               ),
-              if (_detailsController.text.isNotEmpty)
+              if (_notesController.text.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                   child: Text(
-                    'Details added',
+                    'Notes added: "${_notesController.text.length > 50 ? _notesController.text.substring(0, 47) + '...' : _notesController.text}"',
                     style: TextStyle(
-                      // fontStyle: FontStyle.italic,
-                      color: Theme.of(context).primaryColor,
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 12,
                     ),
                   ),
                 ),
               const SizedBox(height: 16),
 
-              // Reward Section
-              Container(
-                // elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0,0,0,10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Switch(
-                            value: _addReward,
-                            onChanged: (bool value) {
-                              setState(() {
-                                _addReward = value;
-                                if (!value) {
-                                  _rewardAmountController.clear();
-                                }
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 5),
-                          const Text(
-                            'Offer Reward?',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      if (_addReward) const SizedBox(height: 12),
-                      if (_addReward)
-                        TextFormField(
-                          controller: _rewardAmountController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Reward Amount (Francs)',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.attach_money),
-                          ),
-                          validator: (value) {
-                            if (_addReward) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter the reward amount';
+              // Reward Section (no Card)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Switch(
+                          value: _addReward,
+                          onChanged: (bool value) {
+                            setState(() {
+                              _addReward = value;
+                              if (!value) {
+                                _rewardAmountController.clear();
                               }
-                              if (double.tryParse(value) == null) {
-                                return 'Please enter a valid number';
-                              }
-                              if (double.parse(value) <= 0) {
-                                return 'Amount must be greater than zero';
-                              }
-                            }
-                            return null;
+                            });
                           },
+                          activeColor: colorScheme.primary,
                         ),
-                    ],
-                  ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Offer Reward?',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    if (_addReward) const SizedBox(height: 12),
+                    if (_addReward)
+                      TextFormField(
+                        controller: _rewardAmountController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Reward Amount (XAF)',
+                          border: const OutlineInputBorder(),
+                          prefixText: 'XAF ',
+                          filled: true,
+                          fillColor: colorScheme.surface,
+                        ),
+                        validator: (value) {
+                          if (_addReward) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter the reward amount';
+                            }
+                            if (double.tryParse(value) == null) {
+                              return 'Please enter a valid number';
+                            }
+                            if (double.parse(value) <= 0) {
+                              return 'Amount must be greater than zero';
+                            }
+                          }
+                          return null;
+                        },
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Submit Button
+              // Next Button
               SizedBox(
-                // height: 50,
-                child: FilledButton(
-                  onPressed: _submitReport,
-                  // style: ElevatedButton.styleFrom(
-                  //   foregroundColor: Colors.white,
-                  //   backgroundColor: Theme.of(context).primaryColor,
-                  //   textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  // ),
-                  // icon: const Icon(Icons.send),
-                  child: const Text('NEXT'),
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _navigateToContactPage,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('NEXT: Contact Information'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

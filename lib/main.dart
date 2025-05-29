@@ -1,3 +1,4 @@
+import 'package:back2u/views/data/data_seeder.dart';
 import 'package:back2u/views/home/index.dart';
 import 'package:back2u/views/onboarding/index.dart';
 import 'package:back2u/views/report/index.dart';
@@ -40,9 +41,10 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const Home(),
         // Note: '/settings' and '/report' point to the same Report widget.
         // You might want to differentiate them or use a single route if they are truly the same.
-        '/settings': (context) => const Report(), 
+        '/settings': (context) => const ReportPage(), 
         '/onboarding': (context) => const Onboarding(),
-        '/report': (context) => const Report(),
+        '/data_seeder': (context) => const DataSeederPage(), // Assuming this is for testing purposes
+        '/report': (context) => const ReportPage(),
       },
     );
   }

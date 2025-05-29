@@ -1,110 +1,144 @@
 import 'package:back2u/components/SimpleCard.dart';
 import 'package:back2u/utils/app_drawer.dart';
-import 'package:back2u/views/report/index.dart';
+import 'package:back2u/views/report/index.dart'; // Ensure this is your Report submission screen
 import 'package:back2u/views/search/index.dart';
 import 'package:flutter/material.dart';
+import 'package:back2u/components/report_details.dart'; // Import ReportDetails
+import 'package:back2u/models/report_model.dart'; // Import your Report model
+import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp conversion
+import 'package:intl/intl.dart'; // For date formatting in headers
 
-final List<Map<String, dynamic>> cardData = [
-  {
-    'ownerName': 'John Doe',
-    'subCategory': 'Birth Certificate',
-    'type': 'Lost',
-    'location': 'New York',
-    'imageCount': 2,
-    'incidentDate': DateTime(2023, 10, 15),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 10, 16), // Added reportDate
-  },
-  {
-    'ownerName': 'Jane Smith',
-    'subCategory': 'ID Card',
-    'type': 'Lost',
-    'location': 'Los Angeles',
-    'imageCount': 1,
-    'incidentDate': DateTime(2023, 11, 3),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 11, 4), // Added reportDate
-  },
-  {
-    'ownerName': 'Mike Johnson',
-    'subCategory': 'Wallet',
-    'type': 'Found',
-    'location': 'Los Angeles',
-    'imageCount': 3,
-    'incidentDate': DateTime(2023, 11, 5),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 11, 6), // Added reportDate
-  },
-  {
-    'ownerName': 'Sarah Williams',
-    'subCategory': 'Laptop',
-    'type': 'Lost',
-    'location': 'Chicago',
-    'imageCount': 2,
-    'incidentDate': DateTime(2023, 11, 10),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 11, 11), // Added reportDate
-  },
-  {
-    'ownerName': 'David Miller',
-    'subCategory': 'Car Keys',
-    'type': 'Found',
-    'location': 'Miami',
-    'imageCount': 1,
-    'incidentDate': DateTime(2023, 11, 12),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 11, 13), // Added reportDate
-  },
-  {
-    'ownerName': 'Emily Johnson',
-    'subCategory': 'Backpack',
-    'type': 'Found',
-    'location': 'Seattle',
-    'imageCount': 2,
-    'incidentDate': DateTime(2023, 11, 8),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 11, 9), // Added reportDate
-  },
-  {
-    'ownerName': 'Robert Brown',
-    'subCategory': 'Headphones',
-    'type': 'Lost',
-    'location': 'Dallas',
-    'imageCount': 0,
-    'incidentDate': DateTime(2023, 10, 28),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 10, 29), // Added reportDate
-  },
-  {
-    'ownerName': 'Lisa Chen',
-    'subCategory': 'Umbrella',
-    'type': 'Found',
-    'location': 'Boston',
-    'imageCount': 1,
-    'incidentDate': DateTime(2023, 10, 25),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 10, 26), // Added reportDate
-  },
-  {
-    'ownerName': 'Thomas Wilson',
-    'subCategory': 'Watch',
-    'type': 'Found',
-    'location': 'San Francisco',
-    'imageCount': 2,
-    'incidentDate': DateTime(2023, 11, 1),
-    'isResolved': false,
-    'reportDate': DateTime(2023, 11, 2), // Added reportDate
-  },
-  {
-    'ownerName': 'Peter Jones',
-    'subCategory': 'Books',
-    'type': 'Lost',
-    'location': 'Chicago',
-    'imageCount': 1,
-    'incidentDate': DateTime(2023, 9, 18),
-    'isResolved': true,
-    'reportDate': DateTime(2023, 9, 19), // Added reportDate
-  },
+// Helper to convert DateTime to Timestamp for mock data
+Timestamp _toTimestamp(DateTime date) {
+  return Timestamp.fromDate(date);
+}
+
+// Reduced and converted sample data using the Report model
+final List<Report> reportData = [
+  Report(
+    ownerName: 'John Doe',
+    category: 'Documents', categoryFr: 'Documents',
+    contactPhone: '123-456-7890',
+    reportedDate: _toTimestamp(DateTime(2025, 5, 20)), // Incident: May 20
+    documentName: 'Birth Certificate',
+    images: [
+      'https://via.placeholder.com/150/FF0000/FFFFFF?text=BC1',
+      'https://via.placeholder.com/150/0000FF/FFFFFF?text=BC2'
+    ],
+    locationLost: 'New York', locationLostFr: 'New York',
+    notes: 'Lost at Central Park. Very important.',
+    createdAt:
+        _toTimestamp(DateTime(2025, 5, 22)), // Reported: May 22 (Most Recent)
+    reportId: 'rep001', reporterId: 'user123', resolved: false, reward: '100',
+    searchKeyWords: ['birth certificate', 'john doe'], status: 'active',
+    subLocationLost: 'Central Park', subLocationLostFr: 'Central Park',
+    subcategory: 'Birth Certificate', subcategoryFr: 'Birth Certificate',
+    type: 'Lost', whatsappNumber: '123-456-7890',
+  ),
+  Report(
+    ownerName: 'Jane Smith',
+    category: 'ID Cards', categoryFr: 'ID Cards', contactPhone: '098-765-4321',
+    reportedDate: _toTimestamp(DateTime(2025, 5, 15)), // Incident: May 15
+    documentName: 'National ID',
+    images: ['https://via.placeholder.com/150/00FF00/FFFFFF?text=ID1'],
+    locationLost: 'Los Angeles', locationLostFr: 'Los Angeles',
+    notes: 'Found near Hollywood sign. Blue wallet.',
+    createdAt: _toTimestamp(DateTime(2025, 5, 16)), // Reported: May 16 (Recent)
+    reportId: 'rep002', reporterId: 'user124',
+    resolved: true, // Resolved example
+    reward: '0', searchKeyWords: ['id card', 'jane smith'], status: 'resolved',
+    subLocationLost: 'Hollywood', subLocationLostFr: 'Hollywood',
+    subcategory: 'ID Card', subcategoryFr: 'ID Card',
+    type: 'Found', whatsappNumber: '098-765-4321',
+  ),
+  Report(
+    ownerName: 'Mike Johnson',
+    category: 'Accessories', categoryFr: 'Accessoires',
+    contactPhone: '111-222-3333',
+    reportedDate: _toTimestamp(DateTime(2025, 4, 10)), // Incident: April 10
+    documentName: 'Brown Wallet',
+    images: [
+      'https://via.placeholder.com/150/FFFF00/000000?text=Wallet1',
+      'https://via.placeholder.com/150/FF00FF/FFFFFF?text=Wallet2'
+    ],
+    locationLost: 'Chicago', locationLostFr: 'Chicago',
+    notes: 'Lost at O\'Hare airport, Terminal 5. Brown leather.',
+    createdAt: _toTimestamp(DateTime(2025, 4, 12)), // Reported: April 12
+    reportId: 'rep003', reporterId: 'user125', resolved: false, reward: '50',
+    searchKeyWords: ['wallet', 'mike johnson'], status: 'active',
+    subLocationLost: 'Airport', subLocationLostFr: 'Airport',
+    subcategory: 'Wallet', subcategoryFr: 'Wallet',
+    type: 'Lost', whatsappNumber: '111-222-3333',
+  ),
+  Report(
+    ownerName: 'Sarah Williams',
+    category: 'Electronics', categoryFr: 'Électronique',
+    contactPhone: '444-555-6666',
+    reportedDate: _toTimestamp(DateTime(2025, 3, 5)), // Incident: March 5
+    documentName: 'MacBook Air', images: [], // No image example
+    locationLost: 'Houston', locationLostFr: 'Houston',
+    notes: 'Found in a coffee shop downtown. Silver color.',
+    createdAt: _toTimestamp(DateTime(2025, 3, 6)), // Reported: March 6
+    reportId: 'rep004', reporterId: 'user126', resolved: false, reward: '0',
+    searchKeyWords: ['laptop', 'sarah williams'], status: 'active',
+    subLocationLost: 'Coffee Shop', subLocationLostFr: 'Coffee Shop',
+    subcategory: 'Laptop', subcategoryFr: 'Laptop',
+    type: 'Found', whatsappNumber: '444-555-6666',
+  ),
+  Report(
+    ownerName: 'David Lee',
+    category: 'Keys', categoryFr: 'Clés', contactPhone: '777-888-9999',
+    reportedDate: _toTimestamp(DateTime(2025, 2, 28)), // Incident: Feb 28
+    documentName: 'Audi Car Keys',
+    images: ['https://via.placeholder.com/150/00FFFF/000000?text=Keys1'],
+    locationLost: 'Denver', locationLostFr: 'Denver',
+    notes: 'Lost on a hiking trail near Red Rocks.',
+    createdAt:
+        _toTimestamp(DateTime(2025, 3, 1)), // Reported: March 1 (Also March)
+    reportId: 'rep005', reporterId: 'user127', resolved: false, reward: '20',
+    searchKeyWords: ['car keys', 'david lee'], status: 'active',
+    subLocationLost: 'Hiking Trail', subLocationLostFr: 'Hiking Trail',
+    subcategory: 'Car Keys', subcategoryFr: 'Car Keys',
+    type: 'Lost', whatsappNumber: '777-888-9999',
+  ),
+  Report(
+    ownerName: 'Anna Kim',
+    category: 'Bags', categoryFr: 'Sacs', contactPhone: '333-222-1111',
+    reportedDate:
+        _toTimestamp(DateTime(2024, 12, 1)), // Incident: Dec 1 (Oldest example)
+    documentName: 'Blue Backpack',
+    images: [
+      'https://via.placeholder.com/150/FFC0CB/000000?text=BP1',
+      'https://via.placeholder.com/150/800080/FFFFFF?text=BP2'
+    ],
+    locationLost: 'Seattle', locationLostFr: 'Seattle',
+    notes: 'Found at library. Contains books.',
+    createdAt:
+        _toTimestamp(DateTime(2024, 12, 3)), // Reported: Dec 3 (Oldest example)
+    reportId: 'rep006', reporterId: 'user128', resolved: false, reward: '0',
+    searchKeyWords: ['backpack', 'anna kim'], status: 'active',
+    subLocationLost: 'Library', subLocationLostFr: 'Library',
+    subcategory: 'Backpack', subcategoryFr: 'Backpack',
+    type: 'Found', whatsappNumber: '333-222-1111',
+  ),
+  // Added one more recent report to demonstrate "Most Recent" better
+  Report(
+    ownerName: 'Chloe Green',
+    category: 'Documents', categoryFr: 'Documents',
+    contactPhone: '999-888-7777',
+    reportedDate: _toTimestamp(DateTime(2025, 5, 23)), // Incident: May 23
+    documentName: 'Passport',
+    images: ['https://via.placeholder.com/150/C0C0C0/000000?text=Passport'],
+    locationLost: 'San Francisco', locationLostFr: 'San Francisco',
+    notes: 'Lost at airport security.',
+    createdAt: _toTimestamp(
+        DateTime(2025, 5, 24)), // Reported: May 24 (Even more recent!)
+    reportId: 'rep007', reporterId: 'user129', resolved: false, reward: '500',
+    searchKeyWords: ['passport', 'chloe green'], status: 'active',
+    subLocationLost: 'SFO Airport', subLocationLostFr: 'SFO Airport',
+    subcategory: 'Passport', subcategoryFr: 'Passport',
+    type: 'Lost', whatsappNumber: '999-888-7777',
+  ),
 ];
 
 class Home extends StatefulWidget {
@@ -117,14 +151,14 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   bool _isLoading = false;
   String _activeFilter = 'All';
-  List<Map<String, dynamic>> _filteredData = [];
+  List<Report> _filteredData = []; // Changed to List<Report>
 
   final List<String> filters = ['All', 'Lost', 'Found'];
 
   @override
   void initState() {
     super.initState();
-    _filteredData = List.from(cardData);
+    _filteredData = List.from(reportData); // Use reportData as source
     _simulateLoading();
   }
 
@@ -145,11 +179,31 @@ class _HomeState extends State<Home> {
       if (!mounted) return;
       setState(() {
         _filteredData = filter == 'All'
-            ? List.from(cardData)
-            : cardData.where((item) => item['type'] == filter).toList();
+            ? List.from(reportData) // Filter from original reportData
+            : reportData
+                .where((item) => item.type == filter)
+                .toList(); // Filter by item.type
         _isLoading = false;
       });
     });
+  }
+
+  // Helper to group reports by month and year
+  Map<String, List<Report>> _groupReportsByMonth(List<Report> reports) {
+    // Sort reports by creation date (most recent first) within the group
+    reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    final Map<String, List<Report>> groupedReports = {};
+    final DateFormat formatter = DateFormat('MMMM yyyy'); // e.g., "May 2025"
+
+    for (var report in reports) {
+      final String monthYear = formatter.format(report.createdAt.toDate());
+      if (!groupedReports.containsKey(monthYear)) {
+        groupedReports[monthYear] = [];
+      }
+      groupedReports[monthYear]!.add(report);
+    }
+    return groupedReports;
   }
 
   @override
@@ -161,7 +215,7 @@ class _HomeState extends State<Home> {
           title: const Text('Home'),
           centerTitle: true,
           elevation: 1,
-          backgroundColor: colorScheme.primary, // Use primary color from theme
+          backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
           actions: [
             IconButton(
@@ -175,7 +229,9 @@ class _HomeState extends State<Home> {
             IconButton(
               icon: const Icon(Icons.more_vert),
               tooltip: 'More options',
-              onPressed: () {},
+              onPressed: () {
+                // TODO: Implement more options functionality
+              },
             ),
           ],
         ),
@@ -195,16 +251,13 @@ class _HomeState extends State<Home> {
                     label: Text(
                       filter,
                       style: TextStyle(
-                        // color: isSelected ? Colors.white : Colors.black,
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     selected: isSelected,
-                    // checkmarkColor: Colors.white,
-                    // selectedColor: Colors.blue,
-                    // backgroundColor: Colors.grey.shade200,
                     onSelected: (_) => _applyFilter(filter),
+                    // Material 3 automatically handles colors based on theme
                   );
                 }).toList(),
               ),
@@ -224,7 +277,9 @@ class _HomeState extends State<Home> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const Report()),
+              MaterialPageRoute(
+                  builder: (context) =>
+                      const ReportPage()), // Assuming Report is your submission form
             );
           },
           label: const Text('Make a Report'),
@@ -276,22 +331,66 @@ class _HomeState extends State<Home> {
   }
 
   Widget _buildReportsList() {
-    return ListView.separated(
-      itemCount: _filteredData.length,
-      physics: const BouncingScrollPhysics(),
+    final groupedReports = _groupReportsByMonth(_filteredData);
+    final sortedMonths = groupedReports.keys.toList()
+      ..sort((a, b) {
+        // Parse "Month Year" strings back to DateTime for proper sorting
+        final DateFormat formatter = DateFormat('MMMM yyyy');
+        final DateTime dateA = formatter.parse(a);
+        final DateTime dateB = formatter.parse(b);
+        return dateB.compareTo(dateA); // Sort months from most recent to oldest
+      });
+
+    return ListView.builder(
+      // physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 80),
-      separatorBuilder: (context, index) => const SizedBox(height: 1),
-      itemBuilder: (context, index) {
-        final item = _filteredData[index];
-        return SimpleCard(
-          ownerName: item['ownerName'],
-          subCategory: item['subCategory'],
-          type: item['type'],
-          location: item['location'],
-          imageCount: item['imageCount'],
-          incidentDate: item['incidentDate'],
-          isResolved: item['isResolved'],
-          reportDate: item['reportDate'], // Pass reportDate to SimpleCard
+      itemCount: sortedMonths.length,
+      itemBuilder: (context, monthIndex) {
+        final month = sortedMonths[monthIndex];
+        final reportsInMonth = groupedReports[month]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Month Header
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                month,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
+            ),
+            // Reports for this month
+            ListView.builder(
+              shrinkWrap: true, // Important to allow nested ListViews
+              physics:
+                  const NeverScrollableScrollPhysics(), // Disable scrolling for inner list
+              itemCount: reportsInMonth.length,
+              itemBuilder: (context, reportIndex) {
+                final report = reportsInMonth[reportIndex];
+                return SimpleCard(
+                  onTap: () {
+                    // Navigate to ReportDetails, passing the Report object
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ReportDetails(
+                            report: report), // Pass the Report object
+                      ),
+                    );
+                  },
+                  report: report, // Pass the Report object
+                );
+              },
+            ),
+            // Add a small space between months sections, unless it's the last one
+            if (monthIndex < sortedMonths.length - 1)
+              const SizedBox(height: 12),
+          ],
         );
       },
     );

@@ -3,72 +3,74 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Report {
   final String? ownerName;
   final String category;
-  final String categoryFr;
+  final String categoryFr; // Assuming French translation
   final String contactPhone;
-  final Timestamp dateOfLoss;
-  final String documentName;
-  final List<String> images;
-  final Timestamp? lastKnownStatusUpdate;
+  final Timestamp reportedDate; // Incident Date
+  final String documentName; // Can be used for specific item name, e.g., "National ID"
+  final List<String> images; // List of image URLs (after upload)
+  final Timestamp? updatedAt;
   final String locationLost;
-  final String locationLostFr;
+  final String locationLostFr; // Assuming French translation
   final String notes;
-  final Timestamp reportDate;
-  final String reportId;
-  final String reporterId;
+  final Timestamp createdAt; // Report Date (set at submission)
+  final String reportId; // Unique ID for the report
+  final String reporterId; // ID of the user who made the report
   final bool resolved;
-  final String reward;
+  final String reward; // Reward amount as string or number
   final List<String> searchKeyWords;
   final String status;
   final String subLocationLost;
-  final String subLocationLostFr;
+  final String subLocationLostFr; // Assuming French translation
   final String subcategory;
-  final String subcategoryFr;
-  final String type;
+  final String subcategoryFr; // Assuming French translation
+  final String type; // "Lost" or "Found"
   final String whatsappNumber;
 
   Report({
-    this.ownerName,
-    required this.category,
-    required this.categoryFr,
-    required this.contactPhone,
-    required this.dateOfLoss,
-    required this.documentName,
-    required this.images,
-    this.lastKnownStatusUpdate,
-    required this.locationLost,
-    required this.locationLostFr,
-    required this.notes,
-    required this.reportDate,
-    required this.reportId,
-    required this.reporterId,
-    required this.resolved,
-    required this.reward,
-    required this.searchKeyWords,
-    required this.status,
-    required this.subLocationLost,
-    required this.subLocationLostFr,
-    required this.subcategory,
-    required this.subcategoryFr,
-    required this.type,
-    required this.whatsappNumber,
-  });
+    this.ownerName, // Now nullable
+    this.category = '', // Provide default values
+    this.categoryFr = '',
+    this.contactPhone = '',
+    Timestamp? reportedDate, // Make nullable in constructor for initial creation
+    this.documentName = '',
+    this.images = const [],
+    this.updatedAt,
+    this.locationLost = '',
+    this.locationLostFr = '',
+    this.notes = '',
+    Timestamp? createdAt, // Make nullable for initial creation
+    this.reportId = '',
+    this.reporterId = '',
+    this.resolved = false,
+    this.reward = '',
+    this.searchKeyWords = const [],
+    this.status = 'active',
+    this.subLocationLost = '',
+    this.subLocationLostFr = '',
+    this.subcategory = '',
+    this.subcategoryFr = '',
+    this.type = '', // This will be set by ReportPage
+    this.whatsappNumber = '',
+  }) : reportedDate = reportedDate ?? Timestamp.now(),
+       createdAt = createdAt ?? Timestamp.now();
+
 
   // Factory constructor to create a Report from a Firestore DocumentSnapshot
   factory Report.fromFirestore(DocumentSnapshot doc) {
-    Map data = doc.data() as Map<String, dynamic>;
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Report(
       ownerName: data['owner_name'],
       category: data['category'] ?? '',
       categoryFr: data['category_fr'] ?? '',
       contactPhone: data['contact_phone'] ?? '',
-      dateOfLoss: data['date_of_loss'] ?? Timestamp.now(),
+      reportedDate: data['reported_date'] ?? Timestamp.now(),
       documentName: data['document_name'] ?? '',
       images: List<String>.from(data['images'] ?? []),
-      lastKnownStatusUpdate: data['last_known_status_update'],
+      updatedAt: data['updated_at'],
       locationLost: data['location_lost'] ?? '',
       locationLostFr: data['location_lost_fr'] ?? '',
       notes: data['notes'] ?? '',
-      reportDate: data['report_date'] ?? Timestamp.now(),
+      createdAt: data['created_at'] ?? Timestamp.now(),
       reportId: data['report_id'] ?? '',
       reporterId: data['reporter_id'] ?? '',
       resolved: data['resolved'] ?? false,
@@ -91,15 +93,14 @@ class Report {
       'category': category,
       'category_fr': categoryFr,
       'contact_phone': contactPhone,
-      'date_of_loss': dateOfLoss,
+      'reported_date': reportedDate,
       'document_name': documentName,
       'images': images,
-      if (lastKnownStatusUpdate != null)
-        'last_known_status_update': lastKnownStatusUpdate,
+      if (updatedAt != null) 'updated_at': updatedAt,
       'location_lost': locationLost,
       'location_lost_fr': locationLostFr,
       'notes': notes,
-      'report_date': reportDate,
+      'created_at': createdAt,
       'report_id': reportId,
       'reporter_id': reporterId,
       'resolved': resolved,
@@ -113,5 +114,60 @@ class Report {
       'type': type,
       'whatsapp_number': whatsappNumber,
     };
+  }
+
+  // Helper method to create a copy with updated values
+  Report copyWith({
+    String? ownerName,
+    String? category,
+    String? categoryFr,
+    String? contactPhone,
+    Timestamp? reportedDate,
+    String? documentName,
+    List<String>? images,
+    Timestamp? updatedAt,
+    String? locationLost,
+    String? locationLostFr,
+    String? notes,
+    Timestamp? createdAt,
+    String? reportId,
+    String? reporterId,
+    bool? resolved,
+    String? reward,
+    List<String>? searchKeyWords,
+    String? status,
+    String? subLocationLost,
+    String? subLocationLostFr,
+    String? subcategory,
+    String? subcategoryFr,
+    String? type,
+    String? whatsappNumber,
+  }) {
+    return Report(
+      ownerName: ownerName ?? this.ownerName,
+      category: category ?? this.category,
+      categoryFr: categoryFr ?? this.categoryFr,
+      contactPhone: contactPhone ?? this.contactPhone,
+      reportedDate: reportedDate ?? this.reportedDate,
+      documentName: documentName ?? this.documentName,
+      images: images ?? this.images,
+      updatedAt: updatedAt ?? this.updatedAt,
+      locationLost: locationLost ?? this.locationLost,
+      locationLostFr: locationLostFr ?? this.locationLostFr,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      reportId: reportId ?? this.reportId,
+      reporterId: reporterId ?? this.reporterId,
+      resolved: resolved ?? this.resolved,
+      reward: reward ?? this.reward,
+      searchKeyWords: searchKeyWords ?? this.searchKeyWords,
+      status: status ?? this.status,
+      subLocationLost: subLocationLost ?? this.subLocationLost,
+      subLocationLostFr: subLocationLostFr ?? this.subLocationLostFr,
+      subcategory: subcategory ?? this.subcategory,
+      subcategoryFr: subcategoryFr ?? this.subcategoryFr,
+      type: type ?? this.type,
+      whatsappNumber: whatsappNumber ?? this.whatsappNumber,
+    );
   }
 }

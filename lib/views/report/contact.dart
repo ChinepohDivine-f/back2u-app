@@ -1,8 +1,20 @@
+import 'dart:io'; // Required for XFile
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For TextInputFormatter
+import 'package:back2u/models/report_model.dart'; // Import your Report model
+import 'package:back2u/views/report/report_summary.dart'; // Import the new SummaryPage
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ContactPage extends StatefulWidget {
-  const ContactPage({super.key});
+  final Report report; // Receive the partially filled Report object
+  final List<XFile> localImageFiles; // Pass local image files for summary/upload
+
+  const ContactPage({
+    super.key,
+    required this.report,
+    this.localImageFiles = const [], // Initialize as empty list
+  });
 
   @override
   State<ContactPage> createState() => _ContactPageState();
@@ -10,32 +22,33 @@ class ContactPage extends StatefulWidget {
 
 class _ContactPageState extends State<ContactPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _whatsappController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  bool _saveToProfile = false; // State for the checkbox
-
-  // Placeholder for initial numbers from backend (if any)
-  String? _initialWhatsappNumber;
-  String? _initialPhoneNumber;
+  late TextEditingController _whatsappController;
+  late TextEditingController _phoneController;
+  bool _saveToProfile = false;
 
   @override
   void initState() {
     super.initState();
+    // Initialize controllers with existing report data or fetched profile data
+    _whatsappController = TextEditingController(text: widget.report.whatsappNumber);
+    _phoneController = TextEditingController(text: widget.report.contactPhone);
+
     // Simulate fetching existing data from user profile (replace with actual backend call)
     _fetchInitialContactInfo();
   }
 
   void _fetchInitialContactInfo() async {
     // In a real app, you would make an API call here to get user's existing contact info.
-    // For demonstration, we'll simulate a delay and set some dummy data.
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
+    // For demonstration, we'll simulate a delay and set some dummy data if fields are empty.
+    await Future.delayed(const Duration(milliseconds: 100)); // Simulate minimal delay
 
-    setState(() {
-      _initialWhatsappNumber = '671234567'; // Example existing WhatsApp
-      _initialPhoneNumber = '698765432';   // Example existing Phone
-      _whatsappController.text = _initialWhatsappNumber ?? '';
-      _phoneController.text = _initialPhoneNumber ?? '';
-    });
+    if (_whatsappController.text.isEmpty && _phoneController.text.isEmpty) {
+      // Only pre-fill if the fields are empty from the passed Report object
+      setState(() {
+        // Example: _whatsappController.text = '671234567';
+        // Example: _phoneController.text = '698765432';
+      });
+    }
   }
 
   // Validator to ensure at least one number is provided
@@ -46,32 +59,29 @@ class _ContactPageState extends State<ContactPage> {
     return null;
   }
 
-  void _submitContactInfo() {
-    // Manually trigger the combined validation for both fields
+  void _navigateToSummary() {
     final String? whatsappText = _whatsappController.text.trim();
     final String? phoneText = _phoneController.text.trim();
     final String? combinedError = _validateContactNumbers(whatsappText, phoneText);
 
     if (_formKey.currentState!.validate() && combinedError == null) {
-      // If validation passes and at least one number is provided
-      // Here, you would send data to your backend
-      print('WhatsApp Number: $whatsappText');
-      print('Phone Number: $phoneText');
-      print('Save to Profile: $_saveToProfile');
-
-      // Simulate API call to backend
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Contact information saved!')),
+      // Create a *copy* of the report object and update its contact properties
+      final updatedReport = widget.report.copyWith(
+        whatsappNumber: whatsappText ?? '',
+        contactPhone: phoneText ?? '',
+        createdAt: Timestamp.now(), // Set report creation date here
+        // Set reporterId, unique reportId, etc. here or during final submission
       );
 
-      // In a real app, if _saveToProfile is true, you'd send these numbers
-      // to your backend for the user's profile.
+      // Pass the fully populated Report object and local images to the SummaryPage
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SummaryPage(report: updatedReport, localImageFiles: widget.localImageFiles)),
+      );
     } else {
-      // Show combined error if exists, or individual field errors
       if (combinedError != null) {
-        // A common way to show global errors is via SnackBar or a general error message at the top.
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(combinedError), backgroundColor: Colors.red),
+          SnackBar(content: Text(combinedError), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     }
@@ -86,21 +96,27 @@ class _ContactPageState extends State<ContactPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Contact Information'),
+        centerTitle: true,
+        elevation: 1,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction, // Validate as user types
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
                 'Provide your contact details. At least one number is required.',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 24),
 
@@ -109,19 +125,16 @@ class _ContactPageState extends State<ContactPage> {
                 controller: _whatsappController,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly, // Allow only digits
-                  LengthLimitingTextInputFormatter(10), // Limit length for typical phone numbers
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(9), // Standard 9 digits for Cameroon
                 ],
                 decoration: InputDecoration(
-                  labelText: 'WhatsApp Number (e.g., 67X XXX XXX)',
+                  labelText: 'WhatsApp Number (e.g., 67X XXX XXXX)', // Updated hint for 9 digits
                   hintText: 'e.g., 671234567',
                   prefixIcon: const Icon(Icons.phone_callback),
                   border: const OutlineInputBorder(),
-                  // The primary validation will happen on submit for this field due to combined rule.
-                  // You can add individual validation if needed, e.g., format.
                 ),
                 validator: (value) {
-                  // Only validate for format if provided
                   if (value != null && value.isNotEmpty && value.length < 9) {
                     return 'Number must be at least 9 digits.';
                   }
@@ -135,18 +148,16 @@ class _ContactPageState extends State<ContactPage> {
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly, // Allow only digits
-                  LengthLimitingTextInputFormatter(10), // Limit length
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(9), // Standard 9 digits for Cameroon
                 ],
                 decoration: InputDecoration(
-                  labelText: 'Phone Number (e.g., 69X XXX XXX)',
+                  labelText: 'Phone Number (e.g., 69X XXX XXXX)', // Updated hint for 9 digits
                   hintText: 'e.g., 698765432',
                   prefixIcon: const Icon(Icons.phone),
                   border: const OutlineInputBorder(),
-                  // The primary validation will happen on submit for this field due to combined rule.
                 ),
                  validator: (value) {
-                  // Only validate for format if provided
                   if (value != null && value.isNotEmpty && value.length < 9) {
                     return 'Number must be at least 9 digits.';
                   }
@@ -165,8 +176,9 @@ class _ContactPageState extends State<ContactPage> {
                         _saveToProfile = newValue ?? false;
                       });
                     },
+                    activeColor: colorScheme.primary,
                   ),
-                  const Text('Save this information to my profile'),
+                  Text('Save this information to my profile', style: Theme.of(context).textTheme.bodyLarge),
                 ],
               ),
               const SizedBox(height: 30),
@@ -174,13 +186,14 @@ class _ContactPageState extends State<ContactPage> {
               // Submit Button
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: _submitContactInfo,
+                child: FilledButton.icon(
+                  onPressed: _navigateToSummary,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('NEXT: Review Report'),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     textStyle: const TextStyle(fontSize: 18),
                   ),
-                  child: const Text('Submit Report'),
                 ),
               ),
             ],

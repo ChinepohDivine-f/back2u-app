@@ -1,150 +1,11 @@
 import 'package:back2u/components/SimpleCard.dart';
 import 'package:back2u/views/search/filter_bottom_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For date formatting
-// import 'package:your_app_name/filter_bottom_sheet.dart'; // <--- IMPORTANT: Update this import path!
+import 'package:intl/intl.dart';
+import 'package:back2u/models/report_model.dart'; // Import your Report model
+import 'package:back2u/views/home/index.dart'; // Import reportData from your Home page for now
+import 'package:back2u/components/report_details.dart'; // Import ReportDetails
 
-// --- Your SimpleCard Widget (exactly as you provided it) ---
-// I'm including it here for a self-contained example,
-// but in your actual project, it would be in its own file (e.g., simple_card.dart)
-
-// --- Report Data Model for Lost Documents (remains the same) ---
-class ReportData {
-  final String ownerName;
-  final String subCategory;
-  final String type;
-  final String location;
-  final String description;
-  final DateTime incidentDate;
-  final int imageCount;
-  final bool isResolved;
-  final DateTime reportDate; // New field for report date
-
-  ReportData({
-    required this.ownerName,
-    required this.subCategory,
-    required this.type,
-    required this.location,
-    this.description = '',
-    required this.incidentDate,
-    this.imageCount = 0,
-    this.isResolved = false,
-    required this.reportDate,
-  });
-
-  bool containsQuery(String query) {
-    return ownerName.toLowerCase().contains(query) ||
-        subCategory.toLowerCase().contains(query) ||
-        type.toLowerCase().contains(query) ||
-        location.toLowerCase().contains(query) ||
-        description.toLowerCase().contains(query);
-  }
-}
-
-// --- Dummy Data (remains the same) ---
-final List<ReportData> _dummySystemData = [
-  ReportData(
-    ownerName: 'National ID - John Doe',
-    subCategory: 'National ID',
-    type: 'Lost',
-    location: 'Buea',
-    incidentDate: DateTime(2025, 5, 10),
-    description: 'Lost near UB gate. Contains ID card and student card.',
-    imageCount: 1,
-    isResolved: false,
-    reportDate: DateTime(2025, 5, 11), // Added reportDate
-    // reportDate: DateTime(2025, 5, 11), // Added reportDate
-  ),
-  ReportData(
-    ownerName: 'Passport - Jane Smith',
-    subCategory: 'Passport',
-    type: 'Lost',
-    location: 'Limbe',
-    incidentDate: DateTime(2025, 5, 8),
-    description: 'Lost at Down Beach. Cameroonian passport.',
-    imageCount: 2,
-    isResolved: true,
-    reportDate: DateTime(2025, 5, 9), // Added reportDate
-  ),
-  ReportData(
-    ownerName: 'Driving License - Peter Obi',
-    subCategory: 'Driving License',
-    type: 'Found',
-    location: 'Buea',
-    incidentDate: DateTime(2025, 5, 15),
-    description: 'Found near the main market, laminated.',
-    imageCount: 0,
-    isResolved: false,
-    reportDate: DateTime(2025, 5, 16), // Added reportDate
-  ),
-  ReportData(
-    ownerName: 'Birth Certificate - Mary Anne',
-    subCategory: 'Birth Certificate',
-    type: 'Lost',
-    location: 'Kumba',
-    incidentDate: DateTime(2025, 5, 12),
-    description: 'Original birth certificate, dated 1995.',
-    imageCount: 1,
-    isResolved: false,
-    reportDate: DateTime(2025, 5, 13), // Added reportDate
-  ),
-  ReportData(
-    ownerName: 'University Diploma - David King',
-    subCategory: 'Diploma',
-    type: 'Lost',
-    location: 'Douala',
-    incidentDate: DateTime(2025, 5, 7),
-    description: 'Lost after graduation ceremony.',
-    imageCount: 1,
-    isResolved: true,
-    reportDate: DateTime(2025, 5, 8), // Added reportDate
-  ),
-  ReportData(
-    ownerName: 'Marriage Certificate - Fam. Nsom',
-    subCategory: 'Marriage Certificate',
-    type: 'Found',
-    location: 'Yaounde',
-    incidentDate: DateTime(2025, 5, 18),
-    description: 'Found near Ngoa-Ekelle. Sealed envelope.',
-    imageCount: 3,
-    isResolved: false,
-    reportDate: DateTime(2025, 5, 19), // Added reportDate
-  ),
-  ReportData(
-    ownerName: 'GCE Certificate - Limbe',
-    subCategory: 'GCE Certificate',
-    type: 'Found',
-    location: 'Buea',
-    incidentDate: DateTime(2025, 5, 17),
-    description: 'Found opposite UB Molyko main gate.',
-    imageCount: 0,
-    isResolved: false,
-    reportDate: DateTime(2025, 5, 18), // Added reportDate
-  ),
-  ReportData(
-    ownerName: 'National ID - Aisha Bello',
-    subCategory: 'National ID',
-    type: 'Lost',
-    location: 'Limbe',
-    incidentDate: DateTime(2025, 5, 9),
-    description: 'Lost at a café, in a brown wallet.',
-    imageCount: 1,
-    isResolved: false,
-    reportDate: DateTime(2025, 5, 10), // Added reportDate
-  ),
-  ReportData(
-    ownerName: 'Voter ID - Samuel Tchoupo',
-    subCategory: 'Voter ID',
-    type: 'Lost',
-    location: 'Buea',
-    incidentDate: DateTime(2025, 5, 14),
-    description: 'Lost during a political rally.',
-    imageCount: 0,
-    isResolved: false,
-    reportDate: DateTime(2025, 5, 15), // Added reportDate
-  ),];
-
-// --- Main Search Page Widget ---
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
 
@@ -156,22 +17,23 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _currentQuery = '';
-  List<ReportData> _filteredData = [];
+  List<Report> _filteredData = []; // Now using List<Report>
   List<String> _searchHistory = [];
   List<String> _searchSuggestions = [];
 
   String? _filterType;
-  String? _filterDocumentType;
+  String? _filterCategory; // Changed from _filterDocumentType to _filterCategory
   String? _filterLocation;
   bool? _filterIsResolved;
 
+  // Use properties from the Report model for filter options
   List<String> get _reportTypes => ['Lost', 'Found'];
-  List<String> get _documentTypes {
-    return _dummySystemData.map((e) => e.subCategory).toSet().toList()..sort();
+  List<String> get _categories {
+    return reportData.map((e) => e.category).toSet().toList()..sort();
   }
 
   List<String> get _locations {
-    return _dummySystemData.map((e) => e.location).toSet().toList()..sort();
+    return reportData.map((e) => e.locationLost).toSet().toList()..sort();
   }
 
   @override
@@ -180,7 +42,7 @@ class _SearchPageState extends State<SearchPage> {
     _searchController.addListener(_onSearchQueryChanged);
     _searchFocusNode.addListener(_onSearchFocusChanged);
     _loadSearchHistory();
-    _filteredData = List.from(_dummySystemData);
+    _filteredData = List.from(reportData); // Initialize with all reports
   }
 
   @override
@@ -193,12 +55,13 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _loadSearchHistory() {
+    // In a real app, load this from SharedPreferences or similar
     setState(() {
       _searchHistory = [
-        'national id',
-        'passport',
-        'driving license',
-        'birth certificate'
+        'National ID',
+        'Passport',
+        'Driving License',
+        'Birth Certificate'
       ];
     });
   }
@@ -208,9 +71,9 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {
       _currentQuery = query;
       if (query.isNotEmpty) {
-        _searchSuggestions = _dummySystemData
-            .where((item) => item.containsQuery(query))
-            .map((item) => item.ownerName)
+        _searchSuggestions = reportData
+            .where((item) => _reportContainsQuery(item, query)) // Use Report for suggestion
+            .map((item) => item.documentName) // Suggest document name or owner name
             .toSet()
             .take(5)
             .toList();
@@ -224,6 +87,17 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {
       // Rebuild to show/hide suggestions based on focus
     });
+  }
+
+  // Helper method to check if a Report contains the query
+  bool _reportContainsQuery(Report report, String query) {
+    return (report.ownerName?.toLowerCase().contains(query) ?? false) ||
+        report.documentName.toLowerCase().contains(query) ||
+        report.category.toLowerCase().contains(query) ||
+        report.subcategory.toLowerCase().contains(query) ||
+        report.locationLost.toLowerCase().contains(query) ||
+        report.subLocationLost.toLowerCase().contains(query) ||
+        report.notes.toLowerCase().contains(query);
   }
 
   void _performSearch([String? queryOverride]) {
@@ -242,20 +116,20 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     setState(() {
-      _filteredData = _dummySystemData.where((item) {
-        bool matchesQuery = item.containsQuery(query);
+      _filteredData = reportData.where((item) {
+        bool matchesQuery = _reportContainsQuery(item, query);
         bool matchesFilterType =
-            _filterType == null || item.type == _filterType;
-        bool matchesFilterDocumentType = _filterDocumentType == null ||
-            item.subCategory == _filterDocumentType;
+            _filterType == null || item.type.toLowerCase() == _filterType?.toLowerCase();
+        bool matchesFilterCategory = _filterCategory == null ||
+            item.category.toLowerCase() == _filterCategory?.toLowerCase();
         bool matchesFilterLocation =
-            _filterLocation == null || item.location == _filterLocation;
+            _filterLocation == null || item.locationLost.toLowerCase() == _filterLocation?.toLowerCase();
         bool matchesFilterIsResolved =
-            _filterIsResolved == null || item.isResolved == _filterIsResolved;
+            _filterIsResolved == null || item.resolved == _filterIsResolved;
 
         return matchesQuery &&
             matchesFilterType &&
-            matchesFilterDocumentType &&
+            matchesFilterCategory && // Corrected filter name
             matchesFilterLocation &&
             matchesFilterIsResolved;
       }).toList();
@@ -266,10 +140,10 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {
       _searchController.clear();
       _currentQuery = '';
-      _filteredData = List.from(_dummySystemData);
+      _filteredData = List.from(reportData); // Reset to all reports
       _searchSuggestions = [];
       _filterType = null;
-      _filterDocumentType = null;
+      _filterCategory = null; // Corrected filter name
       _filterLocation = null;
       _filterIsResolved = null;
       _searchFocusNode.unfocus();
@@ -283,16 +157,16 @@ class _SearchPageState extends State<SearchPage> {
       builder: (BuildContext context) {
         return FilterBottomSheet(
           initialFilterType: _filterType,
-          initialFilterDocumentType: _filterDocumentType,
+          initialFilterDocumentType: _filterCategory, // Pass category to documentType
           initialFilterLocation: _filterLocation,
           initialFilterIsResolved: _filterIsResolved,
           reportTypes: _reportTypes,
-          documentTypes: _documentTypes,
+          documentTypes: _categories, // Pass categories to documentTypes
           locations: _locations,
           onApplyFilters: (type, docType, location, isResolved) {
             setState(() {
               _filterType = type;
-              _filterDocumentType = docType;
+              _filterCategory = docType; // Assign docType back to category
               _filterLocation = location;
               _filterIsResolved = isResolved;
             });
@@ -308,13 +182,13 @@ class _SearchPageState extends State<SearchPage> {
       String message;
       if (_currentQuery.isNotEmpty ||
           _filterType != null ||
-          _filterDocumentType != null ||
+          _filterCategory != null || // Corrected filter name
           _filterLocation != null ||
           _filterIsResolved != null) {
         message = 'No results found matching your criteria.';
       } else {
         message =
-            'Start typing to search or use filters to find lost documents.';
+            'Start typing to search or use filters to find lost and found items.';
       }
       return Center(
         child: Padding(
@@ -329,25 +203,25 @@ class _SearchPageState extends State<SearchPage> {
     }
     return ListView.separated(
       itemCount: _filteredData.length,
-      physics: const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
+      
       shrinkWrap: true,
       padding: const EdgeInsets.only(bottom: 40),
       separatorBuilder: (context, index) => const SizedBox(
         height: 1,
       ),
       itemBuilder: (context, index) {
-        final cardInfo = _filteredData[index];
+        final report = _filteredData[index];
         return SimpleCard(
-          ownerName: cardInfo.ownerName,
-          subCategory: cardInfo.subCategory,
-          type: cardInfo.type,
-          location: cardInfo.location,
-          imageCount: cardInfo.imageCount,
-          incidentDate: cardInfo.incidentDate,
-          isResolved: cardInfo.isResolved,
-          reportDate: cardInfo.reportDate, // Use the new reportDate field
+          onTap: () {
+            // Navigate to ReportDetails, passing the Report object
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ReportDetails(report: report), // Pass the Report object
+              ),
+            );
+          },
+          report: report, // Pass the Report object
         );
       },
     );
@@ -358,10 +232,10 @@ class _SearchPageState extends State<SearchPage> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search Documents'),
+        title: const Text('Search Lost & Found'),
         centerTitle: true,
         elevation: 1,
-        backgroundColor: colorScheme.primary, // Use primary color from theme
+        backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
       ),
       body: Column(
@@ -375,8 +249,14 @@ class _SearchPageState extends State<SearchPage> {
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     decoration: InputDecoration(
-                      hintText: 'Search for documents...',
+                      hintText: 'Search by owner, document, location...',
                       prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: _clearSearch,
+                            )
+                          : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide: BorderSide.none,
@@ -475,28 +355,6 @@ class _SearchPageState extends State<SearchPage> {
             ),
         ],
       ),
-    );
-  }
-}
-
-// --- Main App for demonstration (needed to run the SearchPage) ---
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Lost Documents Finder',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const SearchPage(),
     );
   }
 }

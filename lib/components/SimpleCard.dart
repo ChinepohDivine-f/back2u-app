@@ -1,28 +1,17 @@
+import 'package:back2u/models/report_model.dart';
+import 'package:back2u/views/report/index.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Import for date formatting
+// import 'package:back2u/components/report.dart'; // Make sure this path is correct
 
 class SimpleCard extends StatelessWidget {
   const SimpleCard({
     super.key,
-    required this.ownerName,
-    required this.subCategory,
-    required this.type,
-    required this.location,
-    this.imageCount = 0,
-    required this.incidentDate,
-    required this.reportDate,
-    required this.isResolved,
-    this.onTap, // onTap is nullable, so no default value needed
+    required this.report, // Changed to accept a Report object
+    this.onTap,
   });
 
-  final String ownerName;
-  final String subCategory;
-  final String type; // 'Lost' or 'Found'
-  final String location;
-  final int imageCount;
-  final DateTime incidentDate;
-  final DateTime reportDate;
-  final bool isResolved;
+  final Report report; // The Report object
   final VoidCallback? onTap;
 
   // Helper method to format relative time
@@ -49,40 +38,38 @@ class SimpleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Access the current theme for consistent styling
     final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        // Use default Card elevation and shape for simplicity
-        margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-        elevation: 1, // A subtle shadow
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        elevation: 1,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), // Slightly less rounded corners
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12), // Slightly reduced padding
+          padding: const EdgeInsets.all(12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image area with a simpler look
+              // Image area
               Stack(
                 children: [
                   Container(
-                    height: 80, // Slightly reduced height
-                    width: 80, // Slightly reduced width
+                    height: 80,
+                    width: 80,
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceVariant, // Use a subtle background from theme
-                      borderRadius: BorderRadius.circular(8), // Match card's subtle rounding
+                      color: colorScheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
                       child: Icon(
                         Icons.image_not_supported_rounded,
                         color: colorScheme.onSurfaceVariant,
-                        size: 24, // Slightly smaller icon
+                        size: 24,
                       ),
                     ),
                   ),
@@ -91,19 +78,19 @@ class SimpleCard extends StatelessWidget {
                     top: 0,
                     right: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), // Smaller padding
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: type.toLowerCase() == 'lost'
-                            ? Colors.red[700] // Direct red for 'Lost'
-                            : Colors.green[700], // Direct green for 'Found'
+                        color: report.type.toLowerCase() == 'lost'
+                            ? Colors.red[700]
+                            : Colors.green[700],
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(8),
                           bottomLeft: Radius.circular(8),
                         ),
                       ),
                       child: Text(
-                        type.toUpperCase(),
-                        style: textTheme.labelSmall?.copyWith( // Use labelSmall for smaller text
+                        report.type.toUpperCase(), // Use report.type
+                        style: textTheme.labelSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -111,28 +98,28 @@ class SimpleCard extends StatelessWidget {
                     ),
                   ),
                   // Image count badge
-                  if (imageCount > 0)
+                  if (report.images.isNotEmpty) // Check if images list is not empty
                     Positioned(
                       bottom: 4,
                       left: 4,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.black54, // Simple translucent black
-                          borderRadius: BorderRadius.circular(10), // More circular
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.camera_alt, // Simpler icon
-                              size: 11, // Smaller icon
+                              Icons.camera_alt,
+                              size: 11,
                               color: Colors.white,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              "$imageCount",
-                              style: textTheme.bodyMedium?.copyWith( // Use bodyMedium
+                              "${report.images.length}", // Use report.images.length
+                              style: textTheme.bodyMedium?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -144,7 +131,7 @@ class SimpleCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(width: 12), // Reduced spacing
+              const SizedBox(width: 12),
 
               // Content area
               Expanded(
@@ -157,31 +144,31 @@ class SimpleCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            ownerName,
-                            style: textTheme.titleMedium?.copyWith( // Use titleMedium
+                            report.ownerName ?? 'N/A', // Use report.ownerName
+                            style: textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.onSurface,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (isResolved)
+                        if (report.resolved) // Use report.resolved
                           Container(
                             margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Smaller padding
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: colorScheme.primary.withOpacity(0.1), // Lighter primary background
+                              color: colorScheme.primary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: colorScheme.primary,
-                                width: 1, // Thinner border
+                                width: 1,
                               ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  Icons.check_circle_outline, // Simpler outline icon
+                                  Icons.check_circle_outline,
                                   size: 12,
                                   color: colorScheme.primary,
                                 ),
@@ -199,17 +186,17 @@ class SimpleCard extends StatelessWidget {
                       ],
                     ),
 
-                    const SizedBox(height: 4), // Reduced spacing
+                    const SizedBox(height: 4),
 
                     // Subcategory
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: colorScheme.secondaryContainer.withOpacity(0.5), // Use secondaryContainer with opacity
-                        borderRadius: BorderRadius.circular(6), // Simpler rounded corners
+                        color: colorScheme.secondaryContainer.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        subCategory,
+                        report.subcategory, // Use report.subcategory
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSecondaryContainer,
@@ -217,20 +204,20 @@ class SimpleCard extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 8), // Reduced spacing
+                    const SizedBox(height: 8),
 
                     // Location with icon
                     Row(
                       children: [
                         Icon(
-                          Icons.location_on_outlined, // Simpler outline icon
+                          Icons.location_on_outlined,
                           size: 14,
                           color: colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            location,
+                            report.locationLost, // Use report.locationLost
                             style: textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -240,19 +227,19 @@ class SimpleCard extends StatelessWidget {
                       ],
                     ),
 
-                    const SizedBox(height: 4), // Reduced spacing
+                    const SizedBox(height: 4),
 
-                    // Incident date
+                    // Incident date (using reportedDate from model)
                     Row(
                       children: [
                         Icon(
-                          Icons.event_note_outlined, // Simpler outline event icon
+                          Icons.event_note_outlined,
                           size: 14,
                           color: colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Incident: ${DateFormat('MMM dd, yyyy').format(incidentDate)}',
+                          'Incident: ${DateFormat('MMM dd, yyyy').format(report.reportedDate.toDate())}', // Convert Timestamp to DateTime
                           style: textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -260,19 +247,19 @@ class SimpleCard extends StatelessWidget {
                       ],
                     ),
 
-                    const SizedBox(height: 4), // Small spacing between dates
+                    const SizedBox(height: 4),
 
-                    // Relative time display (for report date)
+                    // Relative time display (using createdAt from model)
                     Row(
                       children: [
                         Icon(
-                          Icons.access_time, // Simpler time icon
+                          Icons.access_time,
                           size: 14,
                           color: colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Reported: ${_getRelativeTime(reportDate)}',
+                          'Reported: ${_getRelativeTime(report.createdAt.toDate())}', // Convert Timestamp to DateTime
                           style: textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurfaceVariant,
