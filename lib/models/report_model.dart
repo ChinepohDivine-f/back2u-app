@@ -3,76 +3,77 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Report {
   final String? ownerName;
   final String category;
-  final String categoryFr; // Assuming French translation
+  final String categoryFr;
   final String contactPhone;
-  final Timestamp reportedDate; // Incident Date
-  final String documentName; // Can be used for specific item name, e.g., "National ID"
-  final List<String> images; // List of image URLs (after upload)
+  final Timestamp reportedDate;
+  final String documentName;
+  final List<String> images;
   final Timestamp? updatedAt;
   final String locationLost;
-  final String locationLostFr; // Assuming French translation
+  final String locationLostFr;
   final String notes;
-  final Timestamp createdAt; // Report Date (set at submission)
-  final String reportId; // Unique ID for the report
-  final String reporterId; // ID of the user who made the report
+  final Timestamp createdAt;
+  final String reportId;
+  final String reporterId; // This is the ID from the sample, keeping it for now
+  final String reporterUid; // New: Firebase Auth User ID
   final bool resolved;
-  final String reward; // Reward amount as string or number
+  final String reward;
   final List<String> searchKeyWords;
   final String status;
   final String subLocationLost;
-  final String subLocationLostFr; // Assuming French translation
+  final String subLocationLostFr;
   final String subcategory;
-  final String subcategoryFr; // Assuming French translation
-  final String type; // "Lost" or "Found"
+  final String subcategoryFr;
+  final String type;
   final String whatsappNumber;
 
   Report({
-    this.ownerName, // Now nullable
-    this.category = '', // Provide default values
-    this.categoryFr = '',
-    this.contactPhone = '',
-    Timestamp? reportedDate, // Make nullable in constructor for initial creation
-    this.documentName = '',
-    this.images = const [],
+    this.ownerName,
+    required this.category,
+    required this.categoryFr,
+    required this.contactPhone,
+    required this.reportedDate,
+    required this.documentName,
+    required this.images,
     this.updatedAt,
-    this.locationLost = '',
-    this.locationLostFr = '',
-    this.notes = '',
-    Timestamp? createdAt, // Make nullable for initial creation
-    this.reportId = '',
-    this.reporterId = '',
-    this.resolved = false,
-    this.reward = '',
-    this.searchKeyWords = const [],
-    this.status = 'active',
-    this.subLocationLost = '',
-    this.subLocationLostFr = '',
-    this.subcategory = '',
-    this.subcategoryFr = '',
-    this.type = '', // This will be set by ReportPage
-    this.whatsappNumber = '',
-  }) : reportedDate = reportedDate ?? Timestamp.now(),
-       createdAt = createdAt ?? Timestamp.now();
-
+    required this.locationLost,
+    required this.locationLostFr,
+    required this.notes,
+    required this.createdAt,
+    required this.reportId,
+    required this.reporterId,
+    required this.reporterUid,
+    required this.resolved,
+    required this.reward,
+    required this.searchKeyWords,
+    required this.status,
+    required this.subLocationLost,
+    required this.subLocationLostFr,
+    required this.subcategory,
+    required this.subcategoryFr,
+    required this.type,
+    required this.whatsappNumber,
+  });
 
   // Factory constructor to create a Report from a Firestore DocumentSnapshot
   factory Report.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    Map data = doc.data() as Map<String, dynamic>;
     return Report(
       ownerName: data['owner_name'],
       category: data['category'] ?? '',
       categoryFr: data['category_fr'] ?? '',
       contactPhone: data['contact_phone'] ?? '',
-      reportedDate: data['reported_date'] ?? Timestamp.now(),
+      reportedDate: data['date_of_loss'] ?? Timestamp.now(),
       documentName: data['document_name'] ?? '',
       images: List<String>.from(data['images'] ?? []),
-      updatedAt: data['updated_at'],
+      updatedAt: data['last_known_status_update'],
       locationLost: data['location_lost'] ?? '',
       locationLostFr: data['location_lost_fr'] ?? '',
       notes: data['notes'] ?? '',
-      createdAt: data['created_at'] ?? Timestamp.now(),
+      createdAt: data['report_date'] ?? Timestamp.now(),
       reportId: data['report_id'] ?? '',
       reporterId: data['reporter_id'] ?? '',
+      reporterUid: data['reporter_uid'] ?? '',
       resolved: data['resolved'] ?? false,
       reward: data['reward'] ?? '',
       searchKeyWords: List<String>.from(data['search_key_words'] ?? []),
@@ -93,16 +94,18 @@ class Report {
       'category': category,
       'category_fr': categoryFr,
       'contact_phone': contactPhone,
-      'reported_date': reportedDate,
+      'date_of_loss': reportedDate,
       'document_name': documentName,
       'images': images,
-      if (updatedAt != null) 'updated_at': updatedAt,
+      if (updatedAt != null)
+        'last_known_status_update': updatedAt,
       'location_lost': locationLost,
       'location_lost_fr': locationLostFr,
       'notes': notes,
-      'created_at': createdAt,
+      'report_date': createdAt,
       'report_id': reportId,
       'reporter_id': reporterId,
+      'reporter_uid': reporterUid,
       'resolved': resolved,
       'reward': reward,
       'search_key_words': searchKeyWords,
@@ -116,7 +119,7 @@ class Report {
     };
   }
 
-  // Helper method to create a copy with updated values
+  // --- ADD THIS copyWith METHOD ---
   Report copyWith({
     String? ownerName,
     String? category,
@@ -132,6 +135,7 @@ class Report {
     Timestamp? createdAt,
     String? reportId,
     String? reporterId,
+    String? reporterUid,
     bool? resolved,
     String? reward,
     List<String>? searchKeyWords,
@@ -158,6 +162,7 @@ class Report {
       createdAt: createdAt ?? this.createdAt,
       reportId: reportId ?? this.reportId,
       reporterId: reporterId ?? this.reporterId,
+      reporterUid: reporterUid ?? this.reporterUid,
       resolved: resolved ?? this.resolved,
       reward: reward ?? this.reward,
       searchKeyWords: searchKeyWords ?? this.searchKeyWords,

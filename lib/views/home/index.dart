@@ -1,4 +1,5 @@
 import 'package:back2u/components/SimpleCard.dart';
+import 'package:back2u/services/get_reports_service.dart';
 import 'package:back2u/utils/app_drawer.dart';
 import 'package:back2u/views/report/index.dart'; // Ensure this is your Report submission screen
 import 'package:back2u/views/search/index.dart';
@@ -7,139 +8,13 @@ import 'package:back2u/components/report_details.dart'; // Import ReportDetails
 import 'package:back2u/models/report_model.dart'; // Import your Report model
 import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp conversion
 import 'package:intl/intl.dart'; // For date formatting in headers
+import 'dart:async'; // Import for StreamSubscription
 
-// Helper to convert DateTime to Timestamp for mock data
-Timestamp _toTimestamp(DateTime date) {
-  return Timestamp.fromDate(date);
-}
+// import 'package:back2u/services/report_service.dart'; // NEW: Import your ReportService
 
-// Reduced and converted sample data using the Report model
-final List<Report> reportData = [
-  Report(
-    ownerName: 'John Doe',
-    category: 'Documents', categoryFr: 'Documents',
-    contactPhone: '123-456-7890',
-    reportedDate: _toTimestamp(DateTime(2025, 5, 20)), // Incident: May 20
-    documentName: 'Birth Certificate',
-    images: [
-      'https://via.placeholder.com/150/FF0000/FFFFFF?text=BC1',
-      'https://via.placeholder.com/150/0000FF/FFFFFF?text=BC2'
-    ],
-    locationLost: 'New York', locationLostFr: 'New York',
-    notes: 'Lost at Central Park. Very important.',
-    createdAt:
-        _toTimestamp(DateTime(2025, 5, 22)), // Reported: May 22 (Most Recent)
-    reportId: 'rep001', reporterId: 'user123', resolved: false, reward: '100',
-    searchKeyWords: ['birth certificate', 'john doe'], status: 'active',
-    subLocationLost: 'Central Park', subLocationLostFr: 'Central Park',
-    subcategory: 'Birth Certificate', subcategoryFr: 'Birth Certificate',
-    type: 'Lost', whatsappNumber: '123-456-7890',
-  ),
-  Report(
-    ownerName: 'Jane Smith',
-    category: 'ID Cards', categoryFr: 'ID Cards', contactPhone: '098-765-4321',
-    reportedDate: _toTimestamp(DateTime(2025, 5, 15)), // Incident: May 15
-    documentName: 'National ID',
-    images: ['https://via.placeholder.com/150/00FF00/FFFFFF?text=ID1'],
-    locationLost: 'Los Angeles', locationLostFr: 'Los Angeles',
-    notes: 'Found near Hollywood sign. Blue wallet.',
-    createdAt: _toTimestamp(DateTime(2025, 5, 16)), // Reported: May 16 (Recent)
-    reportId: 'rep002', reporterId: 'user124',
-    resolved: true, // Resolved example
-    reward: '0', searchKeyWords: ['id card', 'jane smith'], status: 'resolved',
-    subLocationLost: 'Hollywood', subLocationLostFr: 'Hollywood',
-    subcategory: 'ID Card', subcategoryFr: 'ID Card',
-    type: 'Found', whatsappNumber: '098-765-4321',
-  ),
-  Report(
-    ownerName: 'Mike Johnson',
-    category: 'Accessories', categoryFr: 'Accessoires',
-    contactPhone: '111-222-3333',
-    reportedDate: _toTimestamp(DateTime(2025, 4, 10)), // Incident: April 10
-    documentName: 'Brown Wallet',
-    images: [
-      'https://via.placeholder.com/150/FFFF00/000000?text=Wallet1',
-      'https://via.placeholder.com/150/FF00FF/FFFFFF?text=Wallet2'
-    ],
-    locationLost: 'Chicago', locationLostFr: 'Chicago',
-    notes: 'Lost at O\'Hare airport, Terminal 5. Brown leather.',
-    createdAt: _toTimestamp(DateTime(2025, 4, 12)), // Reported: April 12
-    reportId: 'rep003', reporterId: 'user125', resolved: false, reward: '50',
-    searchKeyWords: ['wallet', 'mike johnson'], status: 'active',
-    subLocationLost: 'Airport', subLocationLostFr: 'Airport',
-    subcategory: 'Wallet', subcategoryFr: 'Wallet',
-    type: 'Lost', whatsappNumber: '111-222-3333',
-  ),
-  Report(
-    ownerName: 'Sarah Williams',
-    category: 'Electronics', categoryFr: 'Électronique',
-    contactPhone: '444-555-6666',
-    reportedDate: _toTimestamp(DateTime(2025, 3, 5)), // Incident: March 5
-    documentName: 'MacBook Air', images: [], // No image example
-    locationLost: 'Houston', locationLostFr: 'Houston',
-    notes: 'Found in a coffee shop downtown. Silver color.',
-    createdAt: _toTimestamp(DateTime(2025, 3, 6)), // Reported: March 6
-    reportId: 'rep004', reporterId: 'user126', resolved: false, reward: '0',
-    searchKeyWords: ['laptop', 'sarah williams'], status: 'active',
-    subLocationLost: 'Coffee Shop', subLocationLostFr: 'Coffee Shop',
-    subcategory: 'Laptop', subcategoryFr: 'Laptop',
-    type: 'Found', whatsappNumber: '444-555-6666',
-  ),
-  Report(
-    ownerName: 'David Lee',
-    category: 'Keys', categoryFr: 'Clés', contactPhone: '777-888-9999',
-    reportedDate: _toTimestamp(DateTime(2025, 2, 28)), // Incident: Feb 28
-    documentName: 'Audi Car Keys',
-    images: ['https://via.placeholder.com/150/00FFFF/000000?text=Keys1'],
-    locationLost: 'Denver', locationLostFr: 'Denver',
-    notes: 'Lost on a hiking trail near Red Rocks.',
-    createdAt:
-        _toTimestamp(DateTime(2025, 3, 1)), // Reported: March 1 (Also March)
-    reportId: 'rep005', reporterId: 'user127', resolved: false, reward: '20',
-    searchKeyWords: ['car keys', 'david lee'], status: 'active',
-    subLocationLost: 'Hiking Trail', subLocationLostFr: 'Hiking Trail',
-    subcategory: 'Car Keys', subcategoryFr: 'Car Keys',
-    type: 'Lost', whatsappNumber: '777-888-9999',
-  ),
-  Report(
-    ownerName: 'Anna Kim',
-    category: 'Bags', categoryFr: 'Sacs', contactPhone: '333-222-1111',
-    reportedDate:
-        _toTimestamp(DateTime(2024, 12, 1)), // Incident: Dec 1 (Oldest example)
-    documentName: 'Blue Backpack',
-    images: [
-      'https://via.placeholder.com/150/FFC0CB/000000?text=BP1',
-      'https://via.placeholder.com/150/800080/FFFFFF?text=BP2'
-    ],
-    locationLost: 'Seattle', locationLostFr: 'Seattle',
-    notes: 'Found at library. Contains books.',
-    createdAt:
-        _toTimestamp(DateTime(2024, 12, 3)), // Reported: Dec 3 (Oldest example)
-    reportId: 'rep006', reporterId: 'user128', resolved: false, reward: '0',
-    searchKeyWords: ['backpack', 'anna kim'], status: 'active',
-    subLocationLost: 'Library', subLocationLostFr: 'Library',
-    subcategory: 'Backpack', subcategoryFr: 'Backpack',
-    type: 'Found', whatsappNumber: '333-222-1111',
-  ),
-  // Added one more recent report to demonstrate "Most Recent" better
-  Report(
-    ownerName: 'Chloe Green',
-    category: 'Documents', categoryFr: 'Documents',
-    contactPhone: '999-888-7777',
-    reportedDate: _toTimestamp(DateTime(2025, 5, 23)), // Incident: May 23
-    documentName: 'Passport',
-    images: ['https://via.placeholder.com/150/C0C0C0/000000?text=Passport'],
-    locationLost: 'San Francisco', locationLostFr: 'San Francisco',
-    notes: 'Lost at airport security.',
-    createdAt: _toTimestamp(
-        DateTime(2025, 5, 24)), // Reported: May 24 (Even more recent!)
-    reportId: 'rep007', reporterId: 'user129', resolved: false, reward: '500',
-    searchKeyWords: ['passport', 'chloe green'], status: 'active',
-    subLocationLost: 'SFO Airport', subLocationLostFr: 'SFO Airport',
-    subcategory: 'Passport', subcategoryFr: 'Passport',
-    type: 'Lost', whatsappNumber: '999-888-7777',
-  ),
-];
+// Remove the mock reportData list as we will fetch live data
+// final List<Report> reportData = [...];
+
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -149,48 +24,84 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  bool _isLoading = false;
+  // NEW: Instance of your ReportService
+  final ReportService _reportService = ReportService();
+  // NEW: StreamSubscription to manage the Firestore stream
+  StreamSubscription<List<Report>>? _reportsSubscription;
+
+  bool _isLoading = true; // Set to true initially as we are fetching data
   String _activeFilter = 'All';
-  List<Report> _filteredData = []; // Changed to List<Report>
+  List<Report> _allReportsFromFirestore = []; // Stores all reports fetched from Firestore
+  List<Report> _filteredReports = []; // Stores reports after applying filters
 
   final List<String> filters = ['All', 'Lost', 'Found'];
 
   @override
   void initState() {
     super.initState();
-    _filteredData = List.from(reportData); // Use reportData as source
-    _simulateLoading();
+    _listenToReports(); // Start listening to Firestore reports
   }
 
-  void _simulateLoading() {
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _isLoading = false);
+  @override
+  void dispose() {
+    _reportsSubscription?.cancel(); // Cancel the subscription when the widget is disposed
+    super.dispose();
+  }
+
+  // NEW: Method to listen to the Firestore stream
+  void _listenToReports() {
+    // Set loading to true while waiting for the first data snapshot
+    setState(() {
+      _isLoading = true;
     });
+
+    _reportsSubscription = _reportService.getReportsStream().listen(
+      (reports) {
+        // When new data arrives, update the cache and apply the current filter
+        if (mounted) {
+          setState(() {
+            _allReportsFromFirestore = reports;
+            _applyFilter(_activeFilter); // Re-apply filter with new data
+            _isLoading = false; // Data loaded, set loading to false
+          });
+        }
+      },
+      onError: (error) {
+        // Handle errors in fetching data
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            // Optionally, show an error message to the user
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error loading reports: $error')),
+            );
+          });
+        }
+        debugPrint('Error fetching reports: $error');
+      },
+      onDone: () {
+        // This might not be triggered by Firestore streams, but good practice
+        debugPrint('Report stream finished.');
+      },
+    );
   }
 
   void _applyFilter(String filter) {
     setState(() {
       _activeFilter = filter;
-      _isLoading = true;
-    });
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-      setState(() {
-        _filteredData = filter == 'All'
-            ? List.from(reportData) // Filter from original reportData
-            : reportData
-                .where((item) => item.type == filter)
-                .toList(); // Filter by item.type
-        _isLoading = false;
-      });
+      // Filter from the _allReportsFromFirestore cache
+      _filteredReports = filter == 'All'
+          ? List.from(_allReportsFromFirestore)
+          : _allReportsFromFirestore
+              .where((item) => item.type == filter)
+              .toList();
     });
   }
 
   // Helper to group reports by month and year
   Map<String, List<Report>> _groupReportsByMonth(List<Report> reports) {
     // Sort reports by creation date (most recent first) within the group
+    // The stream already provides sorted data, but a local sort ensures consistency
     reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     final Map<String, List<Report>> groupedReports = {};
@@ -267,7 +178,7 @@ class _HomeState extends State<Home> {
             Expanded(
               child: _isLoading
                   ? _buildLoadingView()
-                  : _filteredData.isEmpty
+                  : _filteredReports.isEmpty // Use _filteredReports for checking emptiness
                       ? _buildNoReportsView()
                       : _buildReportsList(),
             ),
@@ -331,7 +242,7 @@ class _HomeState extends State<Home> {
   }
 
   Widget _buildReportsList() {
-    final groupedReports = _groupReportsByMonth(_filteredData);
+    final groupedReports = _groupReportsByMonth(_filteredReports); // Group filtered reports
     final sortedMonths = groupedReports.keys.toList()
       ..sort((a, b) {
         // Parse "Month Year" strings back to DateTime for proper sorting
@@ -342,7 +253,6 @@ class _HomeState extends State<Home> {
       });
 
     return ListView.builder(
-      // physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 80),
       itemCount: sortedMonths.length,
       itemBuilder: (context, monthIndex) {

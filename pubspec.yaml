@@ -42,6 +42,14 @@ dependencies:
   shared_preferences: ^2.5.3
   smooth_page_indicator: ^1.2.1 # Use the latest stable version
   provider: ^6.1.5
+  google_sign_in: ^6.3.0
+  dio: ^5.4.0
+  cloudinary_public: ^0.23.1
+  flutter_image_compress: ^2.4.0 # Check pub.dev for the latest version
+  path_provider: ^2.1.5 # Needed to get temp directory for compressed files
+  path: ^1.8.0 # Often used with path_provider for path manipulation
+  http: ^1.4.0
+
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -75,6 +83,7 @@ flutter:
     - assets/images/1.png
     - assets/images/2.png
     - assets/images/pngegg.png
+    - assets/images/google-logo.png
     # - images/a_dot_burr.jpeg
     # - images/a_dot_ham.jpeg
 

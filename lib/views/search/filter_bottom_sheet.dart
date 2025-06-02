@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 class FilterBottomSheet extends StatefulWidget {
   final String? initialFilterType;
-  final String? initialFilterDocumentType;
+  final String? initialFilterDocumentType; // This is now Category
   final String? initialFilterLocation;
   final bool? initialFilterIsResolved;
   final List<String> reportTypes;
-  final List<String> documentTypes;
+  final List<String> documentTypes; // These are now Categories
   final List<String> locations;
   final Function(String?, String?, String?, bool?) onApplyFilters;
 
@@ -17,7 +17,7 @@ class FilterBottomSheet extends StatefulWidget {
     this.initialFilterLocation,
     this.initialFilterIsResolved,
     required this.reportTypes,
-    required this.documentTypes,
+    required this.documentTypes, // Renamed from documentTypes to categories
     required this.locations,
     required this.onApplyFilters,
   });
@@ -28,7 +28,7 @@ class FilterBottomSheet extends StatefulWidget {
 
 class _FilterBottomSheetState extends State<FilterBottomSheet> {
   String? _tempFilterType;
-  String? _tempFilterDocumentType;
+  String? _tempFilterDocumentType; // This will hold the selected Category
   String? _tempFilterLocation;
   bool? _tempFilterIsResolved;
 
@@ -120,19 +120,19 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           ),
           const SizedBox(height: 20),
 
-          // Document Type Dropdown
+          // Category Dropdown (formerly Document Type)
           DropdownButtonFormField<String>(
             decoration: const InputDecoration(
-              labelText: 'Document Type',
+              labelText: 'Category', // Changed label
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.article_outlined),
             ),
-            value: _tempFilterDocumentType,
-            items: widget.documentTypes.map((docType) {
-              return DropdownMenuItem(value: docType, child: Text(docType));
+            value: _tempFilterDocumentType, // Still using this var for the value
+            items: widget.documentTypes.map((category) { // Use widget.documentTypes (which is categories)
+              return DropdownMenuItem(value: category, child: Text(category));
             }).toList(),
             onChanged: (value) => setState(() => _tempFilterDocumentType = value),
-            hint: const Text('Select Document Type'),
+            hint: const Text('Select Category'), // Changed hint
           ),
           const SizedBox(height: 20),
 
@@ -174,7 +174,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 onPressed: () {
                   widget.onApplyFilters(
                     _tempFilterType,
-                    _tempFilterDocumentType,
+                    _tempFilterDocumentType, // This is the selected category
                     _tempFilterLocation,
                     _tempFilterIsResolved,
                   );
@@ -188,4 +188,4 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       ),
     );
   }
-}
+}      

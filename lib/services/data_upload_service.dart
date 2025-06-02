@@ -48,17 +48,17 @@ class DataUploadService {
     }
   }
 
-  // New method to upload country data
+  // Updated method to upload country data to /back2u/countries/{countryId}/country_info
   Future<void> _uploadCountryData() async {
     _log('Attempting to upload Country data for Cameroon...');
     final countryData = CameroonData.getCameroonCountryData();
-    // Path: ROOT/Back2u/countries/cameroon (document)
+    // Path: ROOT/Back2u/countries/cameroon/country_info
+    // This matches the rule: /back2u/countries/cameroon/country_info
     final countryRef = _db
         .collection('back2u')
         .doc('countries')
-        .collection(
-            'cameroon') // 'cameroon' here acts as a collection of countries where 'cameroon' is a document within it
-        .doc('country_info'); // The document ID will be 'country_info'
+        .collection('cameroon') // Now 'cameroon' is a document within 'countries' collection
+        .doc('country_info'); // And 'country_info' is a sub-document of 'cameroon'
         
     try {
       final docSnapshot = await countryRef.get();

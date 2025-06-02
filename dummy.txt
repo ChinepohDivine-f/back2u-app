@@ -1,0 +1,153 @@
+./gradlew signingReport
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Task :app:signingReport
+Variant: debug
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+Variant: release
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+Variant: profile
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :cloud_firestore:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :firebase_auth:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :firebase_core:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :firebase_database:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :firebase_storage:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :flutter_plugin_android_lifecycle:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :google_sign_in_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :image_picker_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :shared_preferences_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+> Task :url_launcher_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: /home/chinepohd/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: C7:B7:58:48:5F:D1:43:50:FE:13:17:5D:7A:67:A0:FD
+SHA1: 51:23:D7:36:29:0C:3A:A3:4E:DA:5E:8A:83:DA:95:71:66:59:47:F8
+SHA-256: E0:A0:5D:92:DC:D0:AA:4B:76:42:2F:FD:D3:FD:5B:1A:17:36:08:20:85:40:52:A3:CE:9C:A6:95:6C:0F:A6:0E
+Valid until: Wednesday, July 22, 2054
+----------
+
+BUILD SUCCESSFUL in 4m 54s
+17 actionable tasks: 15 executed, 2 up-to-date

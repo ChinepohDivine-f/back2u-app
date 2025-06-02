@@ -6,6 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:back2u/models/report_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Import your category and location models
+import 'package:back2u/models/category_model.dart';
+import 'package:back2u/models/location_model.dart';
+
+// Import the new data fetching service
+import 'package:back2u/services/form_data_fetch_service.dart';
+
 class ReportForm extends StatefulWidget {
   final Report report;
 
@@ -19,59 +26,119 @@ class _ReportFormState extends State<ReportForm> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _ownerNameController;
-  late TextEditingController _documentNameController;
   late TextEditingController _rewardAmountController;
-  late TextEditingController _notesController;
+  late TextEditingController _notesController; // Retained for internal management
 
-  String? _selectedCategory;
-  String? _selectedSubcategory;
+  String? _selectedCategoryName;
+  String? _selectedSubcategoryName;
   DateTime? _incidentDate;
-  String? _selectedLocation;
-  String? _selectedSubLocation;
+  String? _selectedLocationName;
+  String? _selectedSubLocationName;
   List<XFile> _selectedLocalImages = [];
   bool _addReward = false;
 
-  final List<String> _categories = ['Legal', 'Identification', 'Education Documents', 'Electronics', 'Keys', 'Bags', 'Other'];
-  final Map<String, List<String>> _subcategories = {
-    'Legal': ['Bank statement', 'Land Document', 'Deed'],
-    'Identification': ['National ID', 'School ID', 'Passport', 'Driving License', 'Voter ID'],
-    'Education Documents': ['Certificate', 'Transcript', 'Diploma'],
-    'Electronics': ['Phone', 'Laptop', 'Tablet', 'Headphones'],
-    'Keys': ['Car Keys', 'House Keys', 'Office Keys'],
-    'Bags': ['Backpack', 'Handbag', 'Wallet'],
-    'Other': ['Umbrella', 'Jewelry', 'Watch'],
-  };
-  final List<String> _locations = ['Buea', 'Limbe', 'Kumba', 'Douala', 'Yaounde'];
-  final Map<String, List<String>> _subLocations = {
-    'Buea': ['Molyko', 'Great Soppo', 'Mile 17', 'Mile 4', 'UB'],
-    'Limbe': ['Down Beach', 'Mile 1', 'Mile 2', 'Mile 4', 'Bonadikombo'],
-    'Kumba': ['Kumba Town', 'Mabanda', 'Kosala'],
-    'Douala': ['Bonanjo', 'Akwa', 'Bali', 'Japoma'],
-    'Yaounde': ['Ngoa-Ekelle', 'Mokolo', 'Mfandena'],
-  };
+  final DataFetchService _dataFetchService = DataFetchService();
+
+  List<Category> _allCategories = [];
+  List<Location> _allLocations = [];
+  bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
     _ownerNameController = TextEditingController(text: widget.report.ownerName);
-    _documentNameController = TextEditingController(text: widget.report.documentName);
     _rewardAmountController = TextEditingController(text: widget.report.reward == '0' ? '' : widget.report.reward);
-    _notesController = TextEditingController(text: widget.report.notes);
+    _notesController = TextEditingController(text: widget.report.notes); // Initialize with existing notes
 
-    _selectedCategory = widget.report.category.isNotEmpty ? widget.report.category : null;
-    _selectedSubcategory = widget.report.subcategory.isNotEmpty ? widget.report.subcategory : null;
-    // Ensure _incidentDate is valid before assigning, otherwise default to null
+    // Initialize dropdowns with existing report data.
+    _selectedCategoryName = null;
+    _selectedSubcategoryName = null;
+    _selectedLocationName = null;
+    _selectedSubLocationName = null;
+
     _incidentDate = widget.report.reportedDate.toDate().year > 2000 ? widget.report.reportedDate.toDate() : null;
-    _selectedLocation = widget.report.locationLost.isNotEmpty ? widget.report.locationLost : null;
-    _selectedSubLocation = widget.report.subLocationLost.isNotEmpty ? widget.report.subLocationLost : null;
-
     _addReward = widget.report.reward.isNotEmpty && widget.report.reward != '0';
+
+    _fetchFormData();
+  }
+
+  Future<void> _fetchFormData() async {
+    setState(() {
+      _isLoadingData = true;
+    });
+    try {
+      final categories = await _dataFetchService.fetchCategories();
+      final locations = await _dataFetchService.fetchLocations();
+
+      setState(() {
+        _allCategories = categories;
+        _allLocations = locations;
+
+        // After fetching, attempt to set the initial values based on widget.report
+        // Only set if the value exists in the fetched unique list.
+        if (widget.report.category.isNotEmpty &&
+            _allCategories.any((cat) => cat.nameEn == widget.report.category)) {
+          _selectedCategoryName = widget.report.category;
+        } else {
+          _selectedCategoryName = null;
+        }
+
+        if (_selectedCategoryName != null &&
+            widget.report.subcategory.isNotEmpty) {
+          final selectedCategory = _allCategories.firstWhere(
+            (cat) => cat.nameEn == _selectedCategoryName,
+            orElse: () => Category(categoryId: '', createdAt: Timestamp.now(), nameEn: '', nameFr: '', subcategories: [], updatedAt: Timestamp.now()),
+          );
+          if (selectedCategory.subcategories.any((sub) => sub.nameEn == widget.report.subcategory)) {
+            _selectedSubcategoryName = widget.report.subcategory;
+          } else {
+            _selectedSubcategoryName = null;
+          }
+        } else {
+          _selectedSubcategoryName = null;
+        }
+
+        if (widget.report.locationLost.isNotEmpty &&
+            _allLocations.any((loc) => loc.nameEn == widget.report.locationLost)) {
+          _selectedLocationName = widget.report.locationLost;
+        } else {
+          _selectedLocationName = null;
+        }
+
+        if (_selectedLocationName != null &&
+            widget.report.subLocationLost.isNotEmpty) {
+          final selectedLocation = _allLocations.firstWhere(
+            (loc) => loc.nameEn == _selectedLocationName,
+            orElse: () => Location(createdAt: Timestamp.now(), locationId: '', nameEn: '', nameFr: '', sublocations: [], updatedAt: Timestamp.now()),
+          );
+          if (selectedLocation.sublocations.any((sub) => sub.nameEn == widget.report.subLocationLost)) {
+            _selectedSubLocationName = widget.report.subLocationLost;
+          } else {
+            _selectedSubLocationName = null;
+          }
+        } else {
+          _selectedSubLocationName = null;
+        }
+
+        _isLoadingData = false;
+      });
+    } catch (e) {
+      print('Failed to load form data: $e');
+      setState(() {
+        _isLoadingData = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to load categories and locations. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
     _ownerNameController.dispose();
-    _documentNameController.dispose();
     _rewardAmountController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -108,12 +175,10 @@ class _ReportFormState extends State<ReportForm> {
       final List<XFile>? images = await picker.pickMultiImage();
 
       if (images != null && images.isNotEmpty) {
-        // Limit to max 2 images
         if ((_selectedLocalImages.length + images.length) > 2) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('You can only upload a maximum of 2 images.')),
           );
-          // Add only up to the limit
           setState(() {
             _selectedLocalImages.addAll(images.take(2 - _selectedLocalImages.length));
           });
@@ -136,65 +201,9 @@ class _ReportFormState extends State<ReportForm> {
     });
   }
 
-  void _showNotesDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (BuildContext context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Additional Notes',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _notesController,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Enter any extra information here...',
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 16),
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Save'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  // Removed _showNotesDialog as notes will now be a direct TextFormField
 
   void _navigateToContactPage() {
-    // Manually trigger validation for the date picker if it's not handled by DropdownButtonFormField
     if (_incidentDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -205,7 +214,6 @@ class _ReportFormState extends State<ReportForm> {
       return;
     }
 
-    // Image validation for "Found" reports
     if (widget.report.type == 'Found' && _selectedLocalImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -219,13 +227,13 @@ class _ReportFormState extends State<ReportForm> {
     if (_formKey.currentState!.validate()) {
       final updatedReport = widget.report.copyWith(
         ownerName: _ownerNameController.text,
-        documentName: _documentNameController.text,
-        category: _selectedCategory!,
-        subcategory: _selectedSubcategory!,
+        // documentName removed
+        category: _selectedCategoryName!,
+        subcategory: _selectedSubcategoryName!,
         reportedDate: Timestamp.fromDate(_incidentDate!),
-        locationLost: _selectedLocation!,
-        subLocationLost: _selectedSubLocation ?? '',
-        notes: _notesController.text,
+        locationLost: _selectedLocationName!,
+        subLocationLost: _selectedSubLocationName ?? '',
+        notes: _notesController.text.trim(), // Use notes directly from controller
         reward: _addReward ? _rewardAmountController.text : '0',
       );
 
@@ -247,22 +255,35 @@ class _ReportFormState extends State<ReportForm> {
     _formKey.currentState?.reset();
     setState(() {
       _ownerNameController.clear();
-      _documentNameController.clear();
       _rewardAmountController.clear();
-      _notesController.clear();
-      _selectedCategory = null;
-      _selectedSubcategory = null;
+      _notesController.clear(); // Clear notes on reset
+      _selectedCategoryName = null;
+      _selectedSubcategoryName = null;
       _incidentDate = null;
-      _selectedLocation = null;
-      _selectedSubLocation = null;
+      _selectedLocationName = null;
+      _selectedSubLocationName = null;
       _selectedLocalImages = [];
       _addReward = false;
     });
+    // Re-fetch data to ensure dropdowns are populated correctly after reset
+    _fetchFormData();
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    if (_isLoadingData) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('${widget.report.type} Report - Details'),
+          centerTitle: true,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -291,35 +312,18 @@ class _ReportFormState extends State<ReportForm> {
               TextFormField(
                 controller: _ownerNameController,
                 decoration: const InputDecoration(
-                  labelText: "Owner's Name (or Name on Document)*",
+                  labelText: "Owner's Name (or Name on Item/Document)*", // Updated label
                   border: OutlineInputBorder(),
                 ),
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter the owner\'s name or name on document';
+                    return 'Please enter the owner\'s name or name on the item/document';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
-
-              // Document Name/Item Name Field (Required)
-              // TextFormField(
-              //   controller: _documentNameController,
-              //   decoration: const InputDecoration(
-              //     labelText: "Document Name/Item Name (e.g., 'National ID', 'Blue Backpack')*",
-              //     border: OutlineInputBorder(),
-              //   ),
-              //   textInputAction: TextInputAction.next,
-              //   validator: (value) {
-              //     if (value == null || value.isEmpty) {
-              //       return 'Please enter the document/item name';
-              //     }
-              //     return null;
-              //   },
-              // ),
-              // const SizedBox(height: 16),
 
               // Category Dropdown (Required)
               DropdownButtonFormField<String>(
@@ -327,17 +331,17 @@ class _ReportFormState extends State<ReportForm> {
                   labelText: 'Category*',
                   border: OutlineInputBorder(),
                 ),
-                value: _selectedCategory,
-                items: _categories.map((category) {
+                value: _selectedCategoryName,
+                items: _allCategories.map((category) {
                   return DropdownMenuItem<String>(
-                    value: category,
-                    child: Text(category),
+                    value: category.nameEn,
+                    child: Text(category.nameEn),
                   );
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
-                    _selectedCategory = value;
-                    _selectedSubcategory = null;
+                    _selectedCategoryName = value;
+                    _selectedSubcategoryName = null; // Reset subcategory when category changes
                   });
                 },
                 validator: (value) {
@@ -355,22 +359,31 @@ class _ReportFormState extends State<ReportForm> {
                   labelText: 'Subcategory*',
                   border: OutlineInputBorder(),
                 ),
-                value: _selectedSubcategory,
-                items: (_selectedCategory != null && _subcategories.containsKey(_selectedCategory))
-                    ? _subcategories[_selectedCategory]!.map((subcategory) {
-                        return DropdownMenuItem<String>(
-                          value: subcategory,
-                          child: Text(subcategory),
-                        );
-                      }).toList()
+                value: _selectedSubcategoryName,
+                // Filter subcategories based on the selected category
+                items: _selectedCategoryName != null
+                    ? _allCategories
+                        .firstWhere(
+                          (cat) => cat.nameEn == _selectedCategoryName,
+                          orElse: () => Category(
+                            categoryId: '', createdAt: Timestamp.now(), nameEn: '', nameFr: '', subcategories: [], updatedAt: Timestamp.now()
+                          ),
+                        )
+                        .subcategories
+                        .map((subcat) {
+                          return DropdownMenuItem<String>(
+                            value: subcat.nameEn,
+                            child: Text(subcat.nameEn),
+                          );
+                        }).toList()
                     : [],
-                onChanged: _selectedCategory != null && _subcategories.containsKey(_selectedCategory)
+                onChanged: _selectedCategoryName != null
                     ? (value) {
                         setState(() {
-                          _selectedSubcategory = value;
+                          _selectedSubcategoryName = value;
                         });
                       }
-                    : null,
+                    : null, // Disable if no category selected
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please select a subcategory';
@@ -398,7 +411,7 @@ class _ReportFormState extends State<ReportForm> {
                     children: <Widget>[
                       Text(
                         _incidentDate != null
-                            ? DateFormat('MMM dd, yyyy').format(_incidentDate!)
+                            ? DateFormat('MMM dd, BCE').format(_incidentDate!)
                             : 'Select Date',
                         style: _incidentDate == null
                             ? TextStyle(color: Colors.grey[600])
@@ -418,17 +431,17 @@ class _ReportFormState extends State<ReportForm> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.location_on),
                 ),
-                value: _selectedLocation,
-                items: _locations.map((location) {
+                value: _selectedLocationName,
+                items: _allLocations.map((location) {
                   return DropdownMenuItem<String>(
-                    value: location,
-                    child: Text(location),
+                    value: location.nameEn,
+                    child: Text(location.nameEn),
                   );
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
-                    _selectedLocation = value;
-                    _selectedSubLocation = null;
+                    _selectedLocationName = value;
+                    _selectedSubLocationName = null; // Reset sublocation
                   });
                 },
                 validator: (value) {
@@ -447,22 +460,31 @@ class _ReportFormState extends State<ReportForm> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.location_city),
                 ),
-                value: _selectedSubLocation,
-                items: (_selectedLocation != null && _subLocations.containsKey(_selectedLocation))
-                    ? _subLocations[_selectedLocation]!.map((sublocation) {
-                        return DropdownMenuItem<String>(
-                          value: sublocation,
-                          child: Text(sublocation),
-                        );
-                      }).toList()
+                value: _selectedSubLocationName,
+                // Filter sublocations based on the selected location
+                items: _selectedLocationName != null
+                    ? _allLocations
+                        .firstWhere(
+                          (loc) => loc.nameEn == _selectedLocationName,
+                          orElse: () => Location(
+                            createdAt: Timestamp.now(), locationId: '', nameEn: '', nameFr: '', sublocations: [], updatedAt: Timestamp.now()
+                          ),
+                        )
+                        .sublocations
+                        .map((subloc) {
+                          return DropdownMenuItem<String>(
+                            value: subloc.nameEn,
+                            child: Text(subloc.nameEn),
+                          );
+                        }).toList()
                     : [],
-                onChanged: _selectedLocation != null && _subLocations.containsKey(_selectedLocation)
+                onChanged: _selectedLocationName != null
                     ? (value) {
                         setState(() {
-                          _selectedSubLocation = value;
+                          _selectedSubLocationName = value;
                         });
                       }
-                    : null,
+                    : null, // Disable if no main location selected
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please select a sub-location';
@@ -473,7 +495,7 @@ class _ReportFormState extends State<ReportForm> {
               ),
               const SizedBox(height: 24),
 
-              // Image Picker Section (no Card)
+              // Image Picker Section
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
                 child: Column(
@@ -485,7 +507,7 @@ class _ReportFormState extends State<ReportForm> {
                     ),
                     const SizedBox(height: 12),
                     FilledButton.icon(
-                      onPressed: _selectedLocalImages.length < 2 ? _pickImages : null, // Disable if 2 images already
+                      onPressed: _selectedLocalImages.length < 2 ? _pickImages : null,
                       icon: const Icon(Icons.add_photo_alternate),
                       label: Text(_selectedLocalImages.length < 2 ? 'Add Image' : 'Max 2 Images Uploaded'),
                       style: FilledButton.styleFrom(
@@ -551,35 +573,21 @@ class _ReportFormState extends State<ReportForm> {
               ),
               const SizedBox(height: 16),
 
-              // Additional Notes Button
-              ElevatedButton.icon(
-                onPressed: () => _showNotesDialog(context),
-                icon: const Icon(Icons.notes),
-                label: Text(
-                  _notesController.text.isNotEmpty
-                      ? 'Edit Additional Notes'
-                      : 'Add Additional Notes (Optional)',
+              // Additional Notes Text Field (Directly integrated)
+              TextFormField(
+                controller: _notesController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: 'Additional Notes (Optional)',
+                  border: OutlineInputBorder(),
+                  hintText: 'Enter any extra information here...',
+                  alignLabelWithHint: true, // Aligns label with hint text in multiline input
                 ),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  foregroundColor: colorScheme.onSurface,
-                ),
+                textInputAction: TextInputAction.newline,
               ),
-              if (_notesController.text.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0, left: 4.0),
-                  child: Text(
-                    'Notes added: "${_notesController.text.length > 50 ? _notesController.text.substring(0, 47) + '...' : _notesController.text}"',
-                    style: TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
               const SizedBox(height: 16),
 
-              // Reward Section (no Card)
+              // Reward Section
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
                 child: Column(
