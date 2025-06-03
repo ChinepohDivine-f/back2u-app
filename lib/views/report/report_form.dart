@@ -588,7 +588,7 @@ class _ReportFormState extends State<ReportForm> {
               const SizedBox(height: 16),
 
               // Reward Section
-              Padding(
+              widget.report.type == 'lost' ?                Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,7 +643,9 @@ class _ReportFormState extends State<ReportForm> {
                       ),
                   ],
                 ),
-              ),
+              )
+               : const SizedBox(),
+
               const SizedBox(height: 24),
 
               // Next Button

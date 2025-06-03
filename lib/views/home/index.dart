@@ -1,20 +1,14 @@
-import 'package:back2u/components/SimpleCard.dart';
-import 'package:back2u/services/get_reports_service.dart';
-import 'package:back2u/utils/app_drawer.dart';
-import 'package:back2u/views/report/index.dart'; // Ensure this is your Report submission screen
-import 'package:back2u/views/search/index.dart';
+import 'dart:async'; // For StreamSubscription
 import 'package:flutter/material.dart';
-import 'package:back2u/components/report_details.dart'; // Import ReportDetails
-import 'package:back2u/models/report_model.dart'; // Import your Report model
-import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp conversion
-import 'package:intl/intl.dart'; // For date formatting in headers
-import 'dart:async'; // Import for StreamSubscription
-
-// import 'package:back2u/services/report_service.dart'; // NEW: Import your ReportService
-
-// Remove the mock reportData list as we will fetch live data
-// final List<Report> reportData = [...];
-
+import 'package:back2u/components/SimpleCard.dart';
+import 'package:back2u/utils/app_drawer.dart';
+import 'package:back2u/views/report/index.dart';
+import 'package:back2u/views/search/index.dart';
+import 'package:back2u/components/report_details.dart';
+import 'package:back2u/models/report_model.dart';
+import 'package:intl/intl.dart';
+import 'package:back2u/services/get_reports_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart'; // Ensure this is the correct import
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -24,95 +18,236 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  // NEW: Instance of your ReportService
   final ReportService _reportService = ReportService();
-  // NEW: StreamSubscription to manage the Firestore stream
   StreamSubscription<List<Report>>? _reportsSubscription;
+  // Corrected: Connectivity().onConnectivityChanged now emits List<ConnectivityResult>
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
-  bool _isLoading = true; // Set to true initially as we are fetching data
-  String _activeFilter = 'All';
-  List<Report> _allReportsFromFirestore = []; // Stores all reports fetched from Firestore
-  List<Report> _filteredReports = []; // Stores reports after applying filters
+  bool _isLoadingInitial = true; // True when fetching first set of reports
+  bool _isLoadingMore = false; // True when fetching subsequent reports (pagination)
+  bool _isOffline = false; // Tracks current network status
+  String _activeFilter = 'All'; // 'All', 'Lost', or 'Found'
+  List<Report> _displayedReports = []; // Combined list of all loaded reports
+  String? _errorMessage; // Stores and displays specific error messages
 
   final List<String> filters = ['All', 'Lost', 'Found'];
+  final ScrollController _scrollController = ScrollController(); // For pagination listener
 
   @override
   void initState() {
     super.initState();
-    _listenToReports(); // Start listening to Firestore reports
+    _initConnectivityListener(); // Initialize connectivity listener first
+    _listenToReports(); // Start listening to the reports stream from ReportService
+    _setupScrollListener(); // Set up scroll listener for pagination
+
+    // Initial fetch of reports
+    _loadInitialReports();
   }
 
   @override
   void dispose() {
-    _reportsSubscription?.cancel(); // Cancel the subscription when the widget is disposed
+    _reportsSubscription?.cancel(); // Cancel reports subscription
+    _connectivitySubscription?.cancel(); // Cancel connectivity subscription
+    _scrollController.removeListener(_onScroll); // Remove scroll listener
+    _scrollController.dispose(); // Dispose the scroll controller
+    _reportService.dispose(); // Dispose the service controller
     super.dispose();
   }
 
-  // NEW: Method to listen to the Firestore stream
-  void _listenToReports() {
-    // Set loading to true while waiting for the first data snapshot
-    setState(() {
-      _isLoading = true;
-    });
+  /// Initializes a listener for network connectivity changes.
+  /// Displays an offline banner and attempts to reload reports when online.
+  void _initConnectivityListener() {
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      bool becameOffline = results.contains(ConnectivityResult.none);
 
-    _reportsSubscription = _reportService.getReportsStream().listen(
+      if (becameOffline && !_isOffline) {
+        // App just went offline
+        setState(() {
+          _isOffline = true;
+          _errorMessage = 'No internet connection. Please check your network settings.';
+          _isLoadingInitial = false; // Stop initial loading if it was ongoing
+          _isLoadingMore = false; // Stop loading more if it was ongoing
+          // Clear displayed reports only if they were fetched when online and now we're offline
+          // and might be stale. Or, if we want to force re-fetch.
+          // For now, let's keep them unless explicitly clearing.
+        });
+        // You can optionally show a persistent SnackBar here for offline status
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You are offline. Data might be outdated.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(days: 365), // Persist indefinitely
+          ),
+        );
+      } else if (!becameOffline && _isOffline) {
+        // App just came online
+        setState(() {
+          _isOffline = false;
+          // Only clear network-specific error message
+          if (_errorMessage == 'No internet connection. Please check your network settings.') {
+            _errorMessage = null;
+          }
+        });
+        // Hide any persistent offline snackbars
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        // If no reports were loaded or there was a previous network error, try reloading.
+        if (_displayedReports.isEmpty || _errorMessage == 'No internet connection. Please check your network settings.') {
+          _loadInitialReports(); // Retry loading when connection is restored
+        }
+      }
+    });
+  }
+
+  /// Listens to the stream of reports from the ReportService.
+  /// Updates displayed reports and manages loading/error states.
+  void _listenToReports() {
+    // Set initial loading state when beginning to listen
+    if (mounted && _displayedReports.isEmpty && _errorMessage == null) {
+      setState(() {
+        _isLoadingInitial = true;
+      });
+    }
+
+    _reportsSubscription = _reportService.reportsStream.listen(
       (reports) {
-        // When new data arrives, update the cache and apply the current filter
         if (mounted) {
           setState(() {
-            _allReportsFromFirestore = reports;
-            _applyFilter(_activeFilter); // Re-apply filter with new data
-            _isLoading = false; // Data loaded, set loading to false
+            _displayedReports = reports;
+            _isLoadingInitial = false; // Initial load finished
+            _isLoadingMore = false; // Pagination load finished
+            _errorMessage = null; // Clear any previous errors on successful data receive
           });
         }
       },
       onError: (error) {
-        // Handle errors in fetching data
         if (mounted) {
           setState(() {
-            _isLoading = false;
-            // Optionally, show an error message to the user
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error loading reports: $error')),
-            );
+            _isLoadingInitial = false; // Stop loading
+            _isLoadingMore = false; // Stop loading more
+            _errorMessage = error.toString(); // Store the error message
           });
+          // Show error as a temporary snackbar, unless it's the specific offline message
+          if (_errorMessage != 'No internet connection. Please check your network settings.') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: $_errorMessage'),
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
         }
-        debugPrint('Error fetching reports: $error');
-      },
-      onDone: () {
-        // This might not be triggered by Firestore streams, but good practice
-        debugPrint('Report stream finished.');
+        debugPrint('Error fetching reports: $error'); // Log for debugging
       },
     );
   }
 
-  void _applyFilter(String filter) {
-    setState(() {
-      _activeFilter = filter;
-      // Filter from the _allReportsFromFirestore cache
-      _filteredReports = filter == 'All'
-          ? List.from(_allReportsFromFirestore)
-          : _allReportsFromFirestore
-              .where((item) => item.type == filter)
-              .toList();
-    });
+  /// Sets up the scroll listener for pagination.
+  void _setupScrollListener() {
+    _scrollController.addListener(_onScroll);
   }
 
-  // Helper to group reports by month and year
-  Map<String, List<Report>> _groupReportsByMonth(List<Report> reports) {
-    // Sort reports by creation date (most recent first) within the group
-    // The stream already provides sorted data, but a local sort ensures consistency
-    reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  /// Callback for scroll events to trigger loading more reports.
+  void _onScroll() {
+    // Only load more if at the bottom, not already loading, not offline, and there are more reports
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        !_isLoadingInitial && // Don't load more if initial load is still active
+        _reportService.hasMoreReports &&
+        !_isOffline) {
+      _loadMoreReports();
+    }
+  }
 
+  /// Initiates the first fetch of reports, or re-fetches after a filter change/retry.
+  Future<void> _loadInitialReports() async {
+    if (_isOffline) {
+      // If we are offline, update error message and prevent fetch
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'No internet connection. Cannot load reports.';
+          _isLoadingInitial = false; // Ensure loading stops
+        });
+      }
+      return;
+    }
+
+    // Only show initial loading spinner if no reports are displayed yet
+    // or if we are explicitly trying to reload after an error/filter change.
+    if (mounted && _displayedReports.isEmpty && _errorMessage == null) {
+      setState(() {
+        _isLoadingInitial = true;
+      });
+    }
+    setState(() {
+      _errorMessage = null; // Clear error on new load attempt
+    });
+
+
+    try {
+      await _reportService.fetchInitialReports(
+        typeFilter: _activeFilter == 'All' ? null : _activeFilter,
+      );
+    } catch (e) {
+      // Errors are caught by _listenToReports's onError, which updates _errorMessage.
+      // This catch block is mostly for very rare synchronous errors if the stream setup itself fails.
+      debugPrint('Synchronous error during initial reports load: $e');
+    }
+  }
+
+  /// Initiates fetching more reports for pagination.
+  Future<void> _loadMoreReports() async {
+    // Prevent multiple calls, calls when no more data, or calls when offline/initial loading
+    if (_isLoadingMore || !_reportService.hasMoreReports || _isOffline || _isLoadingInitial) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true; // Show bottom loading indicator
+      _errorMessage = null; // Clear error when attempting to load more
+    });
+
+    try {
+      await _reportService.fetchMoreReports();
+    } catch (e) {
+      // Errors are caught by _listenToReports's onError
+      debugPrint('Synchronous error during more reports load: $e');
+    } finally {
+      // Final state update to ensure loading indicator is hidden
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    }
+  }
+
+  /// Applies a new filter, resets pagination, and reloads reports.
+  void _applyFilter(String filter) {
+    if (filter == _activeFilter) return; // No change, do nothing
+
+    setState(() {
+      _activeFilter = filter;
+      _isLoadingInitial = true; // Show initial loading for new filter
+      _displayedReports = []; // Clear current displayed reports for new filter
+      _errorMessage = null; // Clear any previous error on filter change
+      _scrollController.jumpTo(0); // Scroll to top on filter change
+    });
+    // Trigger a new initial fetch with the selected filter
+    _loadInitialReports();
+  }
+
+  /// Helper to group reports by month and year for display.
+  Map<String, List<Report>> _groupReportsByMonth(List<Report> reports) {
+    // Reports are assumed to be sorted by createdAt descending from the service
     final Map<String, List<Report>> groupedReports = {};
-    final DateFormat formatter = DateFormat('MMMM yyyy'); // e.g., "May 2025"
+    final DateFormat formatter = DateFormat('MMMM y'); // e.g., "May 2025"
 
     for (var report in reports) {
       final String monthYear = formatter.format(report.createdAt.toDate());
-      if (!groupedReports.containsKey(monthYear)) {
-        groupedReports[monthYear] = [];
-      }
-      groupedReports[monthYear]!.add(report);
+      groupedReports.putIfAbsent(monthYear, () => []).add(report);
     }
     return groupedReports;
   }
@@ -174,32 +309,72 @@ class _HomeState extends State<Home> {
               ),
             ),
 
-            // Card list or status view
+            // Offline Status bar (visible only when offline)
+            if (_isOffline)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                color: Theme.of(context).colorScheme.error, // Use theme's error color
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.onError),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You are offline. Data might not be current.',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onError),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Main content area: handles loading, error, empty, and reports list
             Expanded(
-              child: _isLoading
-                  ? _buildLoadingView()
-                  : _filteredReports.isEmpty // Use _filteredReports for checking emptiness
-                      ? _buildNoReportsView()
-                      : _buildReportsList(),
+              child: _buildContent(),
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      const ReportPage()), // Assuming Report is your submission form
-            );
-          },
-          label: const Text('Make a Report'),
-          icon: const Icon(Icons.add),
-          tooltip: 'Create a new lost or found report',
-        ),
+        floatingActionButton: _isOffline
+            ? null // Hide FAB when offline to indicate limited functionality
+            : FloatingActionButton.extended(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const ReportPage()), // Assuming Report is your submission form
+                  );
+                },
+                label: const Text('Make a Report'),
+                icon: const Icon(Icons.add),
+                tooltip: 'Create a new lost or found report',
+              ),
       ),
     );
   }
+
+  /// Determines which content widget to display based on current state.
+  Widget _buildContent() {
+    if (_errorMessage != null && _displayedReports.isEmpty) {
+      // Show error only if no reports could be loaded initially
+      return _buildErrorView();
+    }
+
+    if (_isLoadingInitial && _displayedReports.isEmpty) {
+      // Show full-screen loading only if no reports are loaded yet
+      return _buildLoadingView();
+    }
+
+    if (_displayedReports.isEmpty && !_isLoadingInitial && _errorMessage == null) {
+      // Show no reports view if list is empty after initial load and no error
+      return _buildNoReportsView();
+    }
+
+    // If we have reports, display the list (and handle loading more at the bottom)
+    return _buildReportsList();
+  }
+
+  // --- UI Helper Methods ---
 
   Widget _buildLoadingView() {
     return Center(
@@ -218,6 +393,17 @@ class _HomeState extends State<Home> {
   }
 
   Widget _buildNoReportsView() {
+    String message;
+    String subMessage;
+
+    if (_activeFilter != 'All') {
+      message = 'No ${_activeFilter.toLowerCase()} reports found.';
+      subMessage = 'Try changing your filter or create a new report.';
+    } else {
+      message = 'No reports found yet.';
+      subMessage = 'Be the first to make a report!';
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -225,7 +411,8 @@ class _HomeState extends State<Home> {
           Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
-            "No reports found",
+            message,
+            textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -233,76 +420,150 @@ class _HomeState extends State<Home> {
           ),
           const SizedBox(height: 8),
           Text(
-            "Try changing your filters or create a new report",
+            subMessage,
+            textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
+          if (_isOffline) ...[
+            const SizedBox(height: 24),
+            Text(
+              "You are offline. Content may not be up-to-date.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.red.shade600),
+            ),
+          ]
         ],
       ),
     );
   }
 
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+            const SizedBox(height: 16),
+            Text(
+              "Oops! Something went wrong.",
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade700),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'An unknown error occurred.', // Display stored error
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Clear error and retry loading
+                setState(() {
+                  _errorMessage = null;
+                });
+                _loadInitialReports();
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildReportsList() {
-    final groupedReports = _groupReportsByMonth(_filteredReports); // Group filtered reports
+    final groupedReports = _groupReportsByMonth(_displayedReports);
     final sortedMonths = groupedReports.keys.toList()
       ..sort((a, b) {
-        // Parse "Month Year" strings back to DateTime for proper sorting
-        final DateFormat formatter = DateFormat('MMMM yyyy');
+        final DateFormat formatter = DateFormat('MMMM y');
         final DateTime dateA = formatter.parse(a);
         final DateTime dateB = formatter.parse(b);
         return dateB.compareTo(dateA); // Sort months from most recent to oldest
       });
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: sortedMonths.length,
-      itemBuilder: (context, monthIndex) {
-        final month = sortedMonths[monthIndex];
-        final reportsInMonth = groupedReports[month]!;
+    return RefreshIndicator(
+      onRefresh: _loadInitialReports, // Pull to refresh triggers initial load
+      child: ListView.builder(
+        controller: _scrollController, // Assign scroll controller
+        padding: const EdgeInsets.only(bottom: 80), // Space for FAB
+        // Add an extra item for the loading indicator/status at the bottom
+        itemCount: sortedMonths.length + (_reportService.hasMoreReports || _isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index < sortedMonths.length) {
+            final month = sortedMonths[index];
+            final reportsInMonth = groupedReports[month]!;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Month Header
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text(
-                month,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-              ),
-            ),
-            // Reports for this month
-            ListView.builder(
-              shrinkWrap: true, // Important to allow nested ListViews
-              physics:
-                  const NeverScrollableScrollPhysics(), // Disable scrolling for inner list
-              itemCount: reportsInMonth.length,
-              itemBuilder: (context, reportIndex) {
-                final report = reportsInMonth[reportIndex];
-                return SimpleCard(
-                  onTap: () {
-                    // Navigate to ReportDetails, passing the Report object
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ReportDetails(
-                            report: report), // Pass the Report object
-                      ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Month Header
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Text(
+                    month,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                ),
+                // Reports for this month
+                ListView.builder(
+                  shrinkWrap: true, // Important for nested ListViews
+                  physics: const NeverScrollableScrollPhysics(), // Disable inner scrolling
+                  itemCount: reportsInMonth.length,
+                  itemBuilder: (context, reportIndex) {
+                    final report = reportsInMonth[reportIndex];
+                    return SimpleCard(
+                      onTap: () {
+                        // Navigate to ReportDetails, passing the Report object
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ReportDetails(
+                                report: report), // Pass the Report object
+                          ),
+                        );
+                      },
+                      report: report, // Pass the Report object
                     );
                   },
-                  report: report, // Pass the Report object
-                );
-              },
-            ),
-            // Add a small space between months sections, unless it's the last one
-            if (monthIndex < sortedMonths.length - 1)
-              const SizedBox(height: 12),
-          ],
-        );
-      },
+                ),
+                // Add a small space between months sections, unless it's the last one
+                if (index < sortedMonths.length - 1)
+                  const SizedBox(height: 12),
+              ],
+            );
+          } else {
+            // This is the loading indicator/status at the bottom of the list
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0),
+              child: Center(
+                child: _isLoadingMore
+                    ? const CircularProgressIndicator() // Show loading spinner
+                    : Text(
+                        _reportService.hasMoreReports
+                            ? 'Pull to refresh or scroll down to load more' // More explicit instruction
+                            : 'No more reports', // Message when all reports are loaded
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 }

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:back2u/views/report/report_form.dart';
 import 'package:back2u/models/report_model.dart';
-import 'package:back2u/services/auth_kyc_service.dart'; // Import the AuthKycService
-import 'package:back2u/views/auth/kyc_form_page.dart'; // Import the KYC form page
-import 'package:back2u/models/user_model.dart'; // Import AppUser model
-import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp
+import 'package:back2u/services/auth_kyc_service.dart';
+import 'package:back2u/views/auth/kyc_form_page.dart';
+import 'package:back2u/models/user_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -23,17 +23,15 @@ class _ReportPageState extends State<ReportPage> {
   @override
   void initState() {
     super.initState();
-    // Listen to authentication state changes
     _authKycService.authStateChanges.listen((user) async {
       setState(() {
         _currentUser = user;
-        _isLoading = true; // Set loading true while fetching user profile
+        _isLoading = true;
       });
       if (user != null) {
-        // If user is logged in, fetch their AppUser profile
         await _checkAndLoadUserProfile(user.uid);
       } else {
-        _appUser = null; // Clear AppUser if logged out
+        _appUser = null;
         setState(() {
           _isLoading = false;
         });
@@ -54,7 +52,6 @@ class _ReportPageState extends State<ReportPage> {
     });
     try {
       await _authKycService.signInWithGoogle();
-      // Auth state listener will automatically update _currentUser and _appUser
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Google Sign-In failed: $e')),
@@ -66,87 +63,86 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
-  // Helper to navigate to ReportForm
   void _navigateToReportForm(String reportType) {
     final newReport = Report(
       type: reportType,
-      reportId: 'temp_id_${DateTime.now().microsecondsSinceEpoch}', // temp ID
-      reporterUid: _currentUser!.uid, // Assign the authenticated user's UID
-      category: '', categoryFr: '', contactPhone: '', reportedDate: Timestamp.now(),
-      documentName: '', images: [], locationLost: '', locationLostFr: '',
-      notes: '', createdAt: Timestamp.now(), reporterId: '', resolved: false,
-      reward: '', searchKeyWords: [], status: '', subLocationLost: '',
-      subLocationLostFr: '', subcategory: '', subcategoryFr: '',
+      reportId: 'temp_id_${DateTime.now().microsecondsSinceEpoch}',
+      reporterUid: _currentUser!.uid,
+      category: '',
+      categoryFr: '',
+      contactPhone: '',
+      reportedDate: Timestamp.now(),
+      documentName: '',
+      images: [],
+      locationLost: '',
+      locationLostFr: '',
+      notes: '',
+      createdAt: Timestamp.now(),
+      reporterId: '',
+      resolved: false,
+      reward: '',
+      searchKeyWords: [],
+      status: '',
+      subLocationLost: '',
+      subLocationLostFr: '',
+      subcategory: '',
+      subcategoryFr: '',
       whatsappNumber: '',
-    );  
+    );
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ReportForm(report: newReport)),
     );
   }
 
-  // Show the KYC prompt dialog
   Future<void> _showKycPromptDialog(String reportType) async {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final TextTheme textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
 
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // User must choose an option
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'Complete Your Profile (KYC)',
-            style: textTheme.titleLarge?.copyWith(color: colorScheme.onSurface),
+            style: theme.textTheme.titleLarge,
           ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(
-                  'Your profile is not fully verified. Completing KYC enhances trust and security for interactions on Back2u.',
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Do you want to complete it now or proceed with your report without it?',
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                'Continue Anyway',
-                style: textTheme.labelLarge?.copyWith(color: colorScheme.primary),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Your profile is not fully verified. Completing KYC enhances trust and security for interactions on Back2u.',
+                style: theme.textTheme.bodyMedium,
               ),
+              const SizedBox(height: 16),
+              Text(
+                'Do you want to complete it now or proceed with your report without it?',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Continue Anyway'),
               onPressed: () {
-                Navigator.of(dialogContext).pop(); // Dismiss dialog
-                _navigateToReportForm(reportType); // Proceed to report form
+                Navigator.of(dialogContext).pop();
+                _navigateToReportForm(reportType);
               },
             ),
             FilledButton(
               onPressed: () {
-                Navigator.of(dialogContext).pop(); // Dismiss dialog
+                Navigator.of(dialogContext).pop();
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const KycFormPage()),
                 ).then((_) async {
-                  // After returning from KYC form, refresh user profile to update KYC status
                   if (_currentUser != null) {
                     await _checkAndLoadUserProfile(_currentUser!.uid);
                   }
                 });
               },
-              style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-              ),
-              child: Text(
-                'Complete Now',
-                style: textTheme.labelLarge,
-              ),
+              child: const Text('Complete Now'),
             ),
           ],
         );
@@ -156,103 +152,100 @@ class _ReportPageState extends State<ReportPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final TextTheme textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create a Report'),
         centerTitle: true,
         elevation: 1,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(color: colorScheme.primary),
-            )
+          ? Center(child: CircularProgressIndicator(color: colors.primary))
           : Padding(
-              padding: const EdgeInsets.all(15.0),
+              padding: const EdgeInsets.all(20.0), // Outer padding for the whole body content
               child: Column(
-                // crossAxisAlignment: CrossAxisAlignment.stretch,
-                // mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch, // Ensures children stretch horizontally
                 children: [
                   Text(
-                    (_currentUser == null || _currentUser!.isAnonymous)?'Register':'What would you like to report?',
+                    (_currentUser == null || _currentUser!.isAnonymous)
+                        ? 'Register'
+                        : 'What would you like to report?',
                     textAlign: TextAlign.center,
-                    style: textTheme.headlineSmall?.copyWith(
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 40),
 
                   // Conditional rendering based on authentication status
                   if (_currentUser == null || _currentUser!.isAnonymous)
-                    // User not authenticated or is anonymous, prompt to sign in
-                    _buildAuthPrompt(context, colorScheme, textTheme)
+                    _buildAuthPrompt(theme, colors)
                   else
-                    // User authenticated (Google) - show report buttons directly
-                    // KYC check will happen when report buttons are pressed
-                    _buildReportButtons(context, colorScheme, textTheme),
+                    _buildReportButtons(theme, colors),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildAuthPrompt(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildAuthPrompt(ThemeData theme, ColorScheme colors) {
     return Column(
       children: [
         Text(
           'Please sign in to create a report and help us keep the community safe.',
           textAlign: TextAlign.center,
-          style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+          style: theme.textTheme.bodyLarge,
         ),
-        const SizedBox(height: 24),
-        ElevatedButton.icon(
-          onPressed: _signInWithGoogle,
-          icon: Image.asset('assets/images/google-logo.png', height: 24.0), // Google logo
-          label: Text(
-            'Sign in with Google',
-            style: textTheme.titleMedium?.copyWith(color: colorScheme.primary),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.onPrimary,
-            foregroundColor: colorScheme.primary,
-            side: BorderSide(color: colorScheme.primary, width: 2),
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        const SizedBox(height: 30),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _signInWithGoogle,
+            icon: Image.asset('assets/images/google-logo.png', height: 24.0),
+            label: Text(
+              'Sign in with Google',
+              style: theme.textTheme.titleMedium,
+            ),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildReportButtons(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildReportButtons(ThemeData theme, ColorScheme colors) {
     return Column(
-      // crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch, // Ensure children stretch horizontally
       children: [
         // Display KYC status if not complete
         if (_appUser != null && !_appUser!.kycCompleted)
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(bottom: 24),
             decoration: BoxDecoration(
-              color: colorScheme.tertiaryContainer, // A distinct color for notices
-              borderRadius: BorderRadius.circular(8),
+              color: colors.tertiaryContainer,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: colorScheme.onTertiaryContainer),
+                Icon(Icons.info_outline, color: colors.onTertiaryContainer),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Your profile is not fully verified. Consider completing KYC for full trust.',
-                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.onTertiaryContainer),
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: colors.onTertiaryContainer),
                   ),
                 ),
-                const SizedBox(width: 8),
                 TextButton(
                   onPressed: () {
                      Navigator.push(
@@ -266,68 +259,75 @@ class _ReportPageState extends State<ReportPage> {
                   },
                   child: Text(
                     'Verify Now',
-                    style: textTheme.labelLarge?.copyWith(color: colorScheme.tertiary),
+                    style: theme.textTheme.labelLarge
+                        ?.copyWith(color: colors.tertiary),
                   ),
-                )
+                ),
               ],
             ),
           ),
+        // Add spacing between the KYC banner and the buttons if the banner is present
+        if (_appUser != null && !_appUser!.kycCompleted)
+          const SizedBox(height: 20),
 
+        // NEW: Row for Report Lost/Found Item Buttons
+        Row(
+          children: [
+            SizedBox(
+              child: FilledButton.icon(
+                onPressed: () {
+                  if (_appUser != null && !_appUser!.kycCompleted) {
+                    _showKycPromptDialog('lost');
+                  } else {
+                    _navigateToReportForm('lost');
+                  }
+                },
+                icon: const Icon(Icons.search_off, size: 30),
+                label: Text(
+                  'Report Lost Item',
+                  style: theme.textTheme.titleSmall, // Use titleSmall for better fit
+                  textAlign: TextAlign.center, // Center text within the button
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.secondaryContainer, // Added explicit background color
+                  foregroundColor: colors.onSecondaryContainer, // Added explicit foreground color
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10), // Adjusted horizontal padding
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center, // Center content within the button
+                ),
+              ),
+            ),
+            const SizedBox(width: 15), // Horizontal spacing between buttons
 
-        // Report Lost Item Button
-        FilledButton.icon(
-          
-          onPressed: () {
-            // Check KYC status before proceeding
-            if (_appUser != null && !_appUser!.kycCompleted) {
-              _showKycPromptDialog('lost');
-            } else {
-              _navigateToReportForm('lost');
-            }
-          },
-          icon: Icon(Icons.search_off, size: 30, color: colorScheme.onSecondaryContainer),
-          label: Text(
-            'Report Lost Item',
-            style: textTheme.titleLarge?.copyWith(
-              color: colorScheme.onSecondaryContainer,
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () {
+                  if (_appUser != null && !_appUser!.kycCompleted) {
+                    _showKycPromptDialog('found');
+                  } else {
+                    _navigateToReportForm('found');
+                  }
+                },
+                icon: const Icon(Icons.volunteer_activism, size: 30),
+                label: Text(
+                  'Report Found Item',
+                  style: theme.textTheme.titleSmall, // Use titleSmall for better fit
+                  textAlign: TextAlign.center, // Center text within the button
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.primaryContainer, // Added explicit background color
+                  foregroundColor: colors.onPrimaryContainer, // Added explicit foreground color
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10), // Adjusted horizontal padding
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center, // Center content within the button
+                ),
+              ),
             ),
-          ),
-          style: FilledButton.styleFrom(
-            backgroundColor: colorScheme.secondaryContainer,
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            alignment: Alignment.centerLeft,
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Report Found Item Button
-        FilledButton.icon(
-          onPressed: () {
-            // Check KYC status before proceeding
-            if (_appUser != null && !_appUser!.kycCompleted) {
-              _showKycPromptDialog('found');
-            } else {
-              _navigateToReportForm('found');
-            }
-          },
-          icon: Icon(Icons.volunteer_activism, size: 30, color: colorScheme.onPrimaryContainer),
-          label: Text(
-            'Report Found Item',
-            style: textTheme.titleLarge?.copyWith(
-              color: colorScheme.onPrimaryContainer,
-            ),
-          ),
-          style: FilledButton.styleFrom(
-            backgroundColor: colorScheme.primaryContainer,
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            alignment: Alignment.centerLeft,
-          ),
+          ],
         ),
       ],
     );

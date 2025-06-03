@@ -182,27 +182,27 @@ class _SummaryPageState extends State<SummaryPage> {
                 const SizedBox(height: 10), // Small space before checkbox
 
                 // Checkbox to remember contact info
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _rememberContactInfo,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _rememberContactInfo = value ?? false;
-                        });
-                      },
-                      activeColor: colorScheme.primary,
-                    ),
-                    Expanded(
-                      // Use Expanded to prevent overflow for long text
-                      child: Text(
-                        'Remember my phone and WhatsApp numbers for future reports',
-                        style: textTheme
-                            .bodyMedium, // Use bodyMedium for checkbox text
-                      ),
-                    ),
-                  ],
-                ),
+                // Row(
+                //   children: [
+                //     Checkbox(
+                //       value: _rememberContactInfo,
+                //       onChanged: (bool? value) {
+                //         setState(() {
+                //           _rememberContactInfo = value ?? false;
+                //         });
+                //       },
+                //       activeColor: colorScheme.primary,
+                //     ),
+                //     Expanded(
+                //       // Use Expanded to prevent overflow for long text
+                //       child: Text(
+                //         'Remember my phone and WhatsApp numbers for future reports',
+                //         style: textTheme
+                //             .bodyMedium, // Use bodyMedium for checkbox text
+                //       ),
+                //     ),
+                //   ],
+                // ),
               ],
             ),
             const SizedBox(height: 30),
