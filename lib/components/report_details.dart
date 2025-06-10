@@ -105,15 +105,16 @@ class ReportDetails extends StatelessWidget {
                   ),
                   _buildDetailRow(
                     context,
-                    report.type == 'Lost' ? 'Owner' : 'Finder',
+                    // report.type == 'Lost' ? 'Owner' : 'Finder',
+                    'Documument Owner',
                     report.ownerName ?? 'Not Specified',
                     Icons.person_outline,
                   ),
                   _buildDetailRow(
                     context,
                     'Reward',
-                    report.reward.isNotEmpty && report.reward != '0'
-                        ? report.reward
+                    report.reward.isNotEmpty && report.reward != '0 CFA'
+                        ? report.reward 
                         : 'None',
                     Icons.money_outlined,
                   ),
@@ -224,22 +225,42 @@ class ReportDetails extends StatelessWidget {
 
             // --- Contact Reporter Button ---
             const SizedBox(height: 24),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  _showContactModal(context);
-                },
-                icon: const Icon(Icons.phone),
-                label: const Text('Contact Reporter'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  minimumSize: const Size(double.infinity, 50), // Make button full width
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+            Column(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    _showContactModal(context);
+                  },
+                  icon: const Icon(Icons.save),
+                  label: const Text('Save Report'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.secondary,
+                    foregroundColor: colorScheme.onSecondary,
+                    minimumSize: const Size(
+                        double.infinity, 50), // Make button full width
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
-              ),
+                SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    _showContactModal(context);
+                  },
+                  icon: const Icon(Icons.phone),
+                  label: const Text('Contact Reporter'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    minimumSize: const Size(
+                        double.infinity, 50), // Make button full width
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
           ],
@@ -296,82 +317,12 @@ class ReportDetails extends StatelessWidget {
               _buildContactDetailRow(
                 context,
                 'Reporter Name',
-                report.ownerName ?? 'Not Specified',
+                report.reporterId ?? 'Not Specified',
                 Icons.person,
               ),
 
-              // Report Name/Document
-              _buildContactDetailRow(
-                context,
-                'Report Item',
-                report.documentName,
-                Icons.description,
-              ),
-
-              // Reported Date
-              _buildContactDetailRow(
-                context,
-                'Reported Date',
-                DateFormat('MMM dd, yyyy').format(report.createdAt.toDate()),
-                Icons.calendar_today,
-              ),
-
-              // Phone Number
-              _buildContactDetailRow(
-                context,
-                'Phone Number',
-                report.contactPhone,
-                Icons.phone,
-                isClickable: true,
-                onTap: () {
-                  // TODO: Implement phone call functionality
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Calling ${report.contactPhone}...'),
-                    ),
-                  );
-                },
-              ),
-
-              // WhatsApp Number (if available)
-              if (report.whatsappNumber.isNotEmpty)
-                _buildContactDetailRow(
-                  context,
-                  'WhatsApp',
-                  report.whatsappNumber,
-                  Icons.chat,
-                  isClickable: true,
-                  onTap: () {
-                    // TODO: Implement WhatsApp functionality
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Opening WhatsApp for ${report.whatsappNumber}...'),
-                      ),
-                    );
-                  },
-                ),
-
-              // Email (if available - assuming it exists in your Report model)
-              // Uncomment and modify if email field exists in your model
-              /*
-              if (report.email?.isNotEmpty == true)
-                _buildContactDetailRow(
-                  context,
-                  'Email',
-                  report.email!,
-                  Icons.email,
-                  isClickable: true,
-                  onTap: () {
-                    // TODO: Implement email functionality
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Opening email for ${report.email}...'),
-                      ),
-                    );
-                  },
-                ),
-              */
-
+              
+            
               const SizedBox(height: 24),
 
               // Action Buttons
@@ -407,7 +358,8 @@ class ReportDetails extends StatelessWidget {
                           // TODO: Implement WhatsApp
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Opening WhatsApp for ${report.whatsappNumber}...'),
+                              content: Text(
+                                  'Opening WhatsApp for ${report.whatsappNumber}...'),
                             ),
                           );
                         },
@@ -461,7 +413,9 @@ class ReportDetails extends StatelessWidget {
           Icon(
             icon,
             size: 20,
-            color: isClickable ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            color: isClickable
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -479,7 +433,9 @@ class ReportDetails extends StatelessWidget {
                   value,
                   style: textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: isClickable ? colorScheme.primary : colorScheme.onSurface,
+                    color: isClickable
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ),
               ],

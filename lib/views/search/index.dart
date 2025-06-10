@@ -312,14 +312,15 @@ import 'package:back2u/components/SimpleCard.dart';
               itemBuilder: (context, index) {
                 final report = _displayedReports[index];
                 return SimpleCard(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ReportDetails(report: report),
-                      ),
-                    );
-                  },
+                  //todo: i might use this later
+                  // onTap: () {
+                  //   Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(
+                  //       builder: (context) => ReportDetails(report: report),
+                  //     ),
+                  //   );
+                  // },
                   report: report,
                 );
               },

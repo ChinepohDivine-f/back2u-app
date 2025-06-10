@@ -62,7 +62,7 @@ class _AppDrawerState extends State<AppDrawer> {
         // Pop the drawer first
         Navigator.pop(context);
         // Then navigate, replacing the current route
-        Navigator.pushReplacementNamed(context, '/login');
+        Navigator.pushReplacementNamed(context, '/splash');
       }
     } catch (e) {
       if (mounted) {
@@ -166,7 +166,7 @@ class _AppDrawerState extends State<AppDrawer> {
               title: Text('Login / Sign Up', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold)),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/login'); // Navigate to Login/Sign Up page
+                Navigator.pushReplacementNamed(context, '/auth'); // Navigate to Login/Sign Up page
               },
             ),
           ],

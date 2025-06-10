@@ -159,37 +159,37 @@ class _SettingsPageState extends State<SettingsPage> {
                           }
                         : null,
                   ),
-                  const Divider(indent: 16, endIndent: 16),
-                  ListTile(
-                    leading: Icon(Icons.lock_outline,
-                        color: colors.onSurfaceVariant),
-                    title: Text('Change Password',
-                        style: theme.textTheme.bodyLarge),
-                    subtitle: Text(
-                      userLoggedIn
-                          ? 'Update your account password'
-                          : 'Sign in to change password',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurfaceVariant.withOpacity(0.7)),
-                    ),
-                    trailing: userLoggedIn
-                        ? Icon(Icons.arrow_forward_ios,
-                            size: 16,
-                            color: colors.onSurfaceVariant.withOpacity(0.7))
-                        : null,
-                    onTap: userLoggedIn
-                        ? () {
-                            // Navigate to Change Password Page
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Navigate to Change Password Page')),
-                            );
-                            // Navigator.push(context, MaterialPageRoute(builder: (context) => ChangePasswordPage()));
-                          }
-                        : null,
-                  ),
-                  // Add more account settings here, e.g., Delete Account
+                  // const Divider(indent: 16, endIndent: 16),
+                  // ListTile(
+                  //   leading: Icon(Icons.lock_outline,
+                  //       color: colors.onSurfaceVariant),
+                  //   title: Text('Change Password',
+                  //       style: theme.textTheme.bodyLarge),
+                  //   subtitle: Text(
+                  //     userLoggedIn
+                  //         ? 'Update your account password'
+                  //         : 'Sign in to change password',
+                  //     style: theme.textTheme.bodyMedium?.copyWith(
+                  //         color: colors.onSurfaceVariant.withOpacity(0.7)),
+                  //   ),
+                  //   trailing: userLoggedIn
+                  //       ? Icon(Icons.arrow_forward_ios,
+                  //           size: 16,
+                  //           color: colors.onSurfaceVariant.withOpacity(0.7))
+                  //       : null,
+                  //   onTap: userLoggedIn
+                  //       ? () {
+                  //           // Navigate to Change Password Page
+                  //           ScaffoldMessenger.of(context).showSnackBar(
+                  //             const SnackBar(
+                  //                 content: Text(
+                  //                     'Navigate to Change Password Page')),
+                  //           );
+                  //           // Navigator.push(context, MaterialPageRoute(builder: (context) => ChangePasswordPage()));
+                  //         }
+                  //       : null,
+                  // ),
+                  // // Add more account settings here, e.g., Delete Account
                   if (userLoggedIn) ...[
                     const Divider(indent: 16, endIndent: 16),
                     ListTile(
@@ -339,7 +339,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.brightness_medium,
                         color: colors.onSurfaceVariant),
-                    title: Text('Theme', style: theme.textTheme.bodyLarge),
+                    // title: Text('Theme', style: theme.textTheme.bodyLarge),
                     trailing: SegmentedButton<ThemeMode>(
                       segments: const <ButtonSegment<ThemeMode>>[
                         ButtonSegment<ThemeMode>(

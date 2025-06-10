@@ -1,3 +1,4 @@
+// lib/views/report/report_form.dart
 import 'dart:io';
 import 'package:back2u/views/report/contact.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:back2u/models/report_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path_provider/path_provider.dart'; // For creating dummy XFile for existing images
 
 // Import your category and location models
 import 'package:back2u/models/category_model.dart';
@@ -14,7 +16,7 @@ import 'package:back2u/models/location_model.dart';
 import 'package:back2u/services/form_data_fetch_service.dart';
 
 class ReportForm extends StatefulWidget {
-  final Report report;
+  final Report report; // The report to be edited (or a new empty report)
 
   const ReportForm({super.key, required this.report});
 
@@ -25,16 +27,24 @@ class ReportForm extends StatefulWidget {
 class _ReportFormState extends State<ReportForm> {
   final _formKey = GlobalKey<FormState>();
 
-  late TextEditingController _ownerNameController;
-  late TextEditingController _rewardAmountController;
-  late TextEditingController _notesController; // Retained for internal management
+  late TextEditingController? _ownerNameController;
+  late TextEditingController? _rewardAmountController;
+  late TextEditingController? _notesController;
 
   String? _selectedCategoryName;
   String? _selectedSubcategoryName;
   DateTime? _incidentDate;
   String? _selectedLocationName;
   String? _selectedSubLocationName;
-  List<XFile> _selectedLocalImages = [];
+
+  // For managing images:
+  // List to hold NEWLY picked images (XFile objects)
+  List<XFile> _newlySelectedLocalImages = [];
+  // List to hold EXISTING image URLs from the report
+  List<String> _existingImageUrls = [];
+  // Set to track which EXISTING images are marked for removal
+  Set<String> _imagesToDelete = {};
+
   bool _addReward = false;
 
   final DataFetchService _dataFetchService = DataFetchService();
@@ -48,16 +58,20 @@ class _ReportFormState extends State<ReportForm> {
     super.initState();
     _ownerNameController = TextEditingController(text: widget.report.ownerName);
     _rewardAmountController = TextEditingController(text: widget.report.reward == '0' ? '' : widget.report.reward);
-    _notesController = TextEditingController(text: widget.report.notes); // Initialize with existing notes
+    _notesController = TextEditingController(text: widget.report.notes);
 
     // Initialize dropdowns with existing report data.
-    _selectedCategoryName = null;
-    _selectedSubcategoryName = null;
-    _selectedLocationName = null;
-    _selectedSubLocationName = null;
+    // These will be properly set after _fetchFormData completes and validates them.
+    _selectedCategoryName = widget.report.category.isNotEmpty ? widget.report.category : null;
+    _selectedSubcategoryName = widget.report.subcategory.isNotEmpty ? widget.report.subcategory : null;
+    _selectedLocationName = widget.report.locationLost.isNotEmpty ? widget.report.locationLost : null;
+    _selectedSubLocationName = widget.report.subLocationLost.isNotEmpty ? widget.report.subLocationLost : null;
 
     _incidentDate = widget.report.reportedDate.toDate().year > 2000 ? widget.report.reportedDate.toDate() : null;
     _addReward = widget.report.reward.isNotEmpty && widget.report.reward != '0';
+
+    // Initialize existing image URLs
+    _existingImageUrls = List.from(widget.report.images);
 
     _fetchFormData();
   }
@@ -138,9 +152,9 @@ class _ReportFormState extends State<ReportForm> {
 
   @override
   void dispose() {
-    _ownerNameController.dispose();
-    _rewardAmountController.dispose();
-    _notesController.dispose();
+    _ownerNameController!.dispose();
+    _rewardAmountController!.dispose();
+    _notesController!.dispose();
     super.dispose();
   }
 
@@ -175,16 +189,20 @@ class _ReportFormState extends State<ReportForm> {
       final List<XFile>? images = await picker.pickMultiImage();
 
       if (images != null && images.isNotEmpty) {
-        if ((_selectedLocalImages.length + images.length) > 2) {
+        final currentTotalImages = _newlySelectedLocalImages.length +
+            _existingImageUrls.where((url) => !_imagesToDelete.contains(url)).length;
+
+        if ((currentTotalImages + images.length) > 2) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You can only upload a maximum of 2 images.')),
+            const SnackBar(content: Text('You can only upload a maximum of 2 images total.')),
           );
+          // Add only enough images to reach the limit of 2
           setState(() {
-            _selectedLocalImages.addAll(images.take(2 - _selectedLocalImages.length));
+            _newlySelectedLocalImages.addAll(images.take(2 - currentTotalImages));
           });
         } else {
           setState(() {
-            _selectedLocalImages.addAll(images);
+            _newlySelectedLocalImages.addAll(images);
           });
         }
       }
@@ -195,15 +213,24 @@ class _ReportFormState extends State<ReportForm> {
     }
   }
 
-  void _removeImage(int index) {
+  void _removeNewImage(int index) {
     setState(() {
-      _selectedLocalImages.removeAt(index);
+      _newlySelectedLocalImages.removeAt(index);
     });
   }
 
-  // Removed _showNotesDialog as notes will now be a direct TextFormField
+  void _markExistingImageForRemoval(String imageUrl) {
+    setState(() {
+      if (_imagesToDelete.contains(imageUrl)) {
+        _imagesToDelete.remove(imageUrl); // Unmark
+      } else {
+        _imagesToDelete.add(imageUrl); // Mark for removal
+      }
+    });
+  }
 
   void _navigateToContactPage() {
+    // Validate incident date manually since it's not a TextFormField
     if (_incidentDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -214,7 +241,11 @@ class _ReportFormState extends State<ReportForm> {
       return;
     }
 
-    if (widget.report.type == 'Found' && _selectedLocalImages.isEmpty) {
+    // Validate images for 'Found' reports
+    final totalImagesAfterRemoval = _newlySelectedLocalImages.length +
+        _existingImageUrls.where((url) => !_imagesToDelete.contains(url)).length;
+
+    if (widget.report.type == 'Found' && totalImagesAfterRemoval == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('At least one image is required for Found reports.'),
@@ -225,21 +256,32 @@ class _ReportFormState extends State<ReportForm> {
     }
 
     if (_formKey.currentState!.validate()) {
+      // Create a *copy* of the report with updated details
       final updatedReport = widget.report.copyWith(
-        ownerName: _ownerNameController.text,
-        // documentName removed
+        ownerName: _ownerNameController!.text.trim(),
         category: _selectedCategoryName!,
         subcategory: _selectedSubcategoryName!,
         reportedDate: Timestamp.fromDate(_incidentDate!),
         locationLost: _selectedLocationName!,
         subLocationLost: _selectedSubLocationName ?? '',
-        notes: _notesController.text.trim(), // Use notes directly from controller
-        reward: _addReward ? _rewardAmountController.text : '0',
+        notes: _notesController!.text.trim(),
+        reward: _addReward ? _rewardAmountController!.text.trim() : '0',
+        // Existing images will be filtered during the final upload/update process
+        // No need to pass them here; the ContactPage will handle them.
       );
 
+      // Pass the updated report, newly selected images, and images to delete
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ContactPage(report: updatedReport, localImageFiles: _selectedLocalImages)),
+        MaterialPageRoute(
+          builder: (context) => ContactPage(
+            report: updatedReport,
+            localImageFiles: _newlySelectedLocalImages,
+            existingImageUrls: _existingImageUrls,
+            imagesToDelete: _imagesToDelete,
+            isEditing: true, // Indicate that this is an edit flow
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -252,21 +294,26 @@ class _ReportFormState extends State<ReportForm> {
   }
 
   void _resetForm() {
-    _formKey.currentState?.reset();
+    // Reset controllers to their initial values (from widget.report)
+    _ownerNameController!.text = widget.report.ownerName!;
+    _rewardAmountController!.text = widget.report.reward == '0' ? '' : widget.report.reward;
+    _notesController!.text = widget.report.notes;
+
     setState(() {
-      _ownerNameController.clear();
-      _rewardAmountController.clear();
-      _notesController.clear(); // Clear notes on reset
-      _selectedCategoryName = null;
-      _selectedSubcategoryName = null;
-      _incidentDate = null;
-      _selectedLocationName = null;
-      _selectedSubLocationName = null;
-      _selectedLocalImages = [];
-      _addReward = false;
+      // Reset dropdown selections to initial values or null if not valid
+      _selectedCategoryName = widget.report.category.isNotEmpty && _allCategories.any((cat) => cat.nameEn == widget.report.category) ? widget.report.category : null;
+      _selectedSubcategoryName = widget.report.subcategory.isNotEmpty && (_selectedCategoryName != null && _allCategories.firstWhere((cat) => cat.nameEn == _selectedCategoryName, orElse: () => Category(categoryId: '', createdAt: Timestamp.now(), nameEn: '', nameFr: '', subcategories: [], updatedAt: Timestamp.now())).subcategories.any((sub) => sub.nameEn == widget.report.subcategory)) ? widget.report.subcategory : null;
+      _selectedLocationName = widget.report.locationLost.isNotEmpty && _allLocations.any((loc) => loc.nameEn == widget.report.locationLost) ? widget.report.locationLost : null;
+      _selectedSubLocationName = widget.report.subLocationLost.isNotEmpty && (_selectedLocationName != null && _allLocations.firstWhere((loc) => loc.nameEn == _selectedLocationName, orElse: () => Location(createdAt: Timestamp.now(), locationId: '', nameEn: '', nameFr: '', sublocations: [], updatedAt: Timestamp.now())).sublocations.any((sub) => sub.nameEn == widget.report.subLocationLost)) ? widget.report.subLocationLost : null;
+
+      _incidentDate = widget.report.reportedDate.toDate().year > 2000 ? widget.report.reportedDate.toDate() : null;
+      _addReward = widget.report.reward.isNotEmpty && widget.report.reward != '0';
+
+      _newlySelectedLocalImages = []; // Clear new images
+      _existingImageUrls = List.from(widget.report.images); // Reset existing images
+      _imagesToDelete = {}; // Clear images marked for deletion
     });
-    // Re-fetch data to ensure dropdowns are populated correctly after reset
-    _fetchFormData();
+    // No need to _fetchFormData again unless data itself might have changed on backend
   }
 
   @override
@@ -276,7 +323,7 @@ class _ReportFormState extends State<ReportForm> {
     if (_isLoadingData) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('${widget.report.type} Report - Details'),
+          title: Text('${widget.report.type.toUpperCase()} Report - Details'),
           centerTitle: true,
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
@@ -285,9 +332,14 @@ class _ReportFormState extends State<ReportForm> {
       );
     }
 
+    final int totalImages = _newlySelectedLocalImages.length +
+        _existingImageUrls.where((url) => !_imagesToDelete.contains(url)).length;
+    final int remainingSlots = 2 - totalImages;
+
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.report.type} Report - Details'),
+        title: Text('${widget.report.type.toUpperCase()} Report - Details'),
         centerTitle: true,
         elevation: 1,
         backgroundColor: colorScheme.primary,
@@ -296,7 +348,7 @@ class _ReportFormState extends State<ReportForm> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _resetForm,
-            tooltip: 'Reset Form',
+            tooltip: 'Reset Form to Original',
           ),
         ],
       ),
@@ -312,13 +364,13 @@ class _ReportFormState extends State<ReportForm> {
               TextFormField(
                 controller: _ownerNameController,
                 decoration: const InputDecoration(
-                  labelText: "Owner's Name (or Name on Item/Document)*", // Updated label
+                  labelText: "Owner's Name (or Name on Item)*",
                   border: OutlineInputBorder(),
                 ),
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter the owner\'s name or name on the item/document';
+                    return 'Please enter the owner\'s name or name on the item';
                   }
                   return null;
                 },
@@ -364,7 +416,7 @@ class _ReportFormState extends State<ReportForm> {
                 items: _selectedCategoryName != null
                     ? _allCategories
                         .firstWhere(
-                          (cat) => cat.nameEn == _selectedCategoryName,
+                          (cat) => cat.nameEn == _selectedCategoryName!,
                           orElse: () => Category(
                             categoryId: '', createdAt: Timestamp.now(), nameEn: '', nameFr: '', subcategories: [], updatedAt: Timestamp.now()
                           ),
@@ -402,7 +454,8 @@ class _ReportFormState extends State<ReportForm> {
                     labelText: 'Incident Date*',
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.calendar_today_rounded),
-                    errorText: _incidentDate == null && (_formKey.currentState?.validate() ?? false)
+                    // Only show error if incidentDate is null AND form has been validated (tried to submit)
+                    errorText: (_incidentDate == null && (_formKey.currentState?.validate() ?? false))
                         ? 'Please select the incident date'
                         : null,
                   ),
@@ -411,7 +464,7 @@ class _ReportFormState extends State<ReportForm> {
                     children: <Widget>[
                       Text(
                         _incidentDate != null
-                            ? DateFormat('MMM dd, BCE').format(_incidentDate!)
+                            ? DateFormat('MMM dd, yyyy').format(_incidentDate!) // Corrected date format
                             : 'Select Date',
                         style: _incidentDate == null
                             ? TextStyle(color: Colors.grey[600])
@@ -465,7 +518,7 @@ class _ReportFormState extends State<ReportForm> {
                 items: _selectedLocationName != null
                     ? _allLocations
                         .firstWhere(
-                          (loc) => loc.nameEn == _selectedLocationName,
+                          (loc) => loc.nameEn == _selectedLocationName!,
                           orElse: () => Location(
                             createdAt: Timestamp.now(), locationId: '', nameEn: '', nameFr: '', sublocations: [], updatedAt: Timestamp.now()
                           ),
@@ -507,14 +560,14 @@ class _ReportFormState extends State<ReportForm> {
                     ),
                     const SizedBox(height: 12),
                     FilledButton.icon(
-                      onPressed: _selectedLocalImages.length < 2 ? _pickImages : null,
+                      onPressed: totalImages < 2 ? _pickImages : null,
                       icon: const Icon(Icons.add_photo_alternate),
-                      label: Text(_selectedLocalImages.length < 2 ? 'Add Image' : 'Max 2 Images Uploaded'),
+                      label: Text(totalImages < 2 ? 'Add Image (${remainingSlots} left)' : 'Max 2 Images Uploaded'),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
                     ),
-                    if (widget.report.type == 'Found' && _selectedLocalImages.isEmpty && (_formKey.currentState?.validate() ?? false))
+                    if (widget.report.type == 'Found' && totalImages == 0 && (_formKey.currentState?.validate() ?? false))
                       Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
@@ -522,49 +575,113 @@ class _ReportFormState extends State<ReportForm> {
                           style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
                         ),
                       ),
-                    if (_selectedLocalImages.isNotEmpty) const SizedBox(height: 16),
-                    if (_selectedLocalImages.isNotEmpty)
+                    if (_existingImageUrls.isNotEmpty || _newlySelectedLocalImages.isNotEmpty) const SizedBox(height: 16),
+                    if (_existingImageUrls.isNotEmpty || _newlySelectedLocalImages.isNotEmpty)
                       SizedBox(
                         height: 100,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _selectedLocalImages.length,
+                          itemCount: _existingImageUrls.length + _newlySelectedLocalImages.length,
                           itemBuilder: (context, index) {
-                            return Stack(
-                              children: [
-                                Container(
-                                  margin: const EdgeInsets.only(right: 8.0),
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(
-                                      File(_selectedLocalImages[index].path),
-                                      fit: BoxFit.cover,
+                            if (index < _existingImageUrls.length) {
+                              // Existing image
+                              final imageUrl = _existingImageUrls[index];
+                              final isMarkedForDeletion = _imagesToDelete.contains(imageUrl);
+                              return Stack(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 8.0),
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: isMarkedForDeletion ? Colors.grey[300] : null,
                                     ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 12,
-                                  child: GestureDetector(
-                                    onTap: () => _removeImage(index),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: ColorFiltered(
+                                        colorFilter: isMarkedForDeletion
+                                            ? const ColorFilter.mode(Colors.black38, BlendMode.darken)
+                                            : ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                                        child: Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) =>
+                                              const Center(child: Icon(Icons.broken_image)),
+                                        ),
                                       ),
-                                      child: const Icon(Icons.close, size: 18, color: Colors.white),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
+                                  Positioned(
+                                    top: 4,
+                                    right: 12,
+                                    child: GestureDetector(
+                                      onTap: () => _markExistingImageForRemoval(imageUrl),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          color: isMarkedForDeletion ? Colors.green : Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                            isMarkedForDeletion ? Icons.undo : Icons.close,
+                                            size: 18,
+                                            color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                  if (isMarkedForDeletion)
+                                    const Positioned.fill(
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.delete_forever,
+                                          color: Colors.red,
+                                          size: 40,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            } else {
+                              // Newly selected image
+                              final newImageIndex = index - _existingImageUrls.length;
+                              return Stack(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 8.0),
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.file(
+                                        File(_newlySelectedLocalImages[newImageIndex].path),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 12,
+                                    child: GestureDetector(
+                                      onTap: () => _removeNewImage(newImageIndex),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close, size: 18, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
                           },
                         ),
                       ),
@@ -581,70 +698,72 @@ class _ReportFormState extends State<ReportForm> {
                   labelText: 'Additional Notes (Optional)',
                   border: OutlineInputBorder(),
                   hintText: 'Enter any extra information here...',
-                  alignLabelWithHint: true, // Aligns label with hint text in multiline input
+                  alignLabelWithHint: true,
                 ),
                 textInputAction: TextInputAction.newline,
               ),
               const SizedBox(height: 16),
 
-              // Reward Section
-              widget.report.type == 'lost' ?                Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Switch(
-                          value: _addReward,
-                          onChanged: (bool value) {
-                            setState(() {
-                              _addReward = value;
-                              if (!value) {
-                                _rewardAmountController.clear();
-                              }
-                            });
-                          },
-                          activeColor: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'Offer Reward?',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    if (_addReward) const SizedBox(height: 12),
-                    if (_addReward)
-                      TextFormField(
-                        controller: _rewardAmountController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Reward Amount (XAF)',
-                          border: const OutlineInputBorder(),
-                          prefixText: 'XAF ',
-                          filled: true,
-                          fillColor: colorScheme.surface,
-                        ),
-                        validator: (value) {
-                          if (_addReward) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter the reward amount';
-                            }
-                            if (double.tryParse(value) == null) {
-                              return 'Please enter a valid number';
-                            }
-                            if (double.parse(value) <= 0) {
-                              return 'Amount must be greater than zero';
-                            }
-                          }
-                          return null;
-                        },
+              // Reward Section (Only for 'lost' reports)
+              if (widget.report.type == 'Lost')
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Switch(
+                            value: _addReward,
+                            onChanged: (bool value) {
+                              setState(() {
+                                _addReward = value;
+                                if (!value) {
+                                  _rewardAmountController!.clear();
+                                }
+                              });
+                            },
+                            activeColor: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Offer Reward?',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
-                  ],
-                ),
-              )
-               : const SizedBox(),
+                      if (_addReward) const SizedBox(height: 12),
+                      if (_addReward)
+                        TextFormField(
+                          controller: _rewardAmountController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Reward Amount (XAF)',
+                            border: const OutlineInputBorder(),
+                            prefixText: 'XAF ',
+                            filled: true,
+                            fillColor: colorScheme.surface,
+                          ),
+                          validator: (value) {
+                            if (_addReward) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter the reward amount';
+                              }
+                              if (double.tryParse(value) == null) {
+                                return 'Please enter a valid number';
+                              }
+                              if (double.parse(value) <= 0) {
+                                return 'Amount must be greater than zero';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                    ],
+                  ),
+                )
+              else
+                const SizedBox(), // Render nothing if not a 'Lost' report
 
               const SizedBox(height: 24),
 

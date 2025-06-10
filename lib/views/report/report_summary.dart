@@ -1,22 +1,30 @@
+// lib/views/report/report_summary.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:back2u/models/report_model.dart';
-import 'package:back2u/views/home/index.dart';
+import 'package:back2u/views/home/index.dart'; // Assuming this is your home page
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:back2u/services/image_upload_service.dart'; // NEW: Import your service
+import 'package:back2u/services/image_upload_service.dart'; // For new image uploads
+import 'package:back2u/services/update_report_service.dart'; // NEW: Your service for report updates
 
 class SummaryPage extends StatefulWidget {
   final Report report; // The complete Report object
-  final List<XFile> localImageFiles; // Local image files to display
+  final List<XFile> localImageFiles; // NEWLY picked local image files to upload
+  final List<String> existingImageUrls; // URLs of existing images (from original report)
+  final Set<String> imagesToDelete; // URLs of existing images marked for deletion
+  final bool isEditing; // Flag to indicate if this is an edit operation
 
   const SummaryPage({
     super.key,
     required this.report,
     this.localImageFiles = const [],
+    this.existingImageUrls = const [],
+    this.imagesToDelete = const {},
+    this.isEditing = false,
   });
 
   @override
@@ -24,15 +32,23 @@ class SummaryPage extends StatefulWidget {
 }
 
 class _SummaryPageState extends State<SummaryPage> {
-  bool _rememberContactInfo = true; // Default to true, users can uncheck
+  // We assume _rememberContactInfo is handled by the ContactPage before navigating here
+  // and applied to the user's profile. So, it's not strictly needed for _submitFinalReport.
+  // bool _rememberContactInfo = true; // Kept for consistency if needed later
 
-  // Instantiate the ImageUploadService
   final ImageUploadService _imageUploadService = ImageUploadService();
+  final UpdateReportService _updateReportService = UpdateReportService(); // Instantiate the new service
+  bool _isSubmitting = false;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // Combine images for display: existing (not deleted) + new local ones
+    final List<String> currentDisplayImageUrls = widget.existingImageUrls
+        .where((url) => !widget.imagesToDelete.contains(url))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -41,288 +57,245 @@ class _SummaryPageState extends State<SummaryPage> {
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Please review your report details carefully before submitting.',
-              style: textTheme.titleMedium
-                  ?.copyWith(color: colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.start,
-            ),
-            const SizedBox(height: 24),
-
-            // Item/Document Details
-            _buildSection(
-              context,
-              title: 'Item Details',
-              children: [
-                _buildInfoRow(context, 'Type', widget.report.type,
-                    icon: widget.report.type == 'Lost'
-                        ? Icons.search_off
-                        : Icons.volunteer_activism),
-                _buildInfoRow(
-                    context,
-                    'Owner Name',
-                    widget.report.ownerName!.isNotEmpty
-                        ? widget.report.ownerName!
-                        : 'N/A', // Handle empty owner name
-                    icon: Icons.person_outline),
-                _buildInfoRow(context, 'Category',
-                    '${widget.report.category} > ${widget.report.subcategory}',
-                    icon: Icons.category_outlined),
-                _buildInfoRow(
-                    context,
-                    'Incident Date',
-                    DateFormat('MMM dd, yyyy') // Changed format for clarity
-                        .format(widget.report.reportedDate.toDate()),
-                    icon: Icons.event_note_outlined),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Location Details
-            _buildSection(
-              context,
-              title: 'Location',
-              children: [
-                _buildInfoRow(
-                    context, 'Main Location', widget.report.locationLost,
-                    icon: Icons.location_on_outlined),
-                _buildInfoRow(
-                    context, // Always show sub-location, even if N/A
-                    'Sub-Location',
-                    widget.report.subLocationLost.isNotEmpty
-                        ? widget.report.subLocationLost
-                        : 'N/A',
-                    icon: Icons.location_city_outlined),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Additional Notes - Simplified and padding adjusted
-            if (widget.report.notes.isNotEmpty) // Only show if notes exist
-              _buildSection(
-                context,
-                title: 'Additional Notes',
+      body: _isSubmitting
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.report.notes, style: textTheme.bodyLarge),
-                ],
-              ),
-            if (widget.report.notes.isNotEmpty) const SizedBox(height: 16),
+                  Text(
+                    'Please review your report details carefully before submitting.',
+                    style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                    textAlign: TextAlign.start,
+                  ),
+                  const SizedBox(height: 24),
 
-            // Images
-            if (widget.localImageFiles.isNotEmpty)
-              _buildSection(
-                context,
-                title: 'Images',
-                children: [
-                  SizedBox(
-                    height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: widget.localImageFiles.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(widget.localImageFiles[index].path),
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
-                            ),
+                  // Item/Document Details
+                  _buildSection(
+                    context,
+                    title: 'Item Details',
+                    children: [
+                      _buildInfoRow(
+                          context,
+                          'Type',
+                          widget.report.type,
+                          icon: widget.report.type == 'Lost'
+                              ? Icons.search_off
+                              : Icons.volunteer_activism),
+                      _buildInfoRow(
+                          context,
+                          'Owner Name',
+                          widget.report.ownerName!.isNotEmpty
+                              ? widget.report.ownerName!
+                              : 'N/A',
+                          icon: Icons.person_outline),
+                      _buildInfoRow(context, 'Category',
+                          '${widget.report.category} > ${widget.report.subcategory}',
+                          icon: Icons.category_outlined),
+                      _buildInfoRow(
+                          context,
+                          'Incident Date',
+                          DateFormat('MMM dd, yyyy')
+                              .format(widget.report.reportedDate.toDate()),
+                          icon: Icons.event_note_outlined),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Location Details
+                  _buildSection(
+                    context,
+                    title: 'Location',
+                    children: [
+                      _buildInfoRow(
+                          context, 'Main Location', widget.report.locationLost,
+                          icon: Icons.location_on_outlined),
+                      _buildInfoRow(
+                          context,
+                          'Sub-Location',
+                          widget.report.subLocationLost.isNotEmpty
+                              ? widget.report.subLocationLost
+                              : 'N/A',
+                          icon: Icons.location_city_outlined),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Additional Notes
+                  if (widget.report.notes.isNotEmpty)
+                    _buildSection(
+                      context,
+                      title: 'Additional Notes',
+                      children: [
+                        Text(widget.report.notes, style: textTheme.bodyLarge),
+                      ],
+                    ),
+                  if (widget.report.notes.isNotEmpty) const SizedBox(height: 16),
+
+                  // Images
+                  if (currentDisplayImageUrls.isNotEmpty || widget.localImageFiles.isNotEmpty)
+                    _buildSection(
+                      context,
+                      title: 'Images',
+                      children: [
+                        SizedBox(
+                          height: 100,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: currentDisplayImageUrls.length + widget.localImageFiles.length,
+                            itemBuilder: (context, index) {
+                              if (index < currentDisplayImageUrls.length) {
+                                // Existing image (not marked for deletion)
+                                final imageUrl = currentDisplayImageUrls[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      imageUrl,
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          const Center(child: Icon(Icons.broken_image)),
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                // Newly selected image
+                                final newImageIndex = index - currentDisplayImageUrls.length;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(widget.localImageFiles[newImageIndex].path),
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
                           ),
-                        );
-                      },
+                        ),
+                      ],
+                    ),
+                  if (currentDisplayImageUrls.isNotEmpty || widget.localImageFiles.isNotEmpty) const SizedBox(height: 16),
+
+                  // Reward
+                  if (widget.report.reward.isNotEmpty && widget.report.reward != '0')
+                    _buildSection(
+                      context,
+                      title: 'Reward Offered',
+                      titleColor: colorScheme.primary,
+                      children: [
+                        _buildInfoRow(
+                            context, 'Amount', 'XAF ${widget.report.reward}',
+                            icon: Icons.monetization_on_outlined),
+                      ],
+                    ),
+                  if (widget.report.reward.isNotEmpty && widget.report.reward != '0')
+                    const SizedBox(height: 16),
+
+                  // Contact Information
+                  _buildSection(
+                    context,
+                    title: 'Contact Information',
+                    children: [
+                      _buildInfoRow(
+                          context,
+                          'Phone Number',
+                          widget.report.contactPhone.isNotEmpty
+                              ? widget.report.contactPhone
+                              : 'N/A',
+                          icon: Icons.phone_outlined),
+                      _buildInfoRow(
+                          context,
+                          'WhatsApp Number',
+                          widget.report.whatsappNumber.isNotEmpty
+                              ? widget.report.whatsappNumber
+                              : 'N/A',
+                          icon: Icons.message),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Confirm and Submit Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _submitFinalReport,
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: Text(widget.isEditing ? 'Confirm and Update Report' : 'Confirm and Submit Report'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        textStyle: const TextStyle(fontSize: 18),
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
-            if (widget.localImageFiles.isNotEmpty) const SizedBox(height: 16),
-
-            // Reward - Simplified and padding adjusted
-            if (widget.report.reward.isNotEmpty && widget.report.reward != '0')
-              _buildSection(
-                context,
-                title: 'Reward Offered',
-                titleColor: colorScheme.primary, // Highlight reward title
-                children: [
-                  _buildInfoRow(
-                      context, 'Amount', 'XAF ${widget.report.reward}',
-                      icon: Icons.monetization_on_outlined),
-                ],
-              ),
-            if (widget.report.reward.isNotEmpty && widget.report.reward != '0')
-              const SizedBox(height: 16),
-
-            // Contact Information
-            _buildSection(
-              context,
-              title: 'Contact Information',
-              children: [
-                _buildInfoRow(
-                    context,
-                    'Phone Number',
-                    widget.report.contactPhone.isNotEmpty
-                        ? widget.report.contactPhone
-                        : 'N/A', // Handle empty phone number
-                    icon: Icons.phone_outlined),
-                _buildInfoRow(
-                    context,
-                    'WhatsApp Number',
-                    widget.report.whatsappNumber.isNotEmpty
-                        ? widget.report.whatsappNumber
-                        : 'N/A', // Handle empty WhatsApp number
-                    icon: Icons
-                        .phone_android), // Changed icon to WhatsApp specific
-                const SizedBox(height: 10), // Small space before checkbox
-
-                // Checkbox to remember contact info
-                // Row(
-                //   children: [
-                //     Checkbox(
-                //       value: _rememberContactInfo,
-                //       onChanged: (bool? value) {
-                //         setState(() {
-                //           _rememberContactInfo = value ?? false;
-                //         });
-                //       },
-                //       activeColor: colorScheme.primary,
-                //     ),
-                //     Expanded(
-                //       // Use Expanded to prevent overflow for long text
-                //       child: Text(
-                //         'Remember my phone and WhatsApp numbers for future reports',
-                //         style: textTheme
-                //             .bodyMedium, // Use bodyMedium for checkbox text
-                //       ),
-                //     ),
-                //   ],
-                // ),
-              ],
             ),
-            const SizedBox(height: 30),
-
-            // Confirm and Submit Button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => _submitFinalReport(context),
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Confirm and Submit Report'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  textStyle: const TextStyle(fontSize: 18),
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
     );
   }
 
-  Future<void> _submitFinalReport(BuildContext context) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Submitting report...')),
-    );
+  Future<void> _submitFinalReport() async {
+    setState(() {
+      _isSubmitting = true;
+    });
 
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
-        throw Exception(
-            'User not logged in. Please log in to submit a report.');
+        throw Exception('User not logged in. Please log in to submit a report.');
       }
 
-      // --- 1. Upload Images to ImageKit.io with Compression using the Service ---
-      final List<String> imageUrls =
-          await _imageUploadService.uploadImagesToCloudinary(
-        imageFiles: widget.localImageFiles,
+      await _updateReportService.handleReportSubmission(
+        report: widget.report,
+        localImageFiles: widget.localImageFiles,
+        existingImageUrls: widget.existingImageUrls,
+        imagesToDelete: widget.imagesToDelete,
+        isEditing: widget.isEditing,
         userId: currentUser.uid,
       );
-      // Removed the check for empty imageUrls here, as it's possible to have no images
-      // if the report type is 'Lost'. The previous logic would throw an error.
-      print('Images uploaded. URLs: $imageUrls');
 
-      // --- 2. Finalize Report Object with Generated IDs and Uploaded Image URLs ---
-      final String reportId = FirebaseFirestore.instance
-          .collection('back2u/countries/cameroon/data/reports')
-          .doc()
-          .id;
-      final finalReport = widget.report.copyWith(
-        reportId: reportId,
-        reporterId: currentUser.uid,
-        reporterUid: currentUser.uid,
-        createdAt: Timestamp.now(),
-        images:
-            imageUrls, // Assign the ImageKit.io URLs (can be empty if no images)
-        status: 'pending',
-        searchKeyWords: _generateSearchKeywords(widget.report),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.isEditing ? 'Report updated successfully!' : 'Report submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
 
-      // --- 3. Save the Report object to Firestore ---
-      await FirebaseFirestore.instance
-          .collection('back2u/countries/cameroon/data/reports')
-          .doc(finalReport.reportId)
-          .set(finalReport.toFirestore());
-      print('Report saved to Firestore with ID: ${finalReport.reportId}');
-
-      // --- 4. Update User's Profile with Phone/WhatsApp if checked ---
-      if (_rememberContactInfo) {
-        final userRef = FirebaseFirestore.instance
-            .collection('back2u/countries/cameroon/data/users')
-            .doc(currentUser.uid);
-
-        // Only update if numbers are provided
-        final Map<String, dynamic> updateData = {
-          'updatedAt': Timestamp.now(),
-        };
-        if (finalReport.contactPhone.isNotEmpty) {
-          updateData['phone'] = finalReport.contactPhone;
-        }
-        if (finalReport.whatsappNumber.isNotEmpty) {
-          updateData['whatsappNumber'] = finalReport.whatsappNumber;
-        }
-
-        if (updateData.length > 1) {
-          // If more than just updatedAt is present
-          await userRef.update(updateData);
-          print(
-              'User contact info updated in Firestore for ${currentUser.uid}');
-        } else {
-          print('No contact info to update for user ${currentUser.uid}');
-        }
+        // Navigate to Home and remove all previous routes
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const Home()),
+          (Route<dynamic> route) => false,
+        );
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Report submitted successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Navigate to Home and remove all previous routes
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const Home()),
-        (Route<dynamic> route) => false,
-      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Failed to submit report: ${e.toString()}'), // Use .toString() for better error message
-          backgroundColor: Colors.red,
-        ),
-      );
-      debugPrint('Error submitting report: $e');
+      debugPrint('Error during report submission/update: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.isEditing ? 'Failed to update report: ${e.toString()}' : 'Failed to submit report: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -330,33 +303,26 @@ class _SummaryPageState extends State<SummaryPage> {
   List<String> _generateSearchKeywords(Report r) {
     final keywords = <String>[];
 
-    // 1. Store the full name as written (lowercase)
-    if (r.ownerName != null && r.ownerName!.isNotEmpty) {
+    if (r.ownerName!.isNotEmpty) {
       keywords.add(r.ownerName!.toLowerCase());
     }
 
-    // 2. Add individual words from ownerName, category, subcategory, location, type
-    // and also generate slices (prefixes) for each word.
     for (var term in [
       r.ownerName,
-      // r.category,
-      // r.subcategory,
-      // r.locationLost,
-      // r.subLocationLost,
-      // r.type
+      r.category,
+      r.subcategory,
+      r.locationLost,
+      r.subLocationLost,
+      r.type,
     ]) {
-      if (term != null && term.isNotEmpty) {
+      if (term!.isNotEmpty) {
         final cleanedTerm = term
             .toLowerCase()
-            .replaceAll(RegExp(r'[^\w\s]'), ''); // Remove punctuation
-        final words =
-            cleanedTerm.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
+            .replaceAll(RegExp(r'[^\w\s]'), '');
+        final words = cleanedTerm.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
 
         for (var word in words) {
-          // Store the full word
           keywords.add(word);
-
-          // Generate slices (prefixes) of the word
           for (int i = 1; i <= word.length; i++) {
             keywords.add(word.substring(0, i));
           }
@@ -364,7 +330,6 @@ class _SummaryPageState extends State<SummaryPage> {
       }
     }
 
-    // 3. Add words from notes, split by space, remove punctuation (existing logic)
     if (r.notes.isNotEmpty) {
       keywords.addAll(r.notes
           .toLowerCase()
@@ -373,13 +338,7 @@ class _SummaryPageState extends State<SummaryPage> {
           .where((word) => word.isNotEmpty));
     }
 
-    // Ensure unique and non-empty keywords before returning
-    return keywords
-        .where((k) =>
-            k.isNotEmpty &&
-            k.length > 0) // Ensure not empty or just zero length
-        .toSet()
-        .toList();
+    return keywords.where((k) => k.isNotEmpty).toSet().toList();
   }
 
   // Helper widget to build sections with titles and dividers
@@ -389,8 +348,7 @@ class _SummaryPageState extends State<SummaryPage> {
       Color? titleColor}) {
     final textTheme = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 0.0), // Reduced horizontal padding
+      padding: const EdgeInsets.symmetric(horizontal: 0.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
