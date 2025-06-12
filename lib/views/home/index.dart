@@ -4,7 +4,7 @@ import 'package:back2u/components/SimpleCard.dart'; // This will be updated to h
 import 'package:back2u/utils/app_drawer.dart';
 import 'package:back2u/views/report/index.dart';
 import 'package:back2u/views/search/index.dart';
-import 'package:back2u/components/report_details.dart'; // Assuming this shows full details
+// import 'package:back2u/components/report_details.dart'; // Assuming this shows full details
 import 'package:back2u/models/report_model.dart';
 import 'package:intl/intl.dart';
 import 'package:back2u/services/get_reports_service.dart'; // Your ReportService

@@ -34,7 +34,7 @@ class _ReportPageState extends State<ReportPage> {
     );
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ReportForm(report: newReport)),
+      MaterialPageRoute(builder: (context) => ReportForm(report: newReport, isEditing: false,)),
     );
   }
 

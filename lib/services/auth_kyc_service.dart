@@ -267,4 +267,30 @@ class AuthKycService with ChangeNotifier {
       return null;
     }
   }
+
+  /// Stream the user's profile for real-time updates (e.g., saved reports/bookmarks)
+  Stream<AppUser> getUserProfileStream(String uid) {
+    return _db.collection(_userCollectionPath).doc(uid).snapshots().map((doc) => AppUser.fromFirestore(doc));
+  }
+
+  /// Toggle a report as saved/unsaved for the user (add/remove from savedReports array)
+  Future<void> toggleSavedReport(String uid, String reportId) async {
+    final userRef = _db.collection(_userCollectionPath).doc(uid);
+    final doc = await userRef.get();
+    if (!doc.exists) return;
+    final appUser = AppUser.fromFirestore(doc);
+    final List<String> currentSaved = List<String>.from(appUser.savedReports);
+    final isSaved = currentSaved.contains(reportId);
+    if (isSaved) {
+      await userRef.update({
+        'savedReports': FieldValue.arrayRemove([reportId]),
+        'updatedAt': Timestamp.now(),
+      });
+    } else {
+      await userRef.update({
+        'savedReports': FieldValue.arrayUnion([reportId]),
+        'updatedAt': Timestamp.now(),
+      });
+    }
+  }
 }

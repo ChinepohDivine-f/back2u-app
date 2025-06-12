@@ -2,19 +2,18 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // Added for debugPrint, though not strictly a service dependency
 import 'package:image_picker/image_picker.dart';
-import 'package:back2u/models/report_model.dart'; // Make sure your Report model is here
-import 'package:back2u/services/image_upload_service.dart'; // Re-use your image upload service
+import 'package:back2u/models/report_model.dart';
+import 'package:back2u/services/image_upload_service.dart';
 
 class UpdateReportService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _firebaseStorage = FirebaseStorage.instance;
-  final ImageUploadService _imageUploadService = ImageUploadService(); // Assuming Cloudinary or similar for ImageKit.io
+  final ImageUploadService _imageUploadService = ImageUploadService();
 
-  // Base path for reports in Firestore. Adjust if your structure is different.
   static const String _reportsCollectionPath = 'back2u/countries/cameroon/data/reports';
-  static const String _usersCollectionPath = 'back2u/countries/cameroon/data/users'; // For user profile updates
+  // static const String _usersCollectionPath = 'back2u/countries/cameroon/data/users'; // Not used in this service, can remove
 
   Future<void> handleReportSubmission({
     required Report report,
@@ -23,34 +22,34 @@ class UpdateReportService {
     required Set<String> imagesToDelete,
     required bool isEditing,
     required String userId,
+    String? submissionId, // Added submissionId as an optional parameter for potential idempotency
   }) async {
     // 1. Delete images marked for removal from Firebase Storage
+    // This now correctly uses the Firebase Storage instance you provided earlier.
     await _deleteImagesFromStorage(imagesToDelete);
 
-    // 2. Upload new images to Cloudinary (or your chosen service)
+    // 2. Upload new images
     final List<String> newlyUploadedImageUrls = await _imageUploadService.uploadImagesToCloudinary(
       imageFiles: localImageFiles,
       userId: userId,
     );
 
     // 3. Combine remaining existing image URLs with newly uploaded ones
-     List<String> finalImageUrls = [
-      ...existingImageUrls.where((url) => !imagesToDelete.contains(url)), // Existing, not deleted
-      ...newlyUploadedImageUrls, // Newly uploaded
+    List<String> finalImageUrls = [
+      ...existingImageUrls.where((url) => !imagesToDelete.contains(url)),
+      ...newlyUploadedImageUrls,
     ];
 
-    // Ensure we don't exceed max 2 images if somehow more were added (safety)
+    // Safety: ensure no more than 2 images
     if (finalImageUrls.length > 2) {
-      // This case should ideally be prevented earlier in the form, but acts as a safeguard.
-      // You might log a warning or choose to take only the first 2.
-      // For now, we'll just take the first 2.
       finalImageUrls = finalImageUrls.sublist(0, 2);
+      debugPrint('Warning: More than 2 images provided. Limiting to the first 2.');
     }
 
-    // Prepare report data for Firestore
-    Map<String, dynamic> reportData = report.toFirestore(); // Convert Report model to Map
-    reportData['imageUrls'] = finalImageUrls; // Update with the final image URLs
-    reportData['searchKeyWords'] = _generateSearchKeywords(report); // Recalculate keywords
+    // Prepare base report data
+    Map<String, dynamic> reportData = report.toFirestore();
+    reportData['imageUrls'] = finalImageUrls;
+    reportData['searchKeyWords'] = _generateSearchKeywords(report);
 
     if (isEditing) {
       // Update existing report
@@ -67,56 +66,63 @@ class UpdateReportService {
       debugPrint('Report ${report.reportId} updated successfully.');
     } else {
       // Create new report
+      // Generate a new document reference first to get the ID
       final newReportRef = _firestore.collection(_reportsCollectionPath).doc();
+
+      // Use the generated ID for the reportId field in Firestore
       reportData['reportId'] = newReportRef.id;
-      reportData['reporterId'] = userId;
-      reportData['reporterUid'] = userId; // Assuming reporterUid is also used
+      reportData['reporterUid'] = userId; // Consistent field name: 'reporterUid'
       reportData['createdAt'] = FieldValue.serverTimestamp();
       reportData['updatedAt'] = FieldValue.serverTimestamp();
-      reportData['status'] = 'pending'; // Default status for new reports
-      reportData['resolved'] = false; // Default resolved status
-      reportData['resolvedBy'] = null; // Default null for new reports
+      reportData['status'] = 'pending';
+      reportData['resolved'] = false;
+      reportData['resolvedBy'] = null;
 
+      // Set the new report data
       await newReportRef.set(reportData);
       debugPrint('New report ${newReportRef.id} submitted successfully.');
     }
   }
 
-  // Helper function to delete images from Firebase Storage
   Future<void> _deleteImagesFromStorage(Set<String> imageUrls) async {
     for (final imageUrl in imageUrls) {
       try {
         // Ensure the URL is a Firebase Storage URL before trying to delete
+        // If you are using Cloudinary for new uploads, but Firebase Storage for existing ones,
+        // this check is important. If all images move to Cloudinary, this logic needs adjustment.
         if (imageUrl.contains('firebasestorage.googleapis.com')) {
           await _firebaseStorage.refFromURL(imageUrl).delete();
-          debugPrint('Deleted image from storage: $imageUrl');
+          debugPrint('Deleted image from Firebase Storage: $imageUrl');
         } else {
-          debugPrint('Skipping deletion for non-Firebase Storage URL: $imageUrl');
+          // Assuming Cloudinary URLs don't need direct deletion from Firebase Storage
+          debugPrint('Skipping deletion for non-Firebase Storage URL: $imageUrl (Likely Cloudinary)');
+          // If you need to delete from Cloudinary, you'd add imageUploadService.deleteImage(imageUrl) here.
         }
       } catch (e) {
         debugPrint('Error deleting image from storage ($imageUrl): $e');
-        // Continue even if one image fails to delete, log the error.
       }
     }
   }
 
-  // Re-use your keyword generation logic
+  // Re-use your keyword generation logic - consider moving this to the Report model itself
   List<String> _generateSearchKeywords(Report r) {
     final keywords = <String>[];
 
-    if (r.ownerName!.isNotEmpty) {
+    // Handle nullable ownerName safely
+    if (r.ownerName != null && r.ownerName!.isNotEmpty) {
       keywords.add(r.ownerName!.toLowerCase());
     }
 
     for (var term in [
-      r.ownerName,
+      r.ownerName, // Now includes nullable check directly via '?' in Report model
       r.category,
       r.subcategory,
       r.locationLost,
       r.subLocationLost,
       r.type,
     ]) {
-      if (term!.isNotEmpty) {
+      // Handle nullable terms safely
+      if (term != null && term.isNotEmpty) {
         final cleanedTerm = term
             .toLowerCase()
             .replaceAll(RegExp(r'[^\w\s]'), '');
@@ -124,6 +130,7 @@ class UpdateReportService {
 
         for (var word in words) {
           keywords.add(word);
+          // Add prefixes as keywords for better search
           for (int i = 1; i <= word.length; i++) {
             keywords.add(word.substring(0, i));
           }

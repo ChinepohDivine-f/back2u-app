@@ -1,6 +1,5 @@
 // lib/components/simple_card.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:back2u/models/report_model.dart';
 import 'package:back2u/components/report_details.dart'; // Assuming this exists for onTap navigation
 import 'package:intl/intl.dart'; // For date formatting
@@ -152,9 +151,7 @@ class SimpleCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: report.type.toLowerCase() == 'lost'
-                            ? Colors.red[700]
-                            : Colors.green[700],
+                        color: ColorScheme.fromSeed(seedColor: Colors.blue).primary,
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(8),
                           bottomLeft: Radius.circular(8),

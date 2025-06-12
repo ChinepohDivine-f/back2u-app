@@ -178,6 +178,117 @@ class ReportSearchService {
     }
   }
 
+  // --- NEW: Firestore-powered search with all filters and keyword search ---
+  Future<void> searchReportsWithFilters({
+    String currentQuery = '',
+    String? filterType,
+    String? filterCategory,
+    String? filterSubCategory,
+    String? filterLocation,
+    String? filterSubLocation,
+    bool? filterIsResolved,
+  }) async {
+    try {
+      Query query = _reportsCollection;
+
+      // Apply filters
+      if (filterType != null && filterType.isNotEmpty) {
+        query = query.where('type', isEqualTo: filterType.toLowerCase());
+      }
+      if (filterCategory != null && filterCategory.isNotEmpty) {
+        query = query.where('category', isEqualTo: filterCategory);
+      }
+      if (filterSubCategory != null && filterSubCategory.isNotEmpty) {
+        query = query.where('subcategory', isEqualTo: filterSubCategory);
+      }
+      if (filterLocation != null && filterLocation.isNotEmpty) {
+        query = query.where('location_lost', isEqualTo: filterLocation);
+      }
+      if (filterSubLocation != null && filterSubLocation.isNotEmpty) {
+        query = query.where('sub_location_lost', isEqualTo: filterSubLocation);
+      }
+      if (filterIsResolved != null) {
+        query = query.where('resolved', isEqualTo: filterIsResolved);
+      }
+
+      // Apply keyword search (if query is not empty)
+      if (currentQuery.isNotEmpty) {
+        query = query.where('search_key_words', arrayContains: currentQuery.toLowerCase());
+      }
+
+      // Order by createdAt (for consistent results)
+      query = query.orderBy('createdAt', descending: true);
+
+      final querySnapshot = await query.get();
+      final reports = querySnapshot.docs.map((doc) => Report.fromFirestore(doc)).toList();
+      _filteredReportsController.add(reports);
+    } catch (e) {
+      _errorStateController.add('Failed to search reports: [31m${e.toString()}[0m');
+      _filteredReportsController.add([]);
+    }
+  }
+
+  // --- NEW: Firestore-powered search suggestions (max 7) ---
+  Future<List<String>> fetchSearchSuggestions({
+    required String input,
+    String? filterType,
+    String? filterCategory,
+    String? filterSubCategory,
+    String? filterLocation,
+    String? filterSubLocation,
+    bool? filterIsResolved,
+    String field = 'owner_name', // or 'document_name', etc.
+  }) async {
+    try {
+      Query query = _reportsCollection;
+      if (filterType != null && filterType.isNotEmpty) {
+        query = query.where('type', isEqualTo: filterType.toLowerCase());
+      }
+      if (filterCategory != null && filterCategory.isNotEmpty) {
+        query = query.where('category', isEqualTo: filterCategory);
+      }
+      if (filterSubCategory != null && filterSubCategory.isNotEmpty) {
+        query = query.where('subcategory', isEqualTo: filterSubCategory);
+      }
+      if (filterLocation != null && filterLocation.isNotEmpty) {
+        query = query.where('location_lost', isEqualTo: filterLocation);
+      }
+      if (filterSubLocation != null && filterSubLocation.isNotEmpty) {
+        query = query.where('sub_location_lost', isEqualTo: filterSubLocation);
+      }
+      if (filterIsResolved != null) {
+        query = query.where('resolved', isEqualTo: filterIsResolved);
+      }
+      // For suggestions, use isGreaterThanOrEqualTo and isLessThan for prefix search
+      if (input.isNotEmpty) {
+        final end = input.substring(0, input.length - 1) +
+            String.fromCharCode(input.codeUnitAt(input.length - 1) + 1);
+        query = query
+            .orderBy(field)
+            .startAt([input])
+            .endBefore([end]);
+      }
+      query = query.limit(7);
+      final querySnapshot = await query.get();
+      final suggestions = querySnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            if (data != null && data is Map<String, dynamic>) {
+              return data[field] as String?;
+            }
+            return null;
+          })
+          .whereType<String>()
+          .toSet()
+          .toList();
+      return suggestions;
+    } catch (e) {
+      _errorStateController.add('Failed to fetch suggestions: ${e.toString()}');
+      return [];
+    }
+  }
+
+  // --- Update applySearchAndFilters to use Firestore-powered search ---
   void applySearchAndFilters({
     String currentQuery = '',
     String? filterType,
@@ -187,8 +298,6 @@ class ReportSearchService {
     String? filterSubLocation,
     bool? filterIsResolved,
   }) {
-    if (!_hasData) return;
-
     // Store current filters
     _lastQuery = currentQuery;
     _lastFilterType = filterType;
@@ -197,51 +306,16 @@ class ReportSearchService {
     _lastFilterLocation = filterLocation;
     _lastFilterSubLocation = filterSubLocation;
     _lastFilterIsResolved = filterIsResolved;
-
-    try {
-      List<Report> results = List.from(_allReportsCache);
-
-      // Apply Text Search
-      if (currentQuery.isNotEmpty) {
-        final query = currentQuery.toLowerCase();
-        results = results.where((report) {
-          final reportKeywords = _generateSearchKeywords(report);
-          return reportKeywords.any((keyword) => keyword.contains(query));
-        }).toList();
-      }
-
-      // Apply Filters
-      results = results.where((item) {
-        bool matchesFilterType = filterType == null ||
-            item.type.toLowerCase() == filterType.toLowerCase();
-        bool matchesFilterCategory = filterCategory == null ||
-            item.category.toLowerCase() == filterCategory.toLowerCase();
-        bool matchesFilterSubCategory = filterSubCategory == null ||
-            (item.subcategory?.toLowerCase() ==
-                    filterSubCategory.toLowerCase() ??
-                false);
-        bool matchesFilterLocation = filterLocation == null ||
-            item.locationLost.toLowerCase() == filterLocation.toLowerCase();
-        bool matchesFilterSubLocation = filterSubLocation == null ||
-            (item.subLocationLost?.toLowerCase() ==
-                    filterSubLocation.toLowerCase() ??
-                false);
-        bool matchesFilterIsResolved =
-            filterIsResolved == null || item.resolved == filterIsResolved;
-
-        return matchesFilterType &&
-            matchesFilterCategory &&
-            matchesFilterSubCategory &&
-            matchesFilterLocation &&
-            matchesFilterSubLocation &&
-            matchesFilterIsResolved;
-      }).toList();
-
-      _filteredReportsController.add(results);
-    } catch (e) {
-      _errorStateController.add('Failed to apply filters: ${e.toString()}');
-      _filteredReportsController.add([]);
-    }
+    // Use Firestore-powered search
+    searchReportsWithFilters(
+      currentQuery: currentQuery,
+      filterType: filterType,
+      filterCategory: filterCategory,
+      filterSubCategory: filterSubCategory,
+      filterLocation: filterLocation,
+      filterSubLocation: filterSubLocation,
+      filterIsResolved: filterIsResolved,
+    );
   }
 
   List<String> _generateSearchKeywords(Report r) {

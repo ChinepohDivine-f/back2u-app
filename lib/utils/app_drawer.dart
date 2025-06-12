@@ -85,16 +85,6 @@ class _AppDrawerState extends State<AppDrawer> {
 
     // Determine login status based on internal _currentUser
     final bool userLoggedIn = _currentUser != null && !_currentUser!.isAnonymous;
-
-    // Display loading indicator if data is still being fetched
-    if (_isLoading) {
-      return Drawer(
-        child: Center(
-          child: CircularProgressIndicator(color: colorScheme.primary),
-        ),
-      );
-    }
-
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -123,41 +113,51 @@ class _AppDrawerState extends State<AppDrawer> {
           // --- Logged-in User Specific Menu Items ---
           if (userLoggedIn) ...[
             const Divider(), // Separator for logged-in specific options
-            ListTile(
-              leading: Icon(Icons.description_outlined, color: colorScheme.onSurfaceVariant),
-              title: Text('My Reports', style: Theme.of(context).textTheme.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/my_reports'); // New route for user's reports
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.bookmark_outline, color: colorScheme.onSurfaceVariant),
-              title: Text('Saved Reports', style: Theme.of(context).textTheme.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/saved_reports'); // New route for saved reports
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.settings_outlined, color: colorScheme.onSurfaceVariant),
-              title: Text('Settings', style: Theme.of(context).textTheme.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/settings'); // Navigate to Settings page
-              },
-            ),
-            
-            ListTile(
-              leading: Icon(Icons.logout, color: colorScheme.error),
-              title: Text('Logout', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.error)),
-              onTap: () {
-                _signOut(); // Call the internal logout function
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logging out...')),
-                );
-              },
-            ),
+            if (_isLoading)
+              ListTile(
+                leading: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.primary),
+                ),
+                title: Text('Loading your options...', style: Theme.of(context).textTheme.bodyLarge),
+              )
+            else ...[
+              ListTile(
+                leading: Icon(Icons.description_outlined, color: colorScheme.onSurfaceVariant),
+                title: Text('My Reports', style: Theme.of(context).textTheme.bodyLarge),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/my_reports'); // New route for user's reports
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.bookmark_outline, color: colorScheme.onSurfaceVariant),
+                title: Text('Saved Reports', style: Theme.of(context).textTheme.bodyLarge),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/saved_reports'); // New route for saved reports
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.settings_outlined, color: colorScheme.onSurfaceVariant),
+                title: Text('Settings', style: Theme.of(context).textTheme.bodyLarge),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/settings'); // Navigate to Settings page
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.logout, color: colorScheme.error),
+                title: Text('Logout', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.error)),
+                onTap: () {
+                  _signOut(); // Call the internal logout function
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logging out...')),
+                  );
+                },
+              ),
+            ],
           ] else ...[
             // --- Anonymous User Specific Menu Items ---
             const Divider(), // Separator

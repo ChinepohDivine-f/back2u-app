@@ -1,11 +1,54 @@
 import 'package:back2u/models/report_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart'; // For sharing
+import 'package:back2u/services/auth_kyc_service.dart'; // For toggleSavedReport
 
-class ReportDetails extends StatelessWidget {
+class ReportDetails extends StatefulWidget {
   final Report report;
+  final String? currentUserId;
+  final List<String>? userSavedReports;
 
-  const ReportDetails({Key? key, required this.report}) : super(key: key);
+  const ReportDetails({Key? key, required this.report, this.currentUserId, this.userSavedReports}) : super(key: key);
+
+  @override
+  State<ReportDetails> createState() => _ReportDetailsState();
+}
+
+class _ReportDetailsState extends State<ReportDetails> {
+  bool _isSaving = false;
+  bool _isSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isSaved = widget.userSavedReports?.contains(widget.report.reportId) ?? false;
+  }
+
+  Future<void> _toggleSave() async {
+    if (widget.currentUserId == null) return;
+    setState(() => _isSaving = true);
+    try {
+      await AuthKycService().toggleSavedReport(widget.currentUserId!, widget.report.reportId);
+      setState(() {
+        _isSaved = !_isSaved;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_isSaved ? 'Report saved!' : 'Report removed from saved.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving report: $e')),
+      );
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
+
+  void _shareReport() {
+    final text = 'Check out this ${widget.report.type} report for ${widget.report.ownerName ?? ''} (${widget.report.documentName}) at ${widget.report.locationLost}. More details in the Back2U app!';
+    Share.share(text);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,9 +58,15 @@ class ReportDetails extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${report.type} Report'), // More generic title
+        title: Text('${widget.report.type} Report'),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showContactModal(context),
+        backgroundColor: colorScheme.primary,
+        icon: Icon(Icons.phone, color: colorScheme.onPrimary),
+        label: Text('Contact', style:TextStyle(color: colorScheme.onPrimary)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -29,28 +78,26 @@ class ReportDetails extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: report.type.toLowerCase() == 'lost'
+                    color: widget.report.type.toLowerCase() == 'lost'
                         ? colorScheme.error
                         : colorScheme.tertiary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    report.type.toUpperCase(),
+                    widget.report.type.toUpperCase(),
                     style: textTheme.bodyMedium?.copyWith(
-                      color: report.type.toLowerCase() == 'lost'
+                      color: widget.report.type.toLowerCase() == 'lost'
                           ? colorScheme.onError
                           : colorScheme.onTertiary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                if (report.resolved)
+                if (widget.report.resolved)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(20),
@@ -70,7 +117,7 @@ class ReportDetails extends StatelessWidget {
 
             // --- Owner Name and Document Type (Primary Focus) ---
             Text(
-              report.ownerName ?? 'N/A', // Prioritize owner name
+              widget.report.ownerName ?? 'N/A',
               style: textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -78,12 +125,12 @@ class ReportDetails extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              report.documentName, // Second, the document type
+              widget.report.documentName,
               style: textTheme.titleLarge?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 24), // More space before details
+            const SizedBox(height: 12), // Reduced space before details
 
             // --- Details Card ---
             Padding(
@@ -93,28 +140,26 @@ class ReportDetails extends StatelessWidget {
                 children: [
                   Text(
                     'Details',
-                    style: textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 16),
                   _buildDetailRow(
                     context,
                     'Category',
-                    '${report.category} > ${report.subcategory}',
+                    '${widget.report.category} > ${widget.report.subcategory}',
                     Icons.category_outlined,
                   ),
                   _buildDetailRow(
                     context,
-                    // report.type == 'Lost' ? 'Owner' : 'Finder',
                     'Documument Owner',
-                    report.ownerName ?? 'Not Specified',
+                    widget.report.ownerName ?? 'Not Specified',
                     Icons.person_outline,
                   ),
                   _buildDetailRow(
                     context,
                     'Reward',
-                    report.reward.isNotEmpty && report.reward != '0 CFA'
-                        ? report.reward 
+                    widget.report.reward.isNotEmpty && widget.report.reward != '0 CFA'
+                        ? widget.report.reward
                         : 'None',
                     Icons.money_outlined,
                   ),
@@ -131,28 +176,25 @@ class ReportDetails extends StatelessWidget {
                 children: [
                   Text(
                     'Location & Dates',
-                    style: textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 16),
                   _buildDetailRow(
                     context,
                     'Location',
-                    '${report.locationLost}, ${report.subLocationLost}',
+                    '${widget.report.locationLost}, ${widget.report.subLocationLost}',
                     Icons.location_on_outlined,
                   ),
                   _buildDetailRow(
                     context,
                     'Incident Date',
-                    DateFormat('MMM dd, yyyy')
-                        .format(report.reportedDate.toDate()),
+                    DateFormat('MMM dd, yyyy').format(widget.report.reportedDate.toDate()),
                     Icons.event_note_outlined,
                   ),
                   _buildDetailRow(
                     context,
                     'Reported On',
-                    DateFormat('MMM dd, yyyy')
-                        .format(report.createdAt.toDate()),
+                    DateFormat('MMM dd, yyyy').format(widget.report.createdAt.toDate()),
                     Icons.access_time,
                   ),
                 ],
@@ -161,47 +203,45 @@ class ReportDetails extends StatelessWidget {
             const SizedBox(height: 16),
 
             // --- Notes Card ---
-            if (report.notes.isNotEmpty)
+            if (widget.report.notes.isNotEmpty)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Notes',
-                    style: textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 16),
                   Text(
-                    report.notes,
+                    widget.report.notes,
                     style: textTheme.bodyLarge,
                   ),
                 ],
               ),
-            if (report.notes.isNotEmpty) const SizedBox(height: 16),
+            if (widget.report.notes.isNotEmpty) const SizedBox(height: 16),
 
             // --- Images Card (if any) ---
-            if (report.images.isNotEmpty)
+            if (widget.report.images.isNotEmpty)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Images',
-                    style: textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 16),
                   SizedBox(
-                    height: 120, // Adjusted height for image scroll view
+                    height: 120,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount: report.images.length,
+                      itemCount: widget.report.images.length,
                       itemBuilder: (context, index) {
                         return Padding(
                           padding: const EdgeInsets.only(right: 12.0),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              report.images[index],
+                              widget.report.images[index],
                               width: 120,
                               height: 120,
                               fit: BoxFit.cover,
@@ -210,8 +250,7 @@ class ReportDetails extends StatelessWidget {
                                 width: 120,
                                 height: 120,
                                 color: Colors.grey[300],
-                                child: Icon(Icons.broken_image,
-                                    color: Colors.grey[600]),
+                                child: Icon(Icons.broken_image, color: Colors.grey[600]),
                               ),
                             ),
                           ),
@@ -221,43 +260,48 @@ class ReportDetails extends StatelessWidget {
                   ),
                 ],
               ),
-            if (report.images.isNotEmpty) const SizedBox(height: 16),
+            if (widget.report.images.isNotEmpty) const SizedBox(height: 16),
 
-            // --- Contact Reporter Button ---
+            // --- Save, Share, and Contact Buttons ---
             const SizedBox(height: 24),
-            Column(
+            Row(
               children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _showContactModal(context);
-                  },
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save Report'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.secondary,
-                    foregroundColor: colorScheme.onSecondary,
-                    minimumSize: const Size(
-                        double.infinity, 50), // Make button full width
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _isSaving ? null : _toggleSave,
+                    icon: _isSaved
+                        ? Icon(Icons.bookmark, color: colorScheme.primary)
+                        : Icon(Icons.bookmark_border, color: colorScheme.primary),
+                    label: Text(
+                      _isSaved ? 'Saved' : 'Save Report',
+                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      elevation: 2,
+                      shadowColor: Colors.black12,
+                      side: BorderSide(color: colorScheme.primary.withOpacity(0.18), width: 1.2),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
-                SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _showContactModal(context);
-                  },
-                  icon: const Icon(Icons.phone),
-                  label: const Text('Contact Reporter'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                    minimumSize: const Size(
-                        double.infinity, 50), // Make button full width
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _shareReport,
+                    icon: Icon(Icons.share, color: colorScheme.primary),
+                    label: Text('Share', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      elevation: 2,
+                      shadowColor: Colors.black12,
+                      side: BorderSide(color: colorScheme.primary.withOpacity(0.18), width: 1.2),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
               ],
@@ -317,7 +361,7 @@ class ReportDetails extends StatelessWidget {
               _buildContactDetailRow(
                 context,
                 'Reporter Name',
-                report.reporterId ?? 'Not Specified',
+                widget.report.reporterId ?? 'Not Specified',
                 Icons.person,
               ),
 
@@ -335,7 +379,7 @@ class ReportDetails extends StatelessWidget {
                         // TODO: Implement phone call
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Calling ${report.contactPhone}...'),
+                            content: Text('Calling ${widget.report.contactPhone}...'),
                           ),
                         );
                       },
@@ -349,7 +393,7 @@ class ReportDetails extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (report.whatsappNumber.isNotEmpty) ...[
+                  if (widget.report.whatsappNumber.isNotEmpty) ...[
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
@@ -359,7 +403,7 @@ class ReportDetails extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  'Opening WhatsApp for ${report.whatsappNumber}...'),
+                                  'Opening WhatsApp for ${widget.report.whatsappNumber}...'),
                             ),
                           );
                         },

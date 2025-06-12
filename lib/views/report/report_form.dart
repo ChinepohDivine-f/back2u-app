@@ -17,8 +17,9 @@ import 'package:back2u/services/form_data_fetch_service.dart';
 
 class ReportForm extends StatefulWidget {
   final Report report; // The report to be edited (or a new empty report)
+  final bool isEditing; // Flag to indicate if this is an edit flow
 
-  const ReportForm({super.key, required this.report});
+  const ReportForm({super.key, required this.report, required this.isEditing});
 
   @override
   State<ReportForm> createState() => _ReportFormState();
@@ -245,7 +246,7 @@ class _ReportFormState extends State<ReportForm> {
     final totalImagesAfterRemoval = _newlySelectedLocalImages.length +
         _existingImageUrls.where((url) => !_imagesToDelete.contains(url)).length;
 
-    if (widget.report.type == 'Found' && totalImagesAfterRemoval == 0) {
+    if (widget.report.type == 'found' && totalImagesAfterRemoval == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('At least one image is required for Found reports.'),
@@ -279,7 +280,7 @@ class _ReportFormState extends State<ReportForm> {
             localImageFiles: _newlySelectedLocalImages,
             existingImageUrls: _existingImageUrls,
             imagesToDelete: _imagesToDelete,
-            isEditing: true, // Indicate that this is an edit flow
+            isEditing: widget.isEditing, // Indicate that this is an edit flow
           ),
         ),
       );
@@ -555,7 +556,7 @@ class _ReportFormState extends State<ReportForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Images (${widget.report.type == 'Found' ? 'Required, ' : ''}Max 2)',
+                      'Images (${widget.report.type == 'found' ? 'Required, ' : ''}Max 2)',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
@@ -567,7 +568,7 @@ class _ReportFormState extends State<ReportForm> {
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
                     ),
-                    if (widget.report.type == 'Found' && totalImages == 0 && (_formKey.currentState?.validate() ?? false))
+                    if (widget.report.type == 'found' && totalImages == 0 && (_formKey.currentState?.validate() ?? false))
                       Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
@@ -705,7 +706,7 @@ class _ReportFormState extends State<ReportForm> {
               const SizedBox(height: 16),
 
               // Reward Section (Only for 'lost' reports)
-              if (widget.report.type == 'Lost')
+              if (widget.report.type.toLowerCase() == 'lost')
                 Padding(
                   padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
                   child: Column(

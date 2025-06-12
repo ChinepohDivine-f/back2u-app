@@ -92,8 +92,7 @@ class MyApp extends StatelessWidget {
         '/data_seeder': (context) => const DataSeederPage(),
         '/settings': (context) => const SettingsPage(),
         '/my_reports': (context) => const MyReportsPage(),
-        '/saved_reports': (context) =>
-            const SavedReportsPage(), // New route for saved reports
+        '/saved_reports': (context) => const SavedReportsPage(), // Net)w route for saved reports
         '/auth': (context) =>
             const AuthPage(), // <--- NEW: Route for the AuthPage
       },

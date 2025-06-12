@@ -14,6 +14,6 @@ class EditReportPage extends StatelessWidget {
     // By passing an existing report, it will pre-fill its fields.
     // The 'type' property of the report (e.g., 'Lost' or 'Found') will be used
     // internally by ReportForm to adjust its UI (e.g., image requirements, reward option).
-    return ReportForm(report: report);
+    return ReportForm(report: report, isEditing: true,);
   }
 }

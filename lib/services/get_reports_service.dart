@@ -176,7 +176,7 @@ class ReportService {
   /// Used for "My Reports" page.
   Stream<List<Report>> getReportsByUserId(String uid) {
     return _reportsCollection
-        .where('reporterUid', isEqualTo: uid) // Corrected field name
+        .where('reporter_uid', isEqualTo: uid) // Corrected field name
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
