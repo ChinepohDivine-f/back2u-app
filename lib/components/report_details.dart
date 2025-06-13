@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart'; // For sharing
 import 'package:back2u/services/auth_kyc_service.dart'; // For toggleSavedReport
+import 'package:provider/provider.dart'; // For AuthKycService
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:back2u/components/SimpleCard.dart';
 
 class ReportDetails extends StatefulWidget {
   final Report report;
@@ -46,8 +49,18 @@ class _ReportDetailsState extends State<ReportDetails> {
   }
 
   void _shareReport() {
-    final text = 'Check out this ${widget.report.type} report for ${widget.report.ownerName ?? ''} (${widget.report.documentName}) at ${widget.report.locationLost}. More details in the Back2U app!';
-    Share.share(text);
+    final reportUrl = 'https://back2u.app/report/${widget.report.reportId}';
+    final text = '''
+${widget.report.type.toUpperCase()} Report
+Owner: ${widget.report.ownerName ?? 'N/A'}
+Document: ${widget.report.subcategory}
+Location: ${widget.report.locationLost}
+
+View details or claim here:
+$reportUrl
+
+Shared via Back2U''';
+    Share.share(text, subject: 'Lost & Found Report on Back2U');
   }
 
   @override
@@ -55,6 +68,8 @@ class _ReportDetailsState extends State<ReportDetails> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
+    final appUser = Provider.of<AuthKycService>(context).appUser;
+    final kycCompleted = appUser?.kycCompleted ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -63,7 +78,7 @@ class _ReportDetailsState extends State<ReportDetails> {
         foregroundColor: colorScheme.onPrimary,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showContactModal(context),
+        onPressed: () => _handleContact(context, kycCompleted),
         backgroundColor: colorScheme.primary,
         icon: Icon(Icons.phone, color: colorScheme.onPrimary),
         label: Text('Contact', style:TextStyle(color: colorScheme.onPrimary)),
@@ -125,7 +140,7 @@ class _ReportDetailsState extends State<ReportDetails> {
             ),
             const SizedBox(height: 4),
             Text(
-              widget.report.documentName,
+              widget.report.reporterName,
               style: textTheme.titleLarge?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -313,6 +328,56 @@ class _ReportDetailsState extends State<ReportDetails> {
     );
   }
 
+  void _handleContact(BuildContext context, bool kycCompleted) async {
+    if (!kycCompleted) {
+      // Show KYC required dialog
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Complete KYC'),
+          content: const Text('You need to complete your profile (KYC) to contact the reporter.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, '/kyc'); // Or use your KYC page route
+              },
+              child: const Text('Complete KYC'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (widget.report.type.toLowerCase() == 'lost') {
+      // Show photo upload dialog
+      showDialog(
+        context: context,
+        builder: (ctx) => _ClaimPhotoDialog(onSubmitted: () {
+          Navigator.pop(ctx);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Your claim has been sent to the reporter.')),
+          );
+        }),
+      );
+    } else {
+      // Show message input dialog
+      showDialog(
+        context: context,
+        builder: (ctx) => _ClaimMessageDialog(onSubmitted: (msg) {
+          Navigator.pop(ctx);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Your message has been sent to the finder.')),
+          );
+        }),
+      );
+    }
+  }
+
   // Method to show contact information modal
   void _showContactModal(BuildContext context) {
     final theme = Theme.of(context);
@@ -361,7 +426,7 @@ class _ReportDetailsState extends State<ReportDetails> {
               _buildContactDetailRow(
                 context,
                 'Reporter Name',
-                widget.report.reporterId ?? 'Not Specified',
+                widget.report.reporterUid ?? 'Not Specified',
                 Icons.person,
               ),
 
@@ -538,6 +603,143 @@ class _ReportDetailsState extends State<ReportDetails> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// --- Claim Photo Dialog ---
+class _ClaimPhotoDialog extends StatefulWidget {
+  final VoidCallback onSubmitted;
+  const _ClaimPhotoDialog({required this.onSubmitted});
+  @override
+  State<_ClaimPhotoDialog> createState() => _ClaimPhotoDialogState();
+}
+class _ClaimPhotoDialogState extends State<_ClaimPhotoDialog> {
+  bool _uploading = false;
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Claim Lost Item'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Upload a photo of yourself with the item or a relevant document.'),
+          const SizedBox(height: 16),
+          _uploading
+              ? const CircularProgressIndicator()
+              : OutlinedButton.icon(
+                  icon: const Icon(Icons.photo_camera),
+                  label: const Text('Upload Photo'),
+                  onPressed: () async {
+                    setState(() => _uploading = true);
+                    await Future.delayed(const Duration(seconds: 2)); // Simulate upload
+                    setState(() => _uploading = false);
+                    widget.onSubmitted();
+                  },
+                ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
+  }
+}
+
+// --- Claim Message Dialog ---
+class _ClaimMessageDialog extends StatefulWidget {
+  final void Function(String) onSubmitted;
+  const _ClaimMessageDialog({required this.onSubmitted});
+  @override
+  State<_ClaimMessageDialog> createState() => _ClaimMessageDialogState();
+}
+class _ClaimMessageDialogState extends State<_ClaimMessageDialog> {
+  final TextEditingController _controller = TextEditingController();
+  bool _sending = false;
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Contact Finder'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text("Describe your lost item and why you think it's yours."),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText: 'Enter your message...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _sending
+              ? null
+              : () async {
+                  setState(() => _sending = true);
+                  await Future.delayed(const Duration(seconds: 2)); // Simulate send
+                  setState(() => _sending = false);
+                  widget.onSubmitted(_controller.text);
+                },
+          child: _sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Send'),
+        ),
+      ],
+    );
+  }
+}
+
+class SavedReportsPage extends StatelessWidget {
+  const SavedReportsPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final appUser = Provider.of<AuthKycService>(context).appUser;
+    final savedIds = appUser?.savedReports ?? [];
+
+    if (savedIds.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Saved Reports')),
+        body: Center(
+          child: Text('No saved reports yet.', style: Theme.of(context).textTheme.titleMedium),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Saved Reports')),
+      body: FutureBuilder<QuerySnapshot>(
+        future: FirebaseFirestore.instance
+            .collection('back2u/countries/cameroon/data/reports')
+            .where(FieldPath.documentId, whereIn: savedIds.length > 10 ? savedIds.sublist(0, 10) : savedIds)
+            .get(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(child: Text('No saved reports found.'));
+          }
+          final reports = snapshot.data!.docs.map((doc) => Report.fromFirestore(doc)).toList();
+          return ListView.builder(
+            itemCount: reports.length,
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
+              child: SimpleCard(report: reports[index]),
+            ),
+          );
+        },
       ),
     );
   }

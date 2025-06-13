@@ -19,6 +19,7 @@ import 'package:back2u/views/auth/kyc_form_page.dart';
 import 'package:back2u/views/data/data_seeder.dart';
 
 import 'package:back2u/views/auth/auth_page.dart'; // <--- NEW: Import the AuthPage
+import 'package:back2u/constants/app_theme.dart'; // NEW
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,30 +59,8 @@ class MyApp extends StatelessWidget {
       title: 'Back2U App',
       themeMode: themeProvider.themeMode,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
-      ),
-      darkTheme: ThemeData(
-        primarySwatch: Colors.blue,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
-      ),
+      theme: AppTheme.lightTheme, // UPDATED
+      darkTheme: AppTheme.darkTheme, // UPDATED
       home: const Splash(),
       routes: {
         '/splash': (context) => const Splash(),

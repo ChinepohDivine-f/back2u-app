@@ -473,11 +473,11 @@ class _SummaryPageState extends State<SummaryPage> {
 
     for (var term in [
       r.ownerName,
-      r.category,
-      r.subcategory,
-      r.locationLost,
-      r.subLocationLost,
-      r.type,
+      // r.category,
+      // r.subcategory,
+      // r.locationLost,
+      // r.subLocationLost,
+      // r.type,
     ]) {
       if (term?.isNotEmpty == true) {
         final cleanedTerm = term!

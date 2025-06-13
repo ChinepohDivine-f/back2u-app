@@ -323,13 +323,13 @@ class ReportSearchService {
 
     final List<String?> termsToProcess = [
       r.ownerName,
-      r.documentName,
-      r.category,
-      r.subcategory,
-      r.locationLost,
-      r.subLocationLost,
-      r.type,
-      r.notes,
+      // r.documentName,
+      // r.category,
+      // r.subcategory,
+      // r.locationLost,
+      // r.subLocationLost,
+      // r.type,
+      // r.notes,
     ];
 
     for (var term in termsToProcess) {

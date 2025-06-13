@@ -26,8 +26,8 @@ class _ReportPageState extends State<ReportPage> {
       reportId: 'temp_id_${DateTime.now().microsecondsSinceEpoch}',
       reporterUid: reporterUid,
       category: '', categoryFr: '', contactPhone: '', reportedDate: Timestamp.now(),
-      documentName: '', images: [], locationLost: '', locationLostFr: '',
-      notes: '', createdAt: Timestamp.now(), reporterId: '', resolved: false,
+      reporterName: '', images: [], locationLost: '', locationLostFr: '', // this has to be changed
+      notes: '', createdAt: Timestamp.now(), resolved: false,
       reward: '', searchKeyWords: [], status: '', subLocationLost: '',
       subLocationLostFr: '', subcategory: '', subcategoryFr: '',
       whatsappNumber: '',

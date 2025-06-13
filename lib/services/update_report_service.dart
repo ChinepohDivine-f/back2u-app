@@ -6,6 +6,7 @@ import 'package:flutter/material.dart'; // Added for debugPrint, though not stri
 import 'package:image_picker/image_picker.dart';
 import 'package:back2u/models/report_model.dart';
 import 'package:back2u/services/image_upload_service.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // For getting current user
 
 class UpdateReportService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -22,10 +23,9 @@ class UpdateReportService {
     required Set<String> imagesToDelete,
     required bool isEditing,
     required String userId,
-    String? submissionId, // Added submissionId as an optional parameter for potential idempotency
+    String? submissionId,
   }) async {
     // 1. Delete images marked for removal from Firebase Storage
-    // This now correctly uses the Firebase Storage instance you provided earlier.
     await _deleteImagesFromStorage(imagesToDelete);
 
     // 2. Upload new images
@@ -39,48 +39,41 @@ class UpdateReportService {
       ...existingImageUrls.where((url) => !imagesToDelete.contains(url)),
       ...newlyUploadedImageUrls,
     ];
-
-    // Safety: ensure no more than 2 images
     if (finalImageUrls.length > 2) {
       finalImageUrls = finalImageUrls.sublist(0, 2);
-      debugPrint('Warning: More than 2 images provided. Limiting to the first 2.');
     }
 
-    // Prepare base report data
-    Map<String, dynamic> reportData = report.toFirestore();
-    reportData['imageUrls'] = finalImageUrls;
-    reportData['searchKeyWords'] = _generateSearchKeywords(report);
+    // Get current user's display name for reporterName
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    final String reporterName = currentUser?.displayName ?? 'Unknown';
 
     if (isEditing) {
-      // Update existing report
-      if (report.reportId == null || report.reportId!.isEmpty) {
+      // Update existing report: only update fields in the model, and updatedAt
+      if (report.reportId.isEmpty) {
         throw Exception('Report ID is missing for an update operation.');
       }
+      final updatedReport = report.copyWith(
+        images: finalImageUrls,
+        reporterName: reporterName,
+        updatedAt: FieldValue.serverTimestamp() as Timestamp?,
+      );
       await _firestore
           .collection(_reportsCollectionPath)
           .doc(report.reportId)
-          .update({
-            ...reportData,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-      debugPrint('Report ${report.reportId} updated successfully.');
+          .update(updatedReport.toFirestore());
     } else {
-      // Create new report
-      // Generate a new document reference first to get the ID
+      // Create new report: set createdAt and updatedAt to the same timestamp, and get Firestore doc ID
       final newReportRef = _firestore.collection(_reportsCollectionPath).doc();
-
-      // Use the generated ID for the reportId field in Firestore
-      reportData['reportId'] = newReportRef.id;
-      reportData['reporterUid'] = userId; // Consistent field name: 'reporterUid'
-      reportData['createdAt'] = FieldValue.serverTimestamp();
-      reportData['updatedAt'] = FieldValue.serverTimestamp();
-      reportData['status'] = 'pending';
-      reportData['resolved'] = false;
-      reportData['resolvedBy'] = null;
-
-      // Set the new report data
-      await newReportRef.set(reportData);
-      debugPrint('New report ${newReportRef.id} submitted successfully.');
+      final serverTimestamp = FieldValue.serverTimestamp();
+      final newReport = report.copyWith(
+        reportId: newReportRef.id,
+        reporterUid: userId,
+        reporterName: reporterName,
+        images: finalImageUrls,
+        createdAt: serverTimestamp as Timestamp?,
+        updatedAt: serverTimestamp as Timestamp?,
+      );
+      await newReportRef.set(newReport.toFirestore());
     }
   }
 
@@ -115,11 +108,11 @@ class UpdateReportService {
 
     for (var term in [
       r.ownerName, // Now includes nullable check directly via '?' in Report model
-      r.category,
-      r.subcategory,
-      r.locationLost,
-      r.subLocationLost,
-      r.type,
+      // r.category,
+      // r.subcategory,
+      // r.locationLost,
+      // r.subLocationLost,
+      // r.type,
     ]) {
       // Handle nullable terms safely
       if (term != null && term.isNotEmpty) {

@@ -24,6 +24,7 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
   List<String> _currentSavedReportIds = [];
   Stream<List<Report>>? _savedReportsStream;
   StreamSubscription? _userProfileSub;
+  final Set<String> _loadingReports = {};
 
   @override
   void initState() {
@@ -61,7 +62,13 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
       );
       return;
     }
+    setState(() {
+      _loadingReports.add(reportId);
+    });
     await _authKycService.toggleSavedReport(_currentUser!.uid, reportId);
+    setState(() {
+      _loadingReports.remove(reportId);
+    });
     // UI will update via stream
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -200,9 +207,11 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
                     (context, index) {
                       final report = savedReports[index];
                       final isSaved = _currentSavedReportIds.contains(report.reportId);
+                      final loading = _loadingReports.contains(report.reportId);
                       return SimpleCard(
                         report: report,
                         isSaved: isSaved,
+                        loading: loading,
                         onToggleSave: () => _toggleSaveReport(report.reportId),
                         onTap: () {
                           Navigator.push(

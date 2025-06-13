@@ -8,6 +8,7 @@ class SimpleCard extends StatelessWidget {
   final Report report;
   final bool showActions; // Controls visibility of Edit, Delete, Resolve for owner
   final bool isSaved; // Controls bookmark icon state
+  final bool loading;
   final VoidCallback? onToggleSave; // Callback for save/unsave action
   final VoidCallback? onEdit; // Callback for edit action
   final VoidCallback? onDelete; // Callback for delete action
@@ -20,6 +21,7 @@ class SimpleCard extends StatelessWidget {
     required this.report,
     this.showActions = false,
     this.isSaved = false,
+    this.loading = false,
     this.onToggleSave, // Added
     this.onEdit, // Added
     this.onDelete, // Added
@@ -81,7 +83,7 @@ class SimpleCard extends StatelessWidget {
             ),
           );
         }
-      },
+      }, 
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Keep your preferred margin
         elevation: 1, // Keep your preferred elevation
@@ -297,14 +299,23 @@ class SimpleCard extends StatelessWidget {
                           ),
                         // Save/Unsave button (always visible when onToggleSave is provided)
                         if (onToggleSave != null)
-                          IconButton(
-                            icon: Icon(
-                              isSaved ? Icons.bookmark : Icons.bookmark_border,
-                              color: isSaved ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                            ),
-                            onPressed: onToggleSave, // Directly call the provided callback
-                            tooltip: isSaved ? 'Unsave Report' : 'Save Report',
-                          ),
+                          loading
+                              ? SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.primary),
+                                  ),
+                                )
+                              : IconButton(
+                                  icon: Icon(
+                                    isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                    color: isSaved ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                                  ),
+                                  onPressed: onToggleSave,
+                                  tooltip: isSaved ? 'Unsave Report' : 'Save Report',
+                                ),
                       ],
                     ),
 
