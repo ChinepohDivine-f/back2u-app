@@ -1,24 +1,26 @@
 import 'package:back2u/models/report_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart'; // For sharing
-import 'package:back2u/services/auth_kyc_service.dart'; // For toggleSavedReport
-import 'package:provider/provider.dart'; // For AuthKycService
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:back2u/components/SimpleCard.dart';
-import 'image_gallery.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:back2u/services/auth_kyc_service.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ReportDetails extends StatefulWidget {
   final Report report;
   final String? currentUserId;
   final List<String>? userSavedReports;
+  final bool showActions; // This prop is currently not used to hide/show AppBar actions
+  final VoidCallback? onBack; // This prop is currently not used
 
-  const ReportDetails(
-      {Key? key,
-      required this.report,
-      this.currentUserId,
-      this.userSavedReports})
-      : super(key: key);
+  const ReportDetails({
+    Key? key,
+    required this.report,
+    this.currentUserId,
+    this.userSavedReports,
+    this.showActions = true,
+    this.onBack,
+  }) : super(key: key);
 
   @override
   State<ReportDetails> createState() => _ReportDetailsState();
@@ -27,413 +29,167 @@ class ReportDetails extends StatefulWidget {
 class _ReportDetailsState extends State<ReportDetails> {
   bool _isSaving = false;
   bool _isSaved = false;
+  bool _isOwner = false;
 
   @override
   void initState() {
     super.initState();
-    _isSaved =
-        widget.userSavedReports?.contains(widget.report.reportId) ?? false;
+    _isSaved = widget.userSavedReports?.contains(widget.report.reportId) ?? false;
+    _checkOwnership();
+  }
+
+  Future<void> _checkOwnership() async {
+    // Using context.read is safe here as it's within initState and the AuthKycService is expected to be present.
+    final currentUser = context.read<AuthKycService>().currentUser;
+    if (mounted) {
+      setState(() {
+        _isOwner = currentUser?.uid == widget.report.reporterUid;
+      });
+    }
   }
 
   Future<void> _toggleSave() async {
-    if (widget.currentUserId == null) return;
+    if (widget.currentUserId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please sign in to save reports')),
+        );
+      }
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
-      await AuthKycService()
-          .toggleSavedReport(widget.currentUserId!, widget.report.reportId);
-      setState(() {
-        _isSaved = !_isSaved;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                _isSaved ? 'Report saved!' : 'Report removed from saved.')),
+      await AuthKycService().toggleSavedReport(
+        widget.currentUserId!,
+        widget.report.reportId,
       );
+      setState(() => _isSaved = !_isSaved);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isSaved ? 'Report saved!' : 'Report removed'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving report: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save: ${e.toString()}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
-      setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
   void _shareReport() {
-    final reportUrl = 'https://back2u.app/report/${widget.report.reportId}';
-    final text = '''
+    try {
+      // THIS IS THE KEY: The URL 'https://back2u.app/report/${widget.report.reportId}'
+      // MUST have Open Graph and Twitter Card meta tags on its HTML backend.
+      // The descriptive text you want in the share preview will come from those tags,
+      // not primarily from the 'text' variable here, though 'text' is used for apps
+      // that don't render rich previews.
+      final reportUrl = 'https://back2u.app/report/${widget.report.reportId}';
+      final text = '''
 ${widget.report.type.toUpperCase()} Report
-Owner: ${widget.report.ownerName ?? 'N/A'}
-Document: ${widget.report.subcategory}
+Owner: ${widget.report.ownerName ?? 'Anonymous'}
+Category: ${widget.report.category} > ${widget.report.subcategory}
 Location: ${widget.report.locationLost}
-
-View details or claim here:
-$reportUrl
-
+${widget.report.subLocationLost.isNotEmpty ? 'Sublocation: ${widget.report.subLocationLost}\n' : ''}
+View details: $reportUrl
 Shared via Back2U''';
-    Share.share(text, subject: 'Lost & Found Report on Back2U');
+
+      Share.share(text, subject: '${widget.report.type} Report');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share: ${e.toString()}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  // Helper method to build consistent detail rows with icons
+  Widget _buildDetailRow(String label, String value, {IconData? icon}) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
-    final appUser = Provider.of<AuthKycService>(context).appUser;
-    final kycCompleted = appUser?.kycCompleted ?? false;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.report.type} Report'),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share, color: colorScheme.onPrimary),
-            onPressed: _shareReport,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 20,
+              color: colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Type and Status Badge ---
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: widget.report.type.toLowerCase() == 'lost'
-                        ? colorScheme.error
-                        : colorScheme.tertiary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    widget.report.type.toUpperCase(),
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: widget.report.type.toLowerCase() == 'lost'
-                          ? colorScheme.onError
-                          : colorScheme.onTertiary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (widget.report.resolved)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: colorScheme.primary),
-                    ),
-                    child: Text(
-                      'RESOLVED',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // --- Owner Name and Document Type (Primary Focus) ---
-            Text(
-              widget.report.ownerName ?? 'N/A',
-              style: textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              widget.report.reporterName,
-              style: textTheme.titleLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12), // Reduced space before details
-
-            // --- Details Card ---
-            Padding(
-              padding: const EdgeInsets.all(0.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Details',
-                    style: textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: 16),
-                  _buildDetailRow(
-                    context,
-                    'Category',
-                    '${widget.report.category} > ${widget.report.subcategory}',
-                    Icons.category_outlined,
-                  ),
-                  _buildDetailRow(
-                    context,
-                    'Documument Owner',
-                    widget.report.ownerName ?? 'Not Specified',
-                    Icons.person_outline,
-                  ),
-                  _buildDetailRow(
-                    context,
-                    'Reward',
-                    widget.report.reward.isNotEmpty &&
-                            widget.report.reward != '0 CFA'
-                        ? widget.report.reward
-                        : 'None',
-                    Icons.money_outlined,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // --- Location & Dates Card ---
-            Padding(
-              padding: const EdgeInsets.all(0.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Location & Dates',
-                    style: textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: 16),
-                  _buildDetailRow(
-                    context,
-                    'Location',
-                    '${widget.report.locationLost}, ${widget.report.subLocationLost}',
-                    Icons.location_on_outlined,
-                  ),
-                  _buildDetailRow(
-                    context,
-                    'Incident Date',
-                    DateFormat('MMM dd, yyyy')
-                        .format(widget.report.reportedDate.toDate()),
-                    Icons.event_note_outlined,
-                  ),
-                  _buildDetailRow(
-                    context,
-                    'Reported On',
-                    DateFormat('MMM dd, yyyy')
-                        .format(widget.report.createdAt.toDate()),
-                    Icons.access_time,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // --- Notes Card ---
-            if (widget.report.notes.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Notes',
-                    style: textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: 16),
-                  Text(
-                    widget.report.notes,
-                    style: textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            if (widget.report.notes.isNotEmpty) const SizedBox(height: 16),
-
-            // --- Images Card (if any) ---
-            if (widget.report.images.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Images',
-                    style: textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: 16),
-                  SizedBox(
-                    height: 120,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: widget.report.images.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12.0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  PageRouteBuilder(
-                                    transitionDuration:
-                                        const Duration(milliseconds: 300),
-                                    pageBuilder: (_, __, ___) => ImageGallery(
-                                      images: widget.report.images,
-                                      initialIndex: index,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Image.network(
-                                widget.report.images[index],
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                  width: 120,
-                                  height: 120,
-                                  color: Colors.grey[300],
-                                  child: Icon(Icons.broken_image,
-                                      color: Colors.grey[600]),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            if (widget.report.images.isNotEmpty) const SizedBox(height: 16),
-
-            // --- Save, Share, and Contact Buttons ---
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _isSaving ? null : _toggleSave,
-                    icon: _isSaved
-                        ? Icon(Icons.bookmark, color: colorScheme.primary)
-                        : Icon(Icons.bookmark_border,
-                            color: colorScheme.primary),
-                    label: Text(
-                      _isSaved ? 'Saved' : 'Save Report',
-                      style: TextStyle(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      elevation: 2,
-                      shadowColor: Colors.black12,
-                      side: BorderSide(
-                          color: colorScheme.primary.withOpacity(0.18),
-                          width: 1.2),
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () => _handleContact(context, kycCompleted),
-                    icon: Icon(Icons.phone, color: colorScheme.primary),
-                    label: Text('Contact',
-                        style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w600)),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      elevation: 2,
-                      shadowColor: Colors.black12,
-                      side: BorderSide(
-                          color: colorScheme.primary.withOpacity(0.18),
-                          width: 1.2),
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
       ),
     );
   }
 
-  void _handleContact(BuildContext context, bool kycCompleted) async {
-    if (!kycCompleted) {
-      // Show KYC required dialog
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Complete KYC'),
-          content: const Text(
-              'You need to complete your profile (KYC) to contact the reporter.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pushNamed(
-                    context, '/kyc'); // Or use your KYC page route
-              },
-              child: const Text('Complete KYC'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-    if (widget.report.type.toLowerCase() == 'lost') {
-      // Show photo upload dialog
-      showDialog(
-        context: context,
-        builder: (ctx) => _ClaimPhotoDialog(onSubmitted: () {
-          Navigator.pop(ctx);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Your claim has been sent to the reporter.')),
-          );
-        }),
-      );
-    } else {
-      // Show message input dialog
-      showDialog(
-        context: context,
-        builder: (ctx) => _ClaimMessageDialog(onSubmitted: (msg) {
-          Navigator.pop(ctx);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Your message has been sent to the finder.')),
-          );
-        }),
-      );
+  // Launch URL helper
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) { // Use externalApplication for deep linking
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not launch $url')),
+        );
+      }
     }
   }
 
-  // Method to show contact information modal
-  void _showContactModal(BuildContext context) {
+  // Show contact information modal
+  void _showContactModal() {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
+
+    // Format phone numbers for dialer and WhatsApp
+    // Clean both phone number and WhatsApp number for safety
+    final cleanedContactPhone = widget.report.contactPhone.replaceAll(RegExp(r'[^0-9+]'), '');
+    final cleanedWhatsappNumber = widget.report.whatsappNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+
+    final whatsappUrl = 'https://wa.me/$cleanedWhatsappNumber';
+    final callUrl = 'tel:$cleanedContactPhone';
 
     showModalBottomSheet(
       context: context,
@@ -456,7 +212,7 @@ Shared via Back2U''';
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Reporter Information',
+                    'Contact Reporter',
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface,
@@ -473,12 +229,11 @@ Shared via Back2U''';
               ),
               const SizedBox(height: 16),
 
-              // Reporter Name
-              _buildContactDetailRow(
-                context,
-                'Reporter Name',
-                widget.report.reporterUid ?? 'Not Specified',
-                Icons.person,
+              // Reporter Information
+              _buildDetailRow(
+                'Reported by',
+                widget.report.reporterName ?? 'Anonymous',
+                icon: Icons.person_outline,
               ),
               const SizedBox(height: 24),
 
@@ -486,57 +241,40 @@ Shared via Back2U''';
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
-                        // TODO: Implement phone call
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'Calling ${widget.report.contactPhone}...'),
-                          ),
-                        );
+                        _launchUrl(callUrl);
                       },
                       icon: const Icon(Icons.phone),
                       label: const Text('Call'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.green, // Consider using theme.colorScheme.primary if it aligns with your brand
+                        foregroundColor: Colors.white,
                       ),
                     ),
                   ),
+                  // Only show WhatsApp button if a WhatsApp number is provided
                   if (widget.report.whatsappNumber.isNotEmpty) ...[
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: FilledButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          // TODO: Implement WhatsApp
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'Opening WhatsApp for ${widget.report.whatsappNumber}...'),
-                            ),
-                          );
+                          _launchUrl(whatsappUrl);
                         },
                         icon: const Icon(Icons.chat),
                         label: const Text('WhatsApp'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF25D366), // WhatsApp brand color
+                          foregroundColor: Colors.white,
                         ),
                       ),
                     ),
                   ],
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 16), // Added this missing closing bracket for the Column in the modal
             ],
           ),
         ),
@@ -544,114 +282,221 @@ Shared via Back2U''';
     );
   }
 
-  // Helper method for contact detail rows in modal
-  Widget _buildContactDetailRow(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon, {
-    bool isClickable = false,
-    VoidCallback? onTap,
-  }) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
 
-    Widget content = Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: isClickable
-                ? colorScheme.primary
-                : colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: isClickable
-                        ? colorScheme.primary
-                        : colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isClickable)
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: colorScheme.primary,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.report.type} Report'),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        actions: [
+          if (widget.showActions) // Conditionally show actions if showActions is true
+            IconButton(
+              onPressed: _shareReport,
+              icon: const Icon(Icons.share),
+              tooltip: 'Share Report',
             ),
         ],
       ),
-    );
-
-    if (isClickable && onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: content,
-      );
-    }
-
-    return content;
-  }
-
-  // Helper method to build consistent detail rows
-  Widget _buildDetailRow(
-      BuildContext context, String label, String value, IconData icon) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // --- Type and Status Badge ---
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  label,
-                  style: textTheme.labelLarge
-                      ?.copyWith(color: colorScheme.onSurfaceVariant),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: widget.report.type.toLowerCase() == 'lost'
+                        ? colorScheme.error
+                        : colorScheme.tertiary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    widget.report.type.toUpperCase(),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: widget.report.type.toLowerCase() == 'lost'
+                          ? colorScheme.onError
+                          : colorScheme.onTertiary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
+                if (widget.report.resolved)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: colorScheme.primary),
+                    ),
+                    child: Text(
+                      'RESOLVED',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // --- Owner Name (Primary Focus) ---
+            Text(
+              widget.report.ownerName ?? 'N/A', // Display 'N/A' if ownerName is null
+              style: textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // --- Basic Information ---
+            Text(
+              'Basic Information',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const Divider(height: 24),
+
+            _buildDetailRow(
+              'Category',
+              '${widget.report.category} • ${widget.report.subcategory}',
+              icon: Icons.category_outlined,
+            ),
+            // Conditionally display 'Document Owner' only if ownerName is not null/empty
+            if (widget.report.ownerName?.isNotEmpty ?? false)
+              _buildDetailRow(
+                'Document Owner',
+                widget.report.ownerName!,
+                icon: Icons.person_outline,
+              ),
+            _buildDetailRow(
+              'Reward',
+              widget.report.reward.isNotEmpty && widget.report.reward != '0 CFA'
+                  ? widget.report.reward
+                  : 'No reward',
+              icon: Icons.monetization_on_outlined,
+            ),
+            const SizedBox(height: 24),
+
+            // --- Location & Dates ---
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 24,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
                 Text(
-                  value,
-                  style: textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
+                  'Location & Dates',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const Divider(height: 24),
+
+            _buildDetailRow(
+              'Location',
+              '${widget.report.locationLost}${widget.report.subLocationLost.isNotEmpty ? ' • ${widget.report.subLocationLost}' : ''}',
+              icon: Icons.pin_drop_outlined,
+            ),
+            _buildDetailRow(
+              'Incident Date',
+              // Fixed the date format pattern
+              DateFormat('MMM dd, yyyy').format(widget.report.reportedDate.toDate()),
+              icon: Icons.calendar_today_outlined,
+            ),
+            _buildDetailRow(
+              'Reported On',
+              // Fixed the date format pattern
+              DateFormat('MMM dd, yyyy').format(widget.report.createdAt.toDate()),
+              icon: Icons.access_time_outlined,
+            ),
+            const SizedBox(height: 24),
+
+            // --- Notes ---
+            if (widget.report.notes.isNotEmpty) ...[
+              Text(
+                'Additional Notes',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const Divider(height: 24),
+              Text(
+                widget.report.notes,
+                style: textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+
+            // --- Action Buttons ---
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isSaving ? null : _toggleSave,
+                    icon: Icon(
+                      _isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: _isSaved ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                    ),
+                    label: Text(
+                      _isSaved ? 'Saved' : 'Save',
+                      style: TextStyle(
+                        color: _isSaved ? colorScheme.primary : colorScheme.onSurface,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      side: BorderSide(
+                        color: _isSaved
+                            ? colorScheme.primary
+                            : colorScheme.outlineVariant,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _showContactModal,
+                    icon: const Icon(Icons.phone_outlined),
+                    label: const Text('Contact'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -661,33 +506,37 @@ Shared via Back2U''';
 class _ClaimPhotoDialog extends StatefulWidget {
   final VoidCallback onSubmitted;
   const _ClaimPhotoDialog({required this.onSubmitted});
+
   @override
   State<_ClaimPhotoDialog> createState() => _ClaimPhotoDialogState();
 }
 
 class _ClaimPhotoDialogState extends State<_ClaimPhotoDialog> {
   bool _uploading = false;
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Claim Lost Item'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-              'Upload a photo of yourself with the item or a relevant document.'),
+          const Text('Upload a photo of yourself with the item or a relevant document.'),
           const SizedBox(height: 16),
           _uploading
-              ? const CircularProgressIndicator()
+              ? const Center(child: CircularProgressIndicator())
               : OutlinedButton.icon(
                   icon: const Icon(Icons.photo_camera),
                   label: const Text('Upload Photo'),
                   onPressed: () async {
                     setState(() => _uploading = true);
-                    await Future.delayed(
-                        const Duration(seconds: 2)); // Simulate upload
-                    setState(() => _uploading = false);
-                    widget.onSubmitted();
+                    await Future.delayed(const Duration(seconds: 2)); // Simulate upload
+                    if (mounted) {
+                      setState(() => _uploading = false);
+                      widget.onSubmitted();
+                      Navigator.pop(context); // Close dialog after submission
+                    }
                   },
                 ),
         ],
@@ -704,8 +553,9 @@ class _ClaimPhotoDialogState extends State<_ClaimPhotoDialog> {
 
 // --- Claim Message Dialog ---
 class _ClaimMessageDialog extends StatefulWidget {
-  final void Function(String) onSubmitted;
+  final Function(String) onSubmitted;
   const _ClaimMessageDialog({required this.onSubmitted});
+
   @override
   State<_ClaimMessageDialog> createState() => _ClaimMessageDialogState();
 }
@@ -713,18 +563,26 @@ class _ClaimMessageDialog extends StatefulWidget {
 class _ClaimMessageDialogState extends State<_ClaimMessageDialog> {
   final TextEditingController _controller = TextEditingController();
   bool _sending = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Contact Finder'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text("Describe your lost item and why you think it's yours."),
           const SizedBox(height: 16),
           TextField(
             controller: _controller,
-            maxLines: 3,
+            maxLines: 4,
             decoration: const InputDecoration(
               hintText: 'Enter your message...',
               border: OutlineInputBorder(),
@@ -734,78 +592,30 @@ class _ClaimMessageDialogState extends State<_ClaimMessageDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _sending ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _sending
+          onPressed: _sending || _controller.text.trim().isEmpty
               ? null
               : () async {
                   setState(() => _sending = true);
-                  await Future.delayed(
-                      const Duration(seconds: 2)); // Simulate send
-                  setState(() => _sending = false);
-                  widget.onSubmitted(_controller.text);
+                  await Future.delayed(const Duration(seconds: 2)); // Simulate send
+                  if (mounted) {
+                    setState(() => _sending = false);
+                    widget.onSubmitted(_controller.text.trim());
+                    Navigator.pop(context); // Close dialog after submission
+                  }
                 },
           child: _sending
               ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Send'),
         ),
       ],
-    );
-  }
-}
-
-class SavedReportsPage extends StatelessWidget {
-  const SavedReportsPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final appUser = Provider.of<AuthKycService>(context).appUser;
-    final savedIds = appUser?.savedReports ?? [];
-
-    if (savedIds.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Saved Reports')),
-        body: Center(
-          child: Text('No saved reports yet.',
-              style: Theme.of(context).textTheme.titleMedium),
-        ),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Saved Reports')),
-      body: FutureBuilder<QuerySnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('back2u/countries/cameroon/data/reports')
-            .where(FieldPath.documentId,
-                whereIn:
-                    savedIds.length > 10 ? savedIds.sublist(0, 10) : savedIds)
-            .get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('No saved reports found.'));
-          }
-          final reports = snapshot.data!.docs
-              .map((doc) => Report.fromFirestore(doc))
-              .toList();
-          return ListView.builder(
-            itemCount: reports.length,
-            itemBuilder: (context, index) => Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
-              child: SimpleCard(report: reports[index]),
-            ),
-          );
-        },
-      ),
     );
   }
 }

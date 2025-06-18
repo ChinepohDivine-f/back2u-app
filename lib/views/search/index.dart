@@ -2,7 +2,6 @@ import 'package:back2u/components/SimpleCard.dart';
 import 'package:back2u/views/search/filter_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:back2u/models/report_model.dart';
-import 'package:back2u/components/report_details.dart';
 import 'dart:async';
 
 import 'package:back2u/services/report_search_service.dart';
@@ -13,6 +12,7 @@ class SearchPage extends StatefulWidget {
   @override
   State<SearchPage> createState() => _SearchPageState();
 }
+
 
 class _SearchPageState extends State<SearchPage> {
   final ReportSearchService _searchService = ReportSearchService();
@@ -126,7 +126,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onSearchQueryChanged() {
-    final input = _searchController.text.trim().toLowerCase();
+    final input = _searchController.text.trim();
 
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () async {
@@ -134,14 +134,9 @@ class _SearchPageState extends State<SearchPage> {
 
       List<String> remote = [];
       if (input.isNotEmpty) {
+        // Only fetch suggestions by owner name
         remote = await _searchService.fetchSearchSuggestions(
           input: input,
-          filterType: _filterType,
-          filterCategory: _filterCategory,
-          filterSubCategory: _filterSubCategory,
-          filterLocation: _filterLocation,
-          filterSubLocation: _filterSubLocation,
-          filterIsResolved: _filterIsResolved,
         );
       }
 
@@ -162,8 +157,10 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
-  void _performSearch([String? queryOverride]) {
+  void _performSearch([String? queryOverride]) async {
     final query = (queryOverride ?? _searchController.text).trim();
+    if (query.isEmpty) return;
+
     _searchController.text = query;
     _searchController.selection = TextSelection.fromPosition(
       TextPosition(offset: _searchController.text.length),
@@ -172,13 +169,14 @@ class _SearchPageState extends State<SearchPage> {
     _searchFocusNode.unfocus();
     _searchSuggestions = [];
 
-    if (query.isNotEmpty && !_searchHistory.contains(query.toLowerCase())) {
+    // Add to search history if not already present
+    if (!_searchHistory.any((h) => h.toLowerCase() == query.toLowerCase())) {
       setState(() {
         if (_searchHistory.length >= 10) {
           _searchHistory.removeAt(0);
         }
-        _searchHistory.add(query.toLowerCase());
-        _searchHistory.sort();
+        _searchHistory.add(query);
+        _searchHistory.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
       });
     }
 
@@ -188,15 +186,8 @@ class _SearchPageState extends State<SearchPage> {
       _currentQuery = query;
     });
 
-    _searchService.applySearchAndFilters(
-      currentQuery: _currentQuery,
-      filterType: _filterType,
-      filterCategory: _filterCategory,
-      filterSubCategory: _filterSubCategory,
-      filterLocation: _filterLocation,
-      filterSubLocation: _filterSubLocation,
-      filterIsResolved: _filterIsResolved,
-    );
+    // Only search by owner name
+    await _searchService.searchByOwnerName(query);
   }
 
   void _clearSearch() {

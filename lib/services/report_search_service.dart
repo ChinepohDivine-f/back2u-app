@@ -16,6 +16,8 @@ extension FirstWhereOrNullExtension<E> on Iterable<E> {
   }
 }
 
+
+
 class ReportSearchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final DataFetchService _dataFetchService = DataFetchService();
@@ -63,6 +65,30 @@ class ReportSearchService {
         _firestore.collection('back2u/countries/cameroon/data/reports');
     _initializeService();
   }
+
+  // Add the searchByOwnerName method
+Future<void> searchByOwnerName(String ownerName) async {
+  try {
+    _loadingStateController.add(true);
+    _errorStateController.add(null);
+
+    final query = _reportsCollection
+        .where('owner_name', isEqualTo: ownerName)
+        .orderBy('createdAt', descending: true);
+
+    final querySnapshot = await query.get();
+    final reports = querySnapshot.docs
+        .map((doc) => Report.fromFirestore(doc))
+        .toList();
+        
+    _filteredReportsController.add(reports);
+  } catch (e) {
+    _errorStateController.add('Failed to search by owner: ${e.toString()}');
+    _filteredReportsController.add([]);
+  } finally {
+    _loadingStateController.add(false);
+  }
+}
 
   Future<void> _initializeService() async {
     try {
@@ -113,15 +139,16 @@ class ReportSearchService {
           _lastFilterLocation != null ||
           _lastFilterSubLocation != null ||
           _lastFilterIsResolved != null) {
-        applySearchAndFilters(
-          currentQuery: _lastQuery,
-          filterType: _lastFilterType,
-          filterCategory: _lastFilterCategory,
-          filterSubCategory: _lastFilterSubCategory,
-          filterLocation: _lastFilterLocation,
-          filterSubLocation: _lastFilterSubLocation,
-          filterIsResolved: _lastFilterIsResolved,
-        );
+        // applySearchAndFilters(
+        //   currentQuery: _lastQuery,
+        //   filterType: _lastFilterType,
+        //   filterCategory: _lastFilterCategory,
+        //   filterSubCategory: _lastFilterSubCategory,
+        //   filterLocation: _lastFilterLocation,
+        //   filterSubLocation: _lastFilterSubLocation,
+        //   filterIsResolved: _lastFilterIsResolved,
+        // );
+        // No-op: Only owner name search is supported now.
       } else {
         _filteredReportsController.add(_allReportsCache);
       }
@@ -223,126 +250,108 @@ class ReportSearchService {
       final reports = querySnapshot.docs.map((doc) => Report.fromFirestore(doc)).toList();
       _filteredReportsController.add(reports);
     } catch (e) {
-      _errorStateController.add('Failed to search reports: [31m${e.toString()}[0m');
+      _errorStateController.add('Failed to search reports: ${e.toString()}');
       _filteredReportsController.add([]);
     }
   }
 
   // --- Firestore-powered search suggestions (max 7) ---
   Future<List<String>> fetchSearchSuggestions({
-    required String input,
-    String? filterType,
-    String? filterCategory,
-    String? filterSubCategory,
-    String? filterLocation,
-    String? filterSubLocation,
-    bool? filterIsResolved,
-  }) async {
-    try {
-      // First, get all relevant reports based on filters
-      Query query = _reportsCollection;
-      if (filterType != null && filterType.isNotEmpty) {
-        query = query.where('type', isEqualTo: filterType.toLowerCase());
-      }
-      if (filterCategory != null && filterCategory.isNotEmpty) {
-        query = query.where('category', isEqualTo: filterCategory);
-      }
-      if (filterSubCategory != null && filterSubCategory.isNotEmpty) {
-        query = query.where('subcategory', isEqualTo: filterSubCategory);
-      }
-      if (filterLocation != null && filterLocation.isNotEmpty) {
-        query = query.where('location_lost', isEqualTo: filterLocation);
-      }
-      if (filterSubLocation != null && filterSubLocation.isNotEmpty) {
-        query = query.where('sub_location_lost', isEqualTo: filterSubLocation);
-      }
-      if (filterIsResolved != null) {
-        query = query.where('resolved', isEqualTo: filterIsResolved);
-      }
-      
-      // Get all relevant reports
-      final querySnapshot = await query.get();
-      
-      // Generate suggestions based on search keywords
-      final suggestions = querySnapshot.docs
-          .map((doc) {
-            final report = Report.fromFirestore(doc);
-            // Combine all searchable fields
-            final searchableText = [
-              report.ownerName ?? '',
-              report.category,
-              report.subcategory,
-              report.locationLost,
-              report.subLocationLost,
-              report.notes,
-            ].join(' ');
-            
-            // Check if any part of searchable text contains the input
-            if (searchableText.toLowerCase().contains(input.toLowerCase())) {
-              // Return the most relevant field as suggestion
-              if (report.ownerName?.toLowerCase().contains(input.toLowerCase()) ?? false) {
-                return report.ownerName;
-              }
-              if (report.category.toLowerCase().contains(input.toLowerCase())) {
-                return report.category;
-              }
-              if (report.locationLost?.toLowerCase().contains(input.toLowerCase()) ?? false) {
-                return report.locationLost;
-              }
-              return input; // Fallback to input if no specific field matches
-            }
-            return null;
-          })
-          .whereType<String>()
-          .toSet()
-          .toList();
-      
-      // Sort by relevance (how well they match the input)
-      suggestions.sort((a, b) {
-        final aMatch = a.toLowerCase().indexOf(input.toLowerCase());
-        final bMatch = b.toLowerCase().indexOf(input.toLowerCase());
-        if (aMatch == -1) return 1;
-        if (bMatch == -1) return -1;
-        return aMatch.compareTo(bMatch);
-      });
-      
-      return suggestions.take(7).toList();
-    } catch (e) {
-      _errorStateController.add('Failed to fetch suggestions: ${e.toString()}');
-      return [];
+  required String input,
+  String? filterType,
+  String? filterCategory,
+  String? filterSubCategory,
+  String? filterLocation,
+  String? filterSubLocation,
+  bool? filterIsResolved,
+}) async {
+  try {
+    Query query = _reportsCollection;
+    
+    // Apply all active filters
+    if (filterType != null && filterType.isNotEmpty) {
+      query = query.where('type', isEqualTo: filterType.toLowerCase());
     }
-  }
+    if (filterCategory != null && filterCategory.isNotEmpty) {
+      query = query.where('category', isEqualTo: filterCategory);
+    }
+    if (filterSubCategory != null && filterSubCategory.isNotEmpty) {
+      query = query.where('subcategory', isEqualTo: filterSubCategory);
+    }
+    if (filterLocation != null && filterLocation.isNotEmpty) {
+      query = query.where('location_lost', isEqualTo: filterLocation);
+    }
+    if (filterSubLocation != null && filterSubLocation.isNotEmpty) {
+      query = query.where('sub_location_lost', isEqualTo: filterSubLocation);
+    }
+    if (filterIsResolved != null) {
+      query = query.where('resolved', isEqualTo: filterIsResolved);
+    }
+    
+    // Get all relevant reports
+    final querySnapshot = await query.get();
+    
+    // Create a map to store unique suggestions with their relevance score
+    final Map<String, int> suggestionScores = {};
 
+    for (var doc in querySnapshot.docs) {
+      final report = Report.fromFirestore(doc);
+      final searchableFields = [
+        report.ownerName,
+        report.category,
+        report.subcategory,
+        report.locationLost,
+        report.subLocationLost,
+        report.notes,
+      ].where((field) => field != null && field.isNotEmpty).cast<String>().toList();
+
+      // Check each field for matches
+      for (var field in searchableFields) {
+        if (field.toLowerCase().contains(input.toLowerCase())) {
+          // Calculate a simple relevance score
+          final score = field.toLowerCase().indexOf(input.toLowerCase());
+          final isExactMatch = field.toLowerCase() == input.toLowerCase();
+          
+          // Prefer exact matches and longer matches
+          final relevanceScore = isExactMatch 
+              ? 0  // Highest priority for exact matches
+              : score >= 0 
+                  ? 1  // Higher priority for matches at the start
+                  : 2; // Lower priority for partial matches
+
+          // Store the most relevant version of each suggestion
+          if (!suggestionScores.containsKey(field) || 
+              suggestionScores[field]! > relevanceScore) {
+            suggestionScores[field] = relevanceScore;
+          }
+        }
+      }
+    }
+
+    // Sort suggestions by relevance and then alphabetically
+   // Sort suggestions by relevance and then alphabetically
+final sortedEntries = suggestionScores.entries.toList();
+sortedEntries.sort((a, b) {
+  // First sort by relevance score
+  final scoreCompare = a.value.compareTo(b.value);
+  if (scoreCompare != 0) return scoreCompare;
+  // Then sort alphabetically
+  return a.key.toLowerCase().compareTo(b.key.toLowerCase());
+});
+
+final sortedSuggestions = sortedEntries
+    .map((e) => e.key)
+    .take(7)
+    .toList();
+
+    return sortedSuggestions.take(7).toList();
+  } catch (e) {
+    _errorStateController.add('Failed to fetch suggestions: ${e.toString()}');
+    return [];
+  }
+}
   // --- Update applySearchAndFilters to use Firestore-powered search ---
-  void applySearchAndFilters({
-    String currentQuery = '',
-    String? filterType,
-    String? filterCategory,
-    String? filterSubCategory,
-    String? filterLocation,
-    String? filterSubLocation,
-    bool? filterIsResolved,
-  }) {
-    // Store current filters
-    _lastQuery = currentQuery;
-    _lastFilterType = filterType;
-    _lastFilterCategory = filterCategory;
-    _lastFilterSubCategory = filterSubCategory;
-    _lastFilterLocation = filterLocation;
-    _lastFilterSubLocation = filterSubLocation;
-    _lastFilterIsResolved = filterIsResolved;
-    // Use Firestore-powered search
-    searchReportsWithFilters(
-      currentQuery: currentQuery,
-      filterType: filterType,
-      filterCategory: filterCategory,
-      filterSubCategory: filterSubCategory,
-      filterLocation: filterLocation,
-      filterSubLocation: filterSubLocation,
-      filterIsResolved: filterIsResolved,
-    );
-  }
-
+  
   List<String> _generateSearchKeywords(Report r) {
     final keywords = <String>{};
 

@@ -63,375 +63,215 @@ class SimpleCard extends StatelessWidget {
     }
   }
 
+  // Helper to format date
+  String _formatDate(DateTime dateTime) {
+    return DateFormat('MMM dd, yyyy').format(dateTime);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    return GestureDetector(
-      onTap: () {
-        // Navigate to ReportDetails page when card is tapped
-        // If an explicit onTap callback is provided, use it, otherwise navigate
-        if (onTap != null) {
-          onTap!();
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ReportDetails(report: report),
-            ),
-          );
-        }
-      }, 
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        elevation: 0.5,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), // Keep your preferred border radius
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      clipBehavior: Clip.hardEdge,
+      elevation: 5.0,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap ?? () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ReportDetails(report: report)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12), // Keep your preferred padding
-          child: Row(
+          padding: const EdgeInsets.all(16),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image/Icon area
-              Stack(
+              // Header with type and actions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Status label (only show when resolved)
-                  if (report.status.toLowerCase() == 'resolved')
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Resolved',
-                          style: TextStyle(
-                            color: colorScheme.onSecondaryContainer,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  Container(
-                    height: 80,
-                    width: 80,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceVariant, // Background color for the image/icon area
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: report.images != null && report.images!.isNotEmpty
-                        ? ClipRRect( // Clip for rounded corners on the image
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              report.images!.first, // Display the first image from the list
-                              fit: BoxFit.cover, // Cover the container area
-                              width: 80, // Ensure it fills the container
-                              height: 80, // Ensure it fills the container
-                              loadingBuilder: (context, child, loadingProgress) {
-                                // Show a circular progress indicator while the image is loading
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                        : null,
-                                    strokeWidth: 2,
-                                    color: colorScheme.primary,
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                // Fallback to a default icon if the image fails to load
-                                return Center(
-                                  child: Icon(
-                                    Icons.image_not_supported_rounded,
-                                    color: colorScheme.onSurfaceVariant,
-                                    size: 40, // Larger size for the fallback icon
-                                  ),
-                                );
-                              },
-                            ),
-                          )
-                        : Center( // Default icon if no images are available in the report
-                            child: Icon(
-                              Icons.image_not_supported_rounded,
-                              color: colorScheme.onSurfaceVariant,
-                              size: 40, // Larger size for the default icon
-                            ),
-                          ),
-                  ),
-                  // Lost/Found tag
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: report.type.toLowerCase() == 'lost'
-                            ? colorScheme.error
-                            : colorScheme.secondary,
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(8),
-                          bottomLeft: Radius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        report.type.toUpperCase(), // Use report.type
-                        style: textTheme.labelSmall?.copyWith(
+                  // Type and status chips
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      InputChip(
+                        label: Text(report.type.toUpperCase()),                        
+                        backgroundColor: report.type.toLowerCase() == 'lost'
+                          ? colors.errorContainer.withOpacity(0.9)
+                          : colors.tertiaryContainer.withOpacity(0.9),
+                        labelStyle: textTheme.labelSmall?.copyWith(
                           color: report.type.toLowerCase() == 'lost'
-                              ? colorScheme.onError
-                              : colorScheme.onSecondary,
-                          fontWeight: FontWeight.bold,
+                            ? colors.error
+                            : colors.tertiary,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
                         ),
+                        shape: const StadiumBorder(),
+                        side: BorderSide(
+                          color: report.type.toLowerCase() == 'lost'
+                            ? colors.error
+                            : colors.tertiary,
+                          width: 1.2,
+                        ),
+                        elevation: 1.5,
+                        shadowColor: colors.shadow,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       ),
-                    ),
+                      if (report.resolved)
+                        InputChip(
+                          label: const Text('RESOLVED'),
+                          backgroundColor: colors.secondaryContainer,
+                          labelStyle: textTheme.labelSmall?.copyWith(
+                            color: colors.onSecondaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          shape: const StadiumBorder(),
+                        ),
+                    ],
                   ),
-                  // Image count badge
-                  if (report.images != null && report.images!.isNotEmpty) // Check if images list is not empty
-                    Positioned(
-                      bottom: 4,
-                      left: 4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.camera_alt,
-                              size: 11,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "${report.images!.length}", // Use report.images.length
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  // Actions
+                  if (showActions) _buildOwnerActions(colors)
+                  else if (onToggleSave != null) _buildSaveButton(colors)
                 ],
               ),
 
-              const SizedBox(width: 12),
+              const SizedBox(height: 5),
 
-              // Content area
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Owner name with resolved badge and actions
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            report.ownerName ?? 'N/A', // Use report.ownerName
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (report.resolved) // Use report.resolved for resolved badge
-                          Container(
-                            margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: colorScheme.onPrimary,
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.check_circle_outline,
-                                  size: 12,
-                                  color: colorScheme.onPrimary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Resolved',
-                                  style: textTheme.labelSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: colorScheme.onPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        // Action buttons (edit, delete, resolve) for the owner via PopupMenuButton
-                        if (showActions && (onEdit != null || onDelete != null || onToggleResolve != null))
-                          PopupMenuButton<String>(
-                            onSelected: (value) {
-                              if (value == 'edit' && onEdit != null) {
-                                onEdit!();
-                              } else if (value == 'delete' && onDelete != null) {
-                                onDelete!();
-                              } else if (value == 'toggle_status' && onToggleResolve != null) {
-                                onToggleResolve!();
-                              }
-                            },
-                            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                              if (onEdit != null)
-                                const PopupMenuItem<String>(
-                                  value: 'edit',
-                                  child: ListTile(
-                                    leading: Icon(Icons.edit),
-                                    title: Text('Edit Report'),
-                                  ),
-                                ),
-                              if (onDelete != null)
-                                const PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: ListTile(
-                                    leading: Icon(Icons.delete_forever, color: Colors.red),
-                                    title: Text('Delete Report'),
-                                  ),
-                                ),
-                              if (onToggleResolve != null)
-                                PopupMenuItem<String>(
-                                  value: 'toggle_status',
-                                  child: ListTile(
-                                    leading: Icon(
-                                        report.status == 'resolved' ? Icons.undo : Icons.check_circle_outline,
-                                        color: report.status == 'resolved' ? Colors.orange : Colors.green),
-                                    title: Text(report.status == 'resolved' ? 'Mark as Active' : 'Mark as Resolved'),
-                                  ),
-                                ),
-                            ],
-                            icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
-                            tooltip: 'More options',
-                          ),
-                        // Save/Unsave button (always visible when onToggleSave is provided)
-                        if (onToggleSave != null)
-                          loading
-                              ? SizedBox(
-                                  width: 28,
-                                  height: 28,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.primary),
-                                  ),
-                                )
-                              : IconButton(
-                                  icon: Icon(
-                                    isSaved ? Icons.bookmark : Icons.bookmark_border,
-                                    color: isSaved ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                                  ),
-                                  onPressed: onToggleSave,
-                                  tooltip: isSaved ? 'Unsave Report' : 'Save Report',
-                                ),
-                      ],
+              // Main content
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Owner name and subcategory
+                  Text(
+                    report.ownerName ?? 'Anonymous',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-
-                    const SizedBox(height: 4),
-
-                    // Subcategory
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(6),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    report.subcategory,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 5),
+                  
+                  // Info chips row
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Chip(
+                        backgroundColor: colors.surfaceVariant,
+                        avatar: const Icon(Icons.location_on, size: 16),
+                        label: Text(report.subLocationLost),
+                        labelStyle: textTheme.labelLarge,
+                        visualDensity: VisualDensity.compact,
                       ),
-                      child: Text(
-                        report.subcategory, // Use report.subcategory
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onPrimaryContainer,
+                      Chip(
+                        backgroundColor: colors.surfaceVariant,
+                        avatar: const Icon(Icons.calendar_today, size: 16),
+                        label: Text(_formatDate(report.reportedDate.toDate())),
+                        labelStyle: textTheme.labelLarge,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 10),
+                  
+                  // Created time
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: colors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Reported ${_getRelativeTime(report.createdAt.toDate())}',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Location with icon
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            report.locationLost, // Use report.locationLost
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    // Incident date (using reportedDate from model)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.event_note_outlined,
-                          size: 14,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Incident: ${DateFormat('MMM dd, yyyy').format(report.reportedDate.toDate())}', // Convert Timestamp to DateTime
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    // Relative time display (using createdAt from model)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Reported: ${_getRelativeTime(report.createdAt.toDate())}', // Convert Timestamp to DateTime
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildOwnerActions(ColorScheme colors) {
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        if (value == 'edit' && onEdit != null) {
+          onEdit!();
+        } else if (value == 'delete' && onDelete != null) {
+          onDelete!();
+        } else if (value == 'toggle_status' && onToggleResolve != null) {
+          onToggleResolve!();
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        if (onEdit != null)
+          const PopupMenuItem<String>(
+            value: 'edit',
+            child: ListTile(
+              leading: Icon(Icons.edit),
+              title: Text('Edit Report'),
+            ),
+          ),
+        if (onDelete != null)
+          const PopupMenuItem<String>(
+            value: 'delete',
+            child: ListTile(
+              leading: Icon(Icons.delete_forever, color: Colors.red),
+              title: Text('Delete Report'),
+            ),
+          ),
+        if (onToggleResolve != null)
+          PopupMenuItem<String>(
+            value: 'toggle_status',
+            child: ListTile(
+              leading: Icon(
+                  report.status == 'resolved' ? Icons.undo : Icons.check_circle_outline,
+                  color: report.status == 'resolved' ? Colors.orange : Colors.green),
+              title: Text(report.status == 'resolved' ? 'Mark as Active' : 'Mark as Resolved'),
+            ),
+          ),
+      ],
+      icon: Icon(Icons.more_vert, color: colors.onSurfaceVariant),
+      tooltip: 'More options',
+    );
+  }
+
+  Widget _buildSaveButton(ColorScheme colors) {
+    return loading
+        ? SizedBox(
+            width: 28,
+            height: 28,
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: CircularProgressIndicator(strokeWidth: 2, color: colors.primary),
+            ),
+          )
+        : IconButton(
+            icon: Icon(
+              isSaved ? Icons.bookmark : Icons.bookmark_border,
+              color: isSaved ? colors.primary : colors.onSurfaceVariant,
+            ),
+            onPressed: onToggleSave,
+            tooltip: isSaved ? 'Unsave Report' : 'Save Report',
+          );
   }
 }
