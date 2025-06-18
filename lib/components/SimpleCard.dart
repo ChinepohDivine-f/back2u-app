@@ -55,10 +55,10 @@ class SimpleCard extends StatelessWidget {
   Color _getStatusColor(String status, ColorScheme colors) {
     switch (status.toLowerCase()) {
       case 'resolved':
-        return Colors.green.shade700; // Use a specific green for resolved
-      case 'pending': // You might have a 'pending' status
-        return Colors.orange.shade700;
-      default: // For 'active' or other states
+        return colors.secondary;
+      case 'pending':
+        return colors.tertiary;
+      default:
         return colors.primary;
     }
   }
@@ -85,8 +85,8 @@ class SimpleCard extends StatelessWidget {
         }
       }, 
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Keep your preferred margin
-        elevation: 1, // Keep your preferred elevation
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        elevation: 0.5,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12), // Keep your preferred border radius
         ),
@@ -98,6 +98,27 @@ class SimpleCard extends StatelessWidget {
               // Image/Icon area
               Stack(
                 children: [
+                  // Status label (only show when resolved)
+                  if (report.status.toLowerCase() == 'resolved')
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Resolved',
+                          style: TextStyle(
+                            color: colorScheme.onSecondaryContainer,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
                   Container(
                     height: 80,
                     width: 80,
@@ -153,7 +174,9 @@ class SimpleCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: ColorScheme.fromSeed(seedColor: Colors.blue).primary,
+                        color: report.type.toLowerCase() == 'lost'
+                            ? colorScheme.error
+                            : colorScheme.secondary,
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(8),
                           bottomLeft: Radius.circular(8),
@@ -162,7 +185,9 @@ class SimpleCard extends StatelessWidget {
                       child: Text(
                         report.type.toUpperCase(), // Use report.type
                         style: textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
+                          color: report.type.toLowerCase() == 'lost'
+                              ? colorScheme.onError
+                              : colorScheme.onSecondary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -228,10 +253,10 @@ class SimpleCard extends StatelessWidget {
                             margin: const EdgeInsets.only(left: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: colorScheme.primary.withOpacity(0.1),
+                              color: colorScheme.primary,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: colorScheme.primary,
+                                color: colorScheme.onPrimary,
                                 width: 1,
                               ),
                             ),
@@ -241,14 +266,14 @@ class SimpleCard extends StatelessWidget {
                                 Icon(
                                   Icons.check_circle_outline,
                                   size: 12,
-                                  color: colorScheme.primary,
+                                  color: colorScheme.onPrimary,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Resolved',
                                   style: textTheme.labelSmall?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: colorScheme.primary,
+                                    color: colorScheme.onPrimary,
                                   ),
                                 ),
                               ],
@@ -325,14 +350,14 @@ class SimpleCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: colorScheme.secondaryContainer.withOpacity(0.5),
+                        color: colorScheme.primaryContainer.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         report.subcategory, // Use report.subcategory
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: colorScheme.onSecondaryContainer,
+                          color: colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),

@@ -48,32 +48,35 @@ class UpdateReportService {
     final String reporterName = currentUser?.displayName ?? 'Unknown';
 
     if (isEditing) {
-      // Update existing report: only update fields in the model, and updatedAt
+      // Update existing report: only update fields in the model, and use server timestamp for updatedAt
       if (report.reportId.isEmpty) {
         throw Exception('Report ID is missing for an update operation.');
       }
       final updatedReport = report.copyWith(
         images: finalImageUrls,
         reporterName: reporterName,
-        updatedAt: FieldValue.serverTimestamp() as Timestamp?,
       );
       await _firestore
           .collection(_reportsCollectionPath)
           .doc(report.reportId)
-          .update(updatedReport.toFirestore());
+          .update({
+            ...updatedReport.toFirestore(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
     } else {
-      // Create new report: set createdAt and updatedAt to the same timestamp, and get Firestore doc ID
+      // Create new report: set createdAt and updatedAt to server timestamp
       final newReportRef = _firestore.collection(_reportsCollectionPath).doc();
-      final serverTimestamp = FieldValue.serverTimestamp();
       final newReport = report.copyWith(
         reportId: newReportRef.id,
         reporterUid: userId,
         reporterName: reporterName,
         images: finalImageUrls,
-        createdAt: serverTimestamp as Timestamp?,
-        updatedAt: serverTimestamp as Timestamp?,
       );
-      await newReportRef.set(newReport.toFirestore());
+      await newReportRef.set({
+        ...newReport.toFirestore(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     }
   }
 

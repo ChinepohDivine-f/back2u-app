@@ -69,8 +69,6 @@ class _SummaryPageState extends State<SummaryPage> {
         appBar: AppBar(
           title: Text('${widget.report.type} Report - Summary'),
           centerTitle: true,
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
           // Disable back button when submitting
           automaticallyImplyLeading: !_isSubmitting,
         ),

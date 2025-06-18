@@ -1,6 +1,9 @@
 // lib/views/report/report_form.dart
 import 'dart:io';
 import 'package:back2u/views/report/contact.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +29,16 @@ class ReportForm extends StatefulWidget {
 }
 
 class _ReportFormState extends State<ReportForm> {
+  late Locale _currentLocale;
+  
+
+  Future<void> _loadLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString('language') ?? 'en';
+    setState(() {
+      _currentLocale = languageCode == 'fr' ? const Locale('fr') : const Locale('en');
+    });
+  }
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController? _ownerNameController;
@@ -34,6 +47,16 @@ class _ReportFormState extends State<ReportForm> {
 
   String? _selectedCategoryName;
   String? _selectedSubcategoryName;
+  String? _selectedCategoryNameFr;
+  String? _selectedSubcategoryNameFr;
+
+  String? getSelectedCategory() {
+    return _currentLocale.languageCode == 'fr' ? _selectedCategoryNameFr ?? _selectedCategoryName : _selectedCategoryName;
+  }
+
+  String? getSelectedSubcategory() {
+    return _currentLocale.languageCode == 'fr' ? _selectedSubcategoryNameFr ?? _selectedSubcategoryName : _selectedSubcategoryName;
+  }
   DateTime? _incidentDate;
   String? _selectedLocationName;
   String? _selectedSubLocationName;
@@ -57,6 +80,7 @@ class _ReportFormState extends State<ReportForm> {
   @override
   void initState() {
     super.initState();
+    _loadLocale();
     _ownerNameController = TextEditingController(text: widget.report.ownerName);
     _rewardAmountController = TextEditingController(text: widget.report.reward == '0' ? '' : widget.report.reward);
     _notesController = TextEditingController(text: widget.report.notes);
@@ -302,8 +326,10 @@ class _ReportFormState extends State<ReportForm> {
 
     setState(() {
       // Reset dropdown selections to initial values or null if not valid
-      _selectedCategoryName = widget.report.category.isNotEmpty && _allCategories.any((cat) => cat.nameEn == widget.report.category) ? widget.report.category : null;
-      _selectedSubcategoryName = widget.report.subcategory.isNotEmpty && (_selectedCategoryName != null && _allCategories.firstWhere((cat) => cat.nameEn == _selectedCategoryName, orElse: () => Category(categoryId: '', createdAt: Timestamp.now(), nameEn: '', nameFr: '', subcategories: [], updatedAt: Timestamp.now())).subcategories.any((sub) => sub.nameEn == widget.report.subcategory)) ? widget.report.subcategory : null;
+      _selectedCategoryName = widget.report.category;
+      _selectedSubcategoryName = widget.report.subcategory;
+      _selectedCategoryNameFr = widget.report.categoryFr;
+      _selectedSubcategoryNameFr = widget.report.subcategoryFr;
       _selectedLocationName = widget.report.locationLost.isNotEmpty && _allLocations.any((loc) => loc.nameEn == widget.report.locationLost) ? widget.report.locationLost : null;
       _selectedSubLocationName = widget.report.subLocationLost.isNotEmpty && (_selectedLocationName != null && _allLocations.firstWhere((loc) => loc.nameEn == _selectedLocationName, orElse: () => Location(createdAt: Timestamp.now(), locationId: '', nameEn: '', nameFr: '', sublocations: [], updatedAt: Timestamp.now())).sublocations.any((sub) => sub.nameEn == widget.report.subLocationLost)) ? widget.report.subLocationLost : null;
 
@@ -326,8 +352,6 @@ class _ReportFormState extends State<ReportForm> {
         appBar: AppBar(
           title: Text('${widget.report.type.toUpperCase()} Report - Details'),
           centerTitle: true,
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -342,9 +366,6 @@ class _ReportFormState extends State<ReportForm> {
       appBar: AppBar(
         title: Text('${widget.report.type.toUpperCase()} Report - Details'),
         centerTitle: true,
-        elevation: 1,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -359,7 +380,7 @@ class _ReportFormState extends State<ReportForm> {
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.all(15.0),
-            physics: const BouncingScrollPhysics(),
+            // Using default platform physics
             children: <Widget>[
               // Owner's Name Field (Required)
               TextFormField(

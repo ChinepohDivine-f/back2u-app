@@ -25,21 +25,28 @@ class _ReportPageState extends State<ReportPage> {
       type: reportType,
       reportId: 'temp_id_${DateTime.now().microsecondsSinceEpoch}',
       reporterUid: reporterUid,
-      category: '', categoryFr: '', contactPhone: '', reportedDate: Timestamp.now(),
-      reporterName: '', images: [], locationLost: '', locationLostFr: '', // this has to be changed
+      category: '', categoryFr: '', contactPhone: '',
+      reportedDate: Timestamp.now(),
+      reporterName: '', images: [], locationLost: '',
+      locationLostFr: '', // this has to be changed
       notes: '', createdAt: Timestamp.now(), resolved: false,
-      reward: '', searchKeyWords: [], status: '', subLocationLost: '',
+      reward: '', searchKeyWords: [], status: 'unresolved', subLocationLost: '',
       subLocationLostFr: '', subcategory: '', subcategoryFr: '',
       whatsappNumber: '',
     );
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ReportForm(report: newReport, isEditing: false,)),
+      MaterialPageRoute(
+          builder: (context) => ReportForm(
+                report: newReport,
+                isEditing: false,
+              )),
     );
   }
 
   // Show the KYC prompt dialog
-  Future<void> _showKycPromptDialog(String reportType, BuildContext context) async {
+  Future<void> _showKycPromptDialog(
+      String reportType, BuildContext context) async {
     final theme = Theme.of(context);
     // Access AuthKycService without listening in a method if you don't need UI rebuilds based on it
     final authService = Provider.of<AuthKycService>(context, listen: false);
@@ -49,7 +56,8 @@ class _ReportPageState extends State<ReportPage> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'Complete Your Profile (KYC)',
             style: theme.textTheme.titleLarge,
@@ -74,7 +82,8 @@ class _ReportPageState extends State<ReportPage> {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 if (authService.currentUser != null) {
-                  _navigateToReportForm(reportType, authService.currentUser!.uid);
+                  _navigateToReportForm(
+                      reportType, authService.currentUser!.uid);
                 }
               },
             ),
@@ -112,16 +121,10 @@ class _ReportPageState extends State<ReportPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create a Report'),
-        centerTitle: true,
-        elevation: 1,
-        backgroundColor: colors.primary,
-        foregroundColor: colors.onPrimary,
-        // The back button will automatically appear if this page is pushed onto a stack.
-        // If you want to explicitly add it, you can use:
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back),
-        //   onPressed: () => Navigator.pop(context),
-        // ),
+        // centerTitle: true,
+        // elevation: 0,
+        // backgroundColor: colors.background,
+        // foregroundColor: colors.primary,
       ),
       body: isLoadingAuth
           ? Center(child: CircularProgressIndicator(color: colors.primary))
@@ -140,11 +143,12 @@ class _ReportPageState extends State<ReportPage> {
                     ),
                   ),
                   const SizedBox(height: 40),
-
                   if (!isAuthenticated)
-                    _buildAuthPrompt(theme, colors) // No need to pass authService here, just navigate
+                    _buildAuthPrompt(theme,
+                        colors) // No need to pass authService here, just navigate
                   else
-                    _buildReportButtons(theme, colors, appUser, currentUser!.uid),
+                    _buildReportButtons(
+                        theme, colors, appUser, currentUser!.uid),
                 ],
               ),
             ),
@@ -164,20 +168,22 @@ class _ReportPageState extends State<ReportPage> {
         SizedBox(
           width: double.infinity,
           child: TextButton(
-            style: TextButton.styleFrom(
-              backgroundColor: colors.primaryContainer,
-              foregroundColor: colors.onPrimaryContainer,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              style: TextButton.styleFrom(
+                backgroundColor: colors.primaryContainer,
+                foregroundColor: colors.onPrimaryContainer,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-            ),
-            onPressed: (){
-               Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AuthPage()), // Go to AuthPage
-              );
-            }, child: Text("Sign in", style: theme.textTheme.titleMedium)),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const AuthPage()), // Go to AuthPage
+                );
+              },
+              child: Text("Sign in", style: theme.textTheme.titleMedium)),
           // child: ElevatedButton.icon(
           //   onPressed: () {
           //     // Navigate to the separate AuthPage
@@ -203,7 +209,8 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 
-  Widget _buildReportButtons(ThemeData theme, ColorScheme colors, AppUser? appUser, String reporterUid) {
+  Widget _buildReportButtons(ThemeData theme, ColorScheme colors,
+      AppUser? appUser, String reporterUid) {
     final kycCompleted = appUser?.kycCompleted ?? false;
 
     return Column(
@@ -230,13 +237,15 @@ class _ReportPageState extends State<ReportPage> {
                 ),
                 TextButton(
                   onPressed: () {
-                     Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const KycFormPage()),
-                     ).then((_) {
-                        // After returning from KYC form, refresh user profile via provider
-                        Provider.of<AuthKycService>(context, listen: false).refreshUserProfile();
-                     });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const KycFormPage()),
+                    ).then((_) {
+                      // After returning from KYC form, refresh user profile via provider
+                      Provider.of<AuthKycService>(context, listen: false)
+                          .refreshUserProfile();
+                    });
                   },
                   child: Text(
                     'Verify Now',
@@ -247,68 +256,72 @@ class _ReportPageState extends State<ReportPage> {
               ],
             ),
           ),
-        if (!kycCompleted)
-          const SizedBox(height: 20),
-
-        Row(
+        if (!kycCompleted) const SizedBox(height: 20),
+        GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () {
-                  if (!kycCompleted) {
-                    _showKycPromptDialog('lost', context);
-                  } else {
-                    _navigateToReportForm('lost', reporterUid);
-                  }
-                },
-                icon: const Icon(Icons.search_off, size: 30),
-                label: Text(
-                  'Report Lost Item',
-                  style: theme.textTheme.titleSmall,
-                  textAlign: TextAlign.center,
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.secondaryContainer,
-                  foregroundColor: colors.onSecondaryContainer,
-                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                ),
-              ),
+            _actionCard(
+              icon: Icons.search_off,
+              label: 'Lost Item',
+              bgColor: colors.primaryContainer,
+              fgColor: colors.onPrimaryContainer,
+              onTap: () {
+                if (!kycCompleted) {
+                  _showKycPromptDialog('lost', context);
+                } else {
+                  _navigateToReportForm('lost', reporterUid);
+                }
+              },
             ),
-            const SizedBox(width: 15),
-
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () {
-                  if (!kycCompleted) {
-                    _showKycPromptDialog('found', context);
-                  } else {
-                    _navigateToReportForm('found', reporterUid);
-                  }
-                },
-                icon: const Icon(Icons.volunteer_activism, size: 30),
-                label: Text(
-                  'Report Found Item',
-                  style: theme.textTheme.titleSmall,
-                  textAlign: TextAlign.center,
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.primaryContainer,
-                  foregroundColor: colors.onPrimaryContainer,
-                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                ),
-              ),
+            _actionCard(
+              icon: Icons.volunteer_activism,
+              label: 'Found Item',
+              bgColor: colors.secondaryContainer,
+              fgColor: colors.onSecondaryContainer,
+              onTap: () {
+                if (!kycCompleted) {
+                  _showKycPromptDialog('found', context);
+                } else {
+                  _navigateToReportForm('found', reporterUid);
+                }
+              },
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _actionCard({
+    required IconData icon,
+    required String label,
+    required Color bgColor,
+    required Color fgColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: fgColor),
+            const SizedBox(height: 12),
+            Text(label,
+                style: TextStyle(color: fgColor, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
     );
   }
 }

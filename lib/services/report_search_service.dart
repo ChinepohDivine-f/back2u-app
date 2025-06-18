@@ -228,7 +228,7 @@ class ReportSearchService {
     }
   }
 
-  // --- NEW: Firestore-powered search suggestions (max 7) ---
+  // --- Firestore-powered search suggestions (max 7) ---
   Future<List<String>> fetchSearchSuggestions({
     required String input,
     String? filterType,
@@ -237,9 +237,9 @@ class ReportSearchService {
     String? filterLocation,
     String? filterSubLocation,
     bool? filterIsResolved,
-    String field = 'owner_name', // or 'document_name', etc.
   }) async {
     try {
+      // First, get all relevant reports based on filters
       Query query = _reportsCollection;
       if (filterType != null && filterType.isNotEmpty) {
         query = query.where('type', isEqualTo: filterType.toLowerCase());
@@ -259,29 +259,54 @@ class ReportSearchService {
       if (filterIsResolved != null) {
         query = query.where('resolved', isEqualTo: filterIsResolved);
       }
-      // For suggestions, use isGreaterThanOrEqualTo and isLessThan for prefix search
-      if (input.isNotEmpty) {
-        final end = input.substring(0, input.length - 1) +
-            String.fromCharCode(input.codeUnitAt(input.length - 1) + 1);
-        query = query
-            .orderBy(field)
-            .startAt([input])
-            .endBefore([end]);
-      }
-      query = query.limit(7);
+      
+      // Get all relevant reports
       final querySnapshot = await query.get();
+      
+      // Generate suggestions based on search keywords
       final suggestions = querySnapshot.docs
           .map((doc) {
-            final data = doc.data();
-            if (data != null && data is Map<String, dynamic>) {
-              return data[field] as String?;
+            final report = Report.fromFirestore(doc);
+            // Combine all searchable fields
+            final searchableText = [
+              report.ownerName ?? '',
+              report.category,
+              report.subcategory,
+              report.locationLost,
+              report.subLocationLost,
+              report.notes,
+            ].join(' ');
+            
+            // Check if any part of searchable text contains the input
+            if (searchableText.toLowerCase().contains(input.toLowerCase())) {
+              // Return the most relevant field as suggestion
+              if (report.ownerName?.toLowerCase().contains(input.toLowerCase()) ?? false) {
+                return report.ownerName;
+              }
+              if (report.category.toLowerCase().contains(input.toLowerCase())) {
+                return report.category;
+              }
+              if (report.locationLost?.toLowerCase().contains(input.toLowerCase()) ?? false) {
+                return report.locationLost;
+              }
+              return input; // Fallback to input if no specific field matches
             }
             return null;
           })
           .whereType<String>()
           .toSet()
           .toList();
-      return suggestions;
+      
+      // Sort by relevance (how well they match the input)
+      suggestions.sort((a, b) {
+        final aMatch = a.toLowerCase().indexOf(input.toLowerCase());
+        final bMatch = b.toLowerCase().indexOf(input.toLowerCase());
+        if (aMatch == -1) return 1;
+        if (bMatch == -1) return -1;
+        return aMatch.compareTo(bMatch);
+      });
+      
+      return suggestions.take(7).toList();
     } catch (e) {
       _errorStateController.add('Failed to fetch suggestions: ${e.toString()}');
       return [];

@@ -6,13 +6,19 @@ import 'package:back2u/services/auth_kyc_service.dart'; // For toggleSavedReport
 import 'package:provider/provider.dart'; // For AuthKycService
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:back2u/components/SimpleCard.dart';
+import 'image_gallery.dart';
 
 class ReportDetails extends StatefulWidget {
   final Report report;
   final String? currentUserId;
   final List<String>? userSavedReports;
 
-  const ReportDetails({Key? key, required this.report, this.currentUserId, this.userSavedReports}) : super(key: key);
+  const ReportDetails(
+      {Key? key,
+      required this.report,
+      this.currentUserId,
+      this.userSavedReports})
+      : super(key: key);
 
   @override
   State<ReportDetails> createState() => _ReportDetailsState();
@@ -25,19 +31,23 @@ class _ReportDetailsState extends State<ReportDetails> {
   @override
   void initState() {
     super.initState();
-    _isSaved = widget.userSavedReports?.contains(widget.report.reportId) ?? false;
+    _isSaved =
+        widget.userSavedReports?.contains(widget.report.reportId) ?? false;
   }
 
   Future<void> _toggleSave() async {
     if (widget.currentUserId == null) return;
     setState(() => _isSaving = true);
     try {
-      await AuthKycService().toggleSavedReport(widget.currentUserId!, widget.report.reportId);
+      await AuthKycService()
+          .toggleSavedReport(widget.currentUserId!, widget.report.reportId);
       setState(() {
         _isSaved = !_isSaved;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_isSaved ? 'Report saved!' : 'Report removed from saved.')),
+        SnackBar(
+            content: Text(
+                _isSaved ? 'Report saved!' : 'Report removed from saved.')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -76,12 +86,12 @@ Shared via Back2U''';
         title: Text('${widget.report.type} Report'),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _handleContact(context, kycCompleted),
-        backgroundColor: colorScheme.primary,
-        icon: Icon(Icons.phone, color: colorScheme.onPrimary),
-        label: Text('Contact', style:TextStyle(color: colorScheme.onPrimary)),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.share, color: colorScheme.onPrimary),
+            onPressed: _shareReport,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -93,7 +103,8 @@ Shared via Back2U''';
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: widget.report.type.toLowerCase() == 'lost'
                         ? colorScheme.error
@@ -112,7 +123,8 @@ Shared via Back2U''';
                 ),
                 if (widget.report.resolved)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(20),
@@ -155,7 +167,8 @@ Shared via Back2U''';
                 children: [
                   Text(
                     'Details',
-                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 16),
                   _buildDetailRow(
@@ -173,7 +186,8 @@ Shared via Back2U''';
                   _buildDetailRow(
                     context,
                     'Reward',
-                    widget.report.reward.isNotEmpty && widget.report.reward != '0 CFA'
+                    widget.report.reward.isNotEmpty &&
+                            widget.report.reward != '0 CFA'
                         ? widget.report.reward
                         : 'None',
                     Icons.money_outlined,
@@ -191,7 +205,8 @@ Shared via Back2U''';
                 children: [
                   Text(
                     'Location & Dates',
-                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 16),
                   _buildDetailRow(
@@ -203,13 +218,15 @@ Shared via Back2U''';
                   _buildDetailRow(
                     context,
                     'Incident Date',
-                    DateFormat('MMM dd, yyyy').format(widget.report.reportedDate.toDate()),
+                    DateFormat('MMM dd, yyyy')
+                        .format(widget.report.reportedDate.toDate()),
                     Icons.event_note_outlined,
                   ),
                   _buildDetailRow(
                     context,
                     'Reported On',
-                    DateFormat('MMM dd, yyyy').format(widget.report.createdAt.toDate()),
+                    DateFormat('MMM dd, yyyy')
+                        .format(widget.report.createdAt.toDate()),
                     Icons.access_time,
                   ),
                 ],
@@ -224,7 +241,8 @@ Shared via Back2U''';
                 children: [
                   Text(
                     'Notes',
-                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 16),
                   Text(
@@ -242,7 +260,8 @@ Shared via Back2U''';
                 children: [
                   Text(
                     'Images',
-                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 16),
                   SizedBox(
@@ -255,17 +274,33 @@ Shared via Back2U''';
                           padding: const EdgeInsets.only(right: 12.0),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              widget.report.images[index],
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  PageRouteBuilder(
+                                    transitionDuration:
+                                        const Duration(milliseconds: 300),
+                                    pageBuilder: (_, __, ___) => ImageGallery(
+                                      images: widget.report.images,
+                                      initialIndex: index,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(
+                                widget.report.images[index],
                                 width: 120,
                                 height: 120,
-                                color: Colors.grey[300],
-                                child: Icon(Icons.broken_image, color: Colors.grey[600]),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  width: 120,
+                                  height: 120,
+                                  color: Colors.grey[300],
+                                  child: Icon(Icons.broken_image,
+                                      color: Colors.grey[600]),
+                                ),
                               ),
                             ),
                           ),
@@ -286,18 +321,24 @@ Shared via Back2U''';
                     onPressed: _isSaving ? null : _toggleSave,
                     icon: _isSaved
                         ? Icon(Icons.bookmark, color: colorScheme.primary)
-                        : Icon(Icons.bookmark_border, color: colorScheme.primary),
+                        : Icon(Icons.bookmark_border,
+                            color: colorScheme.primary),
                     label: Text(
                       _isSaved ? 'Saved' : 'Save Report',
-                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w600),
                     ),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       elevation: 2,
                       shadowColor: Colors.black12,
-                      side: BorderSide(color: colorScheme.primary.withOpacity(0.18), width: 1.2),
+                      side: BorderSide(
+                          color: colorScheme.primary.withOpacity(0.18),
+                          width: 1.2),
                       minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -305,16 +346,22 @@ Shared via Back2U''';
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: _shareReport,
-                    icon: Icon(Icons.share, color: colorScheme.primary),
-                    label: Text('Share', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600)),
+                    onPressed: () => _handleContact(context, kycCompleted),
+                    icon: Icon(Icons.phone, color: colorScheme.primary),
+                    label: Text('Contact',
+                        style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600)),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       elevation: 2,
                       shadowColor: Colors.black12,
-                      side: BorderSide(color: colorScheme.primary.withOpacity(0.18), width: 1.2),
+                      side: BorderSide(
+                          color: colorScheme.primary.withOpacity(0.18),
+                          width: 1.2),
                       minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -335,7 +382,8 @@ Shared via Back2U''';
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Complete KYC'),
-          content: const Text('You need to complete your profile (KYC) to contact the reporter.'),
+          content: const Text(
+              'You need to complete your profile (KYC) to contact the reporter.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -344,7 +392,8 @@ Shared via Back2U''';
             FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                Navigator.pushNamed(context, '/kyc'); // Or use your KYC page route
+                Navigator.pushNamed(
+                    context, '/kyc'); // Or use your KYC page route
               },
               child: const Text('Complete KYC'),
             ),
@@ -360,7 +409,8 @@ Shared via Back2U''';
         builder: (ctx) => _ClaimPhotoDialog(onSubmitted: () {
           Navigator.pop(ctx);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Your claim has been sent to the reporter.')),
+            const SnackBar(
+                content: Text('Your claim has been sent to the reporter.')),
           );
         }),
       );
@@ -371,7 +421,8 @@ Shared via Back2U''';
         builder: (ctx) => _ClaimMessageDialog(onSubmitted: (msg) {
           Navigator.pop(ctx);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Your message has been sent to the finder.')),
+            const SnackBar(
+                content: Text('Your message has been sent to the finder.')),
           );
         }),
       );
@@ -429,9 +480,6 @@ Shared via Back2U''';
                 widget.report.reporterUid ?? 'Not Specified',
                 Icons.person,
               ),
-
-              
-            
               const SizedBox(height: 24),
 
               // Action Buttons
@@ -444,7 +492,8 @@ Shared via Back2U''';
                         // TODO: Implement phone call
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Calling ${widget.report.contactPhone}...'),
+                            content: Text(
+                                'Calling ${widget.report.contactPhone}...'),
                           ),
                         );
                       },
@@ -615,6 +664,7 @@ class _ClaimPhotoDialog extends StatefulWidget {
   @override
   State<_ClaimPhotoDialog> createState() => _ClaimPhotoDialogState();
 }
+
 class _ClaimPhotoDialogState extends State<_ClaimPhotoDialog> {
   bool _uploading = false;
   @override
@@ -624,7 +674,8 @@ class _ClaimPhotoDialogState extends State<_ClaimPhotoDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Upload a photo of yourself with the item or a relevant document.'),
+          const Text(
+              'Upload a photo of yourself with the item or a relevant document.'),
           const SizedBox(height: 16),
           _uploading
               ? const CircularProgressIndicator()
@@ -633,7 +684,8 @@ class _ClaimPhotoDialogState extends State<_ClaimPhotoDialog> {
                   label: const Text('Upload Photo'),
                   onPressed: () async {
                     setState(() => _uploading = true);
-                    await Future.delayed(const Duration(seconds: 2)); // Simulate upload
+                    await Future.delayed(
+                        const Duration(seconds: 2)); // Simulate upload
                     setState(() => _uploading = false);
                     widget.onSubmitted();
                   },
@@ -657,6 +709,7 @@ class _ClaimMessageDialog extends StatefulWidget {
   @override
   State<_ClaimMessageDialog> createState() => _ClaimMessageDialogState();
 }
+
 class _ClaimMessageDialogState extends State<_ClaimMessageDialog> {
   final TextEditingController _controller = TextEditingController();
   bool _sending = false;
@@ -689,11 +742,17 @@ class _ClaimMessageDialogState extends State<_ClaimMessageDialog> {
               ? null
               : () async {
                   setState(() => _sending = true);
-                  await Future.delayed(const Duration(seconds: 2)); // Simulate send
+                  await Future.delayed(
+                      const Duration(seconds: 2)); // Simulate send
                   setState(() => _sending = false);
                   widget.onSubmitted(_controller.text);
                 },
-          child: _sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Send'),
+          child: _sending
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Send'),
         ),
       ],
     );
@@ -712,7 +771,8 @@ class SavedReportsPage extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(title: const Text('Saved Reports')),
         body: Center(
-          child: Text('No saved reports yet.', style: Theme.of(context).textTheme.titleMedium),
+          child: Text('No saved reports yet.',
+              style: Theme.of(context).textTheme.titleMedium),
         ),
       );
     }
@@ -722,7 +782,9 @@ class SavedReportsPage extends StatelessWidget {
       body: FutureBuilder<QuerySnapshot>(
         future: FirebaseFirestore.instance
             .collection('back2u/countries/cameroon/data/reports')
-            .where(FieldPath.documentId, whereIn: savedIds.length > 10 ? savedIds.sublist(0, 10) : savedIds)
+            .where(FieldPath.documentId,
+                whereIn:
+                    savedIds.length > 10 ? savedIds.sublist(0, 10) : savedIds)
             .get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -731,11 +793,14 @@ class SavedReportsPage extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(child: Text('No saved reports found.'));
           }
-          final reports = snapshot.data!.docs.map((doc) => Report.fromFirestore(doc)).toList();
+          final reports = snapshot.data!.docs
+              .map((doc) => Report.fromFirestore(doc))
+              .toList();
           return ListView.builder(
             itemCount: reports.length,
             itemBuilder: (context, index) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
               child: SimpleCard(report: reports[index]),
             ),
           );

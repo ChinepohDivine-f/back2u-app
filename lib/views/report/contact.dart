@@ -173,9 +173,6 @@ class _ContactPageState extends State<ContactPage> {
       appBar: AppBar(
         title: const Text('Contact Information'),
         centerTitle: true,
-        elevation: 1,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
       ),
       body: _isLoadingContactInfo
           ? const Center(child: CircularProgressIndicator())

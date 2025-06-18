@@ -2,11 +2,18 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ImageUploadService {
-  // Replace with your own Cloudinary credentials
-  final String cloudName = 'dlildya5o';
-  final String uploadPreset = 'reports_pics';
+  final String cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
+  final String uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '';
+
+  ImageUploadService() {
+    if (cloudName.isEmpty || uploadPreset.isEmpty) {
+      // ignore: avoid_print
+      print('⚠️ Cloudinary environment variables are missing.');
+    }
+  }
 
   Future<List<String>> uploadImagesToCloudinary({
     required List<XFile> imageFiles,

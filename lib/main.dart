@@ -3,8 +3,14 @@ import 'package:back2u/views/my_reports/index.dart';
 import 'package:back2u/views/saved_reports/index.dart';
 import 'package:back2u/views/settings/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'l10n/app_localizations.dart';
+import 'views/settings/settings_page.dart' as settings_page;
+import 'views/settings/index.dart' as settings_index;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart'; // Import Provider for state management
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Import your custom files
 import 'package:back2u/firebase_options.dart'; // Firebase options
@@ -23,6 +29,9 @@ import 'package:back2u/constants/app_theme.dart'; // NEW
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: '.env');
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -48,17 +57,53 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => MyAppState();
+}
+
+class MyAppState extends State<MyApp> {
+  Locale? _locale;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocale();
+  }
+
+  Future<void> _loadLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString('language') ?? 'en';
+    final locale = languageCode == 'fr' ? const Locale('fr') : const Locale('en');
+    if (mounted) {
+      setState(() {
+        _locale = locale;
+      });
+    }
+  }
+
+  void changeLocale(Locale locale) {
+    if (mounted) {
+      setState(() {
+        _locale = locale;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
-      title: 'Back2U App',
+      title: 'Back2U',
+      locale: _locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       themeMode: themeProvider.themeMode,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => SafeArea(child: child ?? const SizedBox.shrink()),
       theme: AppTheme.lightTheme, // UPDATED
       darkTheme: AppTheme.darkTheme, // UPDATED
       home: const Splash(),

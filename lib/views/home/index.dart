@@ -20,7 +20,8 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   // ReportService will be accessed via Provider now
-  late ReportService _reportService; // Changed to late to be initialized in didChangeDependencies
+  late ReportService
+  _reportService; // Changed to late to be initialized in didChangeDependencies
   StreamSubscription<List<Report>>? _reportsSubscription;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
@@ -35,7 +36,8 @@ class _HomeState extends State<Home> {
   final ScrollController _scrollController = ScrollController();
 
   // Pagination configuration
-  static const double _scrollThreshold = 200.0; // Pixels from bottom to trigger load
+  static const double _scrollThreshold =
+      200.0; // Pixels from bottom to trigger load
   static const int _pageSize = 10; // Items per page
 
   @override
@@ -71,31 +73,35 @@ class _HomeState extends State<Home> {
 
   /// Initialize connectivity listener
   void _initConnectivityListener() {
-    _connectivitySubscription = Connectivity()
-        .onConnectivityChanged
-        .listen((List<ConnectivityResult> results) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      List<ConnectivityResult> results,
+    ) {
       bool becameOffline = results.contains(ConnectivityResult.none);
 
       if (becameOffline && !_isOffline) {
         setState(() {
           _isOffline = true;
-          _errorMessage = 'No internet connection. Please check your network settings.';
-          _isLoadingInitial = false; // Stop initial loading spinner if it was running
-          _isLoadingMore = false;    // Stop more loading spinner
+          _errorMessage =
+              'No internet connection. Please check your network settings.';
+          _isLoadingInitial =
+              false; // Stop initial loading spinner if it was running
+          _isLoadingMore = false; // Stop more loading spinner
         });
         _showOfflineSnackBar();
       } else if (!becameOffline && _isOffline) {
         setState(() {
           _isOffline = false;
           // Clear network-specific error message only if it's the one we set
-          if (_errorMessage == 'No internet connection. Please check your network settings.') {
+          if (_errorMessage ==
+              'No internet connection. Please check your network settings.') {
             _errorMessage = null;
           }
         });
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
         // Retry loading if we had no reports or were specifically offline
-        if (_displayedReports.isEmpty || _errorMessage != null) { // Also retry if there was a previous error
+        if (_displayedReports.isEmpty || _errorMessage != null) {
+          // Also retry if there was a previous error
           _loadInitialReports();
         }
       }
@@ -176,7 +182,8 @@ class _HomeState extends State<Home> {
         !_isLoadingInitial && // Don't load more if initial load is still in progress
         _reportService.hasMoreReports &&
         !_isOffline &&
-        !_reportService.isLoading) { // Use ReportService's isLoading to prevent concurrent fetches
+        !_reportService.isLoading) {
+      // Use ReportService's isLoading to prevent concurrent fetches
       _loadMoreReports();
     }
   }
@@ -193,7 +200,8 @@ class _HomeState extends State<Home> {
       });
       _showOfflineSnackBar();
       return;
-    } else if (_isOffline) { // If was offline but now connected, clear offline state
+    } else if (_isOffline) {
+      // If was offline but now connected, clear offline state
       setState(() {
         _isOffline = false;
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -286,23 +294,19 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Home'),
-          centerTitle: true,
-          elevation: 1,
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
           actions: [
             IconButton(
               icon: const Icon(Icons.search),
               tooltip: 'Search items',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SearchPage()),
-              ),
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SearchPage()),
+                  ),
             ),
             // More options button (can be a PopupMenuButton)
             IconButton(
@@ -324,7 +328,11 @@ class _HomeState extends State<Home> {
                             onTap: () {
                               Navigator.pop(context); // Close dialog
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Feedback feature coming soon!')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Feedback feature coming soon!',
+                                  ),
+                                ),
                               );
                             },
                           ),
@@ -334,7 +342,11 @@ class _HomeState extends State<Home> {
                             onTap: () {
                               Navigator.pop(context); // Close dialog
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Help content not yet available.')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Help content not yet available.',
+                                  ),
+                                ),
                               );
                             },
                           ),
@@ -372,26 +384,31 @@ class _HomeState extends State<Home> {
       padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
       child: Wrap(
         spacing: 8,
-        children: filters.map((filter) {
-          final isSelected = _activeFilter == filter;
-          return ChoiceChip(
-            label: Text(
-              filter,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Theme.of(context).colorScheme.onSecondaryContainer : Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            selected: isSelected,
-            selectedColor: Theme.of(context).colorScheme.secondaryContainer,
-            onSelected: (selected) {
-              if (selected) {
-                _applyFilter(filter);
-              }
-            },
-            showCheckmark: false, // Hide the default checkmark
-          );
-        }).toList(),
+        children:
+            filters.map((filter) {
+              final isSelected = _activeFilter == filter;
+              return ChoiceChip(
+                label: Text(
+                  filter,
+                  style: TextStyle(
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    color:
+                        isSelected
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                selected: isSelected,
+                selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                onSelected: (selected) {
+                  if (selected) {
+                    _applyFilter(filter);
+                  }
+                },
+                showCheckmark: false, // Hide the default checkmark
+              );
+            }).toList(),
       ),
     );
   }
@@ -446,7 +463,9 @@ class _HomeState extends State<Home> {
     }
 
     // If no reports found after loading (and no error)
-    if (_displayedReports.isEmpty && !_isLoadingInitial && _errorMessage == null) {
+    if (_displayedReports.isEmpty &&
+        !_isLoadingInitial &&
+        _errorMessage == null) {
       return _buildNoReportsView();
     }
 
@@ -460,11 +479,16 @@ class _HomeState extends State<Home> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+          CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(height: 16),
           Text(
             "Loading reports...",
-            style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -491,7 +515,9 @@ class _HomeState extends State<Home> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator.adaptive(
-              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
             ),
             // Icon(Icons.search_off, size: 64, color: Theme.of(context).colorScheme.outline),
             const SizedBox(height: 16),
@@ -521,7 +547,7 @@ class _HomeState extends State<Home> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),
@@ -536,7 +562,11 @@ class _HomeState extends State<Home> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
             const SizedBox(height: 16),
             Text(
               "Oops! Something went wrong.",
@@ -578,14 +608,16 @@ class _HomeState extends State<Home> {
   /// Build reports list with pagination
   Widget _buildReportsList() {
     final groupedReports = _groupReportsByMonth(_displayedReports);
-    final sortedMonths = groupedReports.keys.toList()
-      ..sort((a, b) {
-        // Parse "MMMM yyyy" to DateTime for correct sorting
-        final DateFormat formatter = DateFormat('MMMM yyyy');
-        final DateTime dateA = formatter.parse(a);
-        final DateTime dateB = formatter.parse(b);
-        return dateB.compareTo(dateA); // Sort descending (most recent month first)
-      });
+    final sortedMonths =
+        groupedReports.keys.toList()..sort((a, b) {
+          // Parse "MMMM yyyy" to DateTime for correct sorting
+          final DateFormat formatter = DateFormat('MMMM yyyy');
+          final DateTime dateA = formatter.parse(a);
+          final DateTime dateB = formatter.parse(b);
+          return dateB.compareTo(
+            dateA,
+          ); // Sort descending (most recent month first)
+        });
 
     return RefreshIndicator(
       onRefresh: _loadInitialReports, // Pull-to-refresh
@@ -594,15 +626,19 @@ class _HomeState extends State<Home> {
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.only(bottom: 80.0), // Padding for FAB
-        itemCount: sortedMonths.length +
-            (_reportService.hasMoreReports || _isLoadingMore ? 1 : 0), // Add 1 for footer if more reports or loading
+        itemCount:
+            sortedMonths.length +
+            (_reportService.hasMoreReports || _isLoadingMore
+                ? 1
+                : 0), // Add 1 for footer if more reports or loading
         itemBuilder: (context, index) {
           if (index < sortedMonths.length) {
             // This is a month section
             return _buildMonthSection(
               sortedMonths[index],
               groupedReports[sortedMonths[index]]!,
-              index < sortedMonths.length - 1, // Add spacing if not the last month
+              index <
+                  sortedMonths.length - 1, // Add spacing if not the last month
             );
           } else {
             // This is the pagination footer
@@ -614,7 +650,11 @@ class _HomeState extends State<Home> {
   }
 
   /// Build month section (header + reports)
-  Widget _buildMonthSection(String month, List<Report> reports, bool addSpacing) {
+  Widget _buildMonthSection(
+    String month,
+    List<Report> reports,
+    bool addSpacing,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -630,26 +670,7 @@ class _HomeState extends State<Home> {
           ),
         ),
         // Reports for this month
-        ListView.builder(
-          shrinkWrap: true, // Crucial for nested ListViews
-          physics: const NeverScrollableScrollPhysics(), // Prevent inner ListView from scrolling
-          itemCount: reports.length,
-          itemBuilder: (context, reportIndex) {
-            final report = reports[reportIndex];
-            return SimpleCard(
-              //todo: i might want to yse these later
-              // onTap: () {
-              //   Navigator.push(
-              //     context,
-              //     MaterialPageRoute(
-              //       builder: (context) => ReportDetails(report: report),
-              //     ),
-              //   );
-              // },
-              report: report,
-            );
-          },
-        ),
+        ...reports.map((report) => SimpleCard(report: report)).toList(),
         // Spacing between months (optional)
         if (addSpacing) const SizedBox(height: 12),
       ],
@@ -661,20 +682,30 @@ class _HomeState extends State<Home> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20.0),
       child: Center(
-        child: _isLoadingMore
-            ? Column(
-                children: [
-                  CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 8),
-                  Text('Loading more reports...', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                ],
-              )
-            : Text(
-                _reportService.hasMoreReports
-                    ? 'Scroll down to load more' // Message when more reports are available
-                    : 'No more reports', // Message when all reports are loaded
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-              ),
+        child:
+            _isLoadingMore
+                ? Column(
+                  children: [
+                    CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Loading more reports...',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                )
+                : Text(
+                  _reportService.hasMoreReports
+                      ? 'Scroll down to load more' // Message when more reports are available
+                      : 'No more reports', // Message when all reports are loaded
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
       ),
     );
   }

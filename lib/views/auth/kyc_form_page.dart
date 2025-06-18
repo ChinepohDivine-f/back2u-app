@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:back2u/views/settings/privacy_policy.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +15,7 @@ class KycFormPage extends StatefulWidget {
 }
 
 class _KycFormPageState extends State<KycFormPage> {
+  bool _agreedToPolicy = false;
   final _formKey = GlobalKey<FormState>();
   final AuthKycService _authKycService = AuthKycService();
 
@@ -234,11 +237,50 @@ class _KycFormPageState extends State<KycFormPage> {
                       imageFile: _idCardBackImage,
                       onPick: (source) => _pickImage(source, (file) => _idCardBackImage = file),
                     ),
+                    // Privacy Policy Agreement
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _agreedToPolicy,
+                          onChanged: (value) {
+                            setState(() {
+                              _agreedToPolicy = value ?? false;
+                            });
+                          },
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              children: [
+                                const TextSpan(text: 'I have read and agree to the '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const PrivacyPolicyPage()),
+                                      );
+                                    },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 32),
 
                     // Submit Button
                     ElevatedButton.icon(
-                      onPressed: _submitKyc,
+                      onPressed: _agreedToPolicy ? _submitKyc : null,
                       icon: const Icon(Icons.verified_user),
                       label: const Text('Submit for Verification'),
                       style: ElevatedButton.styleFrom(
