@@ -7,10 +7,9 @@ class AppUser {
   final String username;
   final String? phone;
   final String? whatsappNumber;
+  final bool phoneVerified;
   final String? profileImageUrl; // Changed from List<String> to single String URL
   final String? accountNameOnId; // New field for KYC
-  final String? idCardFrontUrl; // New field for KYC
-  final String? idCardBackUrl; // New field for KYC
   final bool kycCompleted; // New field to track KYC status
   final Timestamp createdAt;
   final Timestamp updatedAt;
@@ -26,10 +25,9 @@ class AppUser {
     required this.username,
     this.phone,
     this.whatsappNumber,
+    this.phoneVerified = false,
     this.profileImageUrl,
     this.accountNameOnId,
-    this.idCardFrontUrl,
-    this.idCardBackUrl,
     this.kycCompleted = false, // Default to false
     required this.createdAt,
     required this.updatedAt,
@@ -45,11 +43,9 @@ class AppUser {
       email: data['email'] ?? '',
       username: data['username'] ?? '',
       phone: data['phone'],
-      whatsappNumber: data['whatsappNumber'],
+      phoneVerified: data['phoneVerified'] ?? false,
       profileImageUrl: data['profileImageUrl'],
       accountNameOnId: data['accountNameOnId'],
-      idCardFrontUrl: data['idCardFrontUrl'],
-      idCardBackUrl: data['idCardBackUrl'],
       kycCompleted: data['kycCompleted'] ?? false,
       createdAt: data['createdAt'] ?? Timestamp.now(),
       updatedAt: data['updatedAt'] ?? Timestamp.now(),
@@ -65,10 +61,9 @@ class AppUser {
       'username': username,
       'phone': phone,
       'whatsappNumber': whatsappNumber,
+      'phoneVerified': phoneVerified,
       'profileImageUrl': profileImageUrl,
       'accountNameOnId': accountNameOnId,
-      'idCardFrontUrl': idCardFrontUrl,
-      'idCardBackUrl': idCardBackUrl,
       'kycCompleted': kycCompleted,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -86,6 +81,7 @@ class AppUser {
       email: user.email ?? '',
       username: user.displayName ?? 'New User',
       profileImageUrl: user.photoURL,
+      phoneVerified: user.phoneNumber != null, // Consider phone verified if user has a phone number
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       joinedDate: Timestamp.now(),

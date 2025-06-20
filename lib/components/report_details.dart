@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:back2u/services/auth_kyc_service.dart';
+import 'package:back2u/views/auth/phone_verification_page.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -90,7 +91,20 @@ class _ReportDetailsState extends State<ReportDetails> {
     }
   }
 
-  void _shareReport() {
+  void _shareReport() async {
+    // Check if phone is verified before allowing sharing
+    final isVerified = await _isPhoneVerified();
+    if (!isVerified) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please verify your phone number to share this report'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     try {
       // THIS IS THE KEY: The URL 'https://back2u.app/report/${widget.report.reportId}'
       // MUST have Open Graph and Twitter Card meta tags on its HTML backend.
@@ -177,17 +191,82 @@ Shared via Back2U''';
     }
   }
 
+  // Check if user's phone is verified
+  Future<bool> _isPhoneVerified() async {
+    final authService = context.read<AuthKycService>();
+    await authService.reloadUser();
+    return authService.isPhoneVerified;
+  }
+
   // Show contact information modal
-  void _showContactModal() {
+  Future<void> _showContactModal() async {
+    // Check if phone is verified
+    final isVerified = await _isPhoneVerified();
+    
+    if (!isVerified) {
+      // Show dialog to verify phone first
+      final shouldVerify = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Phone Verification Required'),
+          content: const Text('You need to verify your phone number before you can contact the finder.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Verify Phone'),
+            ),
+          ],
+        ),
+      ) ?? false;
+
+      if (shouldVerify && mounted) {
+        // Navigate to phone verification page with isFromReportDetails flag
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PhoneVerificationPage(isFromReportDetails: true),
+          ),
+        );
+        
+        if (result != true) {
+          // User didn't complete verification
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Phone verification is required to contact the finder'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+        
+        // If we get here, verification was successful
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Phone verified successfully!'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        return; // User cancelled
+      }
+    }
+
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
 
     // Format phone numbers for dialer and WhatsApp
-    // Clean both phone number and WhatsApp number for safety
     final cleanedContactPhone = widget.report.contactPhone.replaceAll(RegExp(r'[^0-9+]'), '');
     final cleanedWhatsappNumber = widget.report.whatsappNumber.replaceAll(RegExp(r'[^0-9+]'), '');
-
     final whatsappUrl = 'https://wa.me/$cleanedWhatsappNumber';
     final callUrl = 'tel:$cleanedContactPhone';
 

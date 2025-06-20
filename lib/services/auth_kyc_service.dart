@@ -1,13 +1,12 @@
 import 'dart:io';
-import 'package:flutter/material.dart'; // Add for ChangeNotifier
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:back2u/models/user_model.dart'; // Ensure this path is correct
+import 'package:back2u/models/user_model.dart';
 
-// Make AuthKycService a ChangeNotifier
 class AuthKycService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -15,62 +14,63 @@ class AuthKycService with ChangeNotifier {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
 
-  // Firestore path for user profiles
   static const String _userCollectionPath = 'back2u/countries/cameroon/data/users';
 
-  // Internal state for current user and profile
   User? _currentUser;
   AppUser? _appUser;
-  bool _isLoadingAuth = true; // Overall loading state for auth/user profile
+  bool _isLoadingAuth = true;
 
-  // Public getters for the state
   User? get currentUser => _currentUser;
   AppUser? get appUser => _appUser;
-  bool get isLoadingAuth => _isLoadingAuth; // Use this for UI loading indicators
+  bool get isLoadingAuth => _isLoadingAuth;
   bool get isAuthenticated => _currentUser != null && !_currentUser!.isAnonymous;
-  bool get kycCompleted => _appUser?.kycCompleted ?? false; // Convenience getter
+  bool get kycCompleted => _appUser?.kycCompleted ?? false;
 
-  // Constructor: Set up auth state listener
   AuthKycService() {
     _auth.authStateChanges().listen((user) async {
       _currentUser = user;
-      _isLoadingAuth = true; // Set loading true while profile is being fetched
-      notifyListeners(); // Notify immediately that user state (logged in/out) has changed
+      _isLoadingAuth = true;
+      notifyListeners();
 
       if (user != null) {
         await _fetchUserProfile(user.uid);
       } else {
-        _appUser = null; // Clear app user if logged out
+        _appUser = null;
       }
-      _isLoadingAuth = false; // Reset loading
-      notifyListeners(); // Notify again after profile fetch or clearing
+      _isLoadingAuth = false;
+      notifyListeners();
     });
   }
 
-  // Stream to listen to authentication state changes (still useful for some cases)
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  // Get current user UID
   String? get currentUserId => _auth.currentUser?.uid;
 
-  // Sign in anonymously (if still needed)
   Future<UserCredential> signInAnonymously() async {
     _isLoadingAuth = true;
     notifyListeners();
     try {
       final result = await _auth.signInAnonymously();
-      // State updated by authStateChanges listener
+      final user = result.user;
+      if (user != null) {
+        final userRef = _db.collection(_userCollectionPath).doc(user.uid);
+        final docSnapshot = await userRef.get();
+        if (!docSnapshot.exists) {
+          final newAppUser = AppUser.fromFirebaseUser(user);
+          await userRef.set(newAppUser.toFirestore());
+          _appUser = newAppUser;
+        } else {
+          _appUser = AppUser.fromFirestore(docSnapshot);
+        }
+      }
       return result;
     } catch (e) {
-      print('Error signing in anonymously: $e');
       rethrow;
     } finally {
-      _isLoadingAuth = false; // Re-evaluate if listener has handled it
+      _isLoadingAuth = false;
       notifyListeners();
     }
   }
 
-  // Sign in with Google - Handles both new user creation and existing user sign-in
   Future<User?> signInWithGoogle() async {
     _isLoadingAuth = true;
     notifyListeners();
@@ -79,7 +79,7 @@ class AuthKycService with ChangeNotifier {
       if (googleUser == null) {
         _isLoadingAuth = false;
         notifyListeners();
-        return null; // User cancelled the sign-in process
+        return null;
       }
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
@@ -92,36 +92,25 @@ class AuthKycService with ChangeNotifier {
       try {
         if (_auth.currentUser != null && _auth.currentUser!.isAnonymous) {
           userCredential = await _auth.currentUser!.linkWithCredential(credential);
-          print('Anonymous account linked with Google successfully!');
         } else {
           userCredential = await _auth.signInWithCredential(credential);
-          print('Signed in with Google successfully!');
         }
       } on FirebaseAuthException catch (e) {
         if (e.code == 'credential-already-in-use') {
-          print('Error: credential-already-in-use. Attempting to sign in with existing user.');
-          userCredential = await _auth.signInWithCredential(credential); // Try direct sign-in
+          userCredential = await _auth.signInWithCredential(credential);
         } else {
-          print('Error during Google sign-in: ${e.code} - ${e.message}');
           rethrow;
         }
-      } catch (e) {
-        print('Unexpected error during Google sign-in: $e');
-        rethrow;
       }
 
       final User? user = userCredential.user;
       if (user != null) {
-        await _checkAndCreateUserProfile(user); // Ensure profile exists
+        await _checkAndCreateUserProfile(user);
       }
-      // State will be updated by authStateChanges listener
       return user;
     } catch (e) {
-      print('Error signing in with Google: $e');
       rethrow;
     } finally {
-      // If error occurred before listener could update, ensure loading is off.
-      // Otherwise, listener will set it.
       if (_currentUser == null) {
         _isLoadingAuth = false;
         notifyListeners();
@@ -129,17 +118,13 @@ class AuthKycService with ChangeNotifier {
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
     _isLoadingAuth = true;
     notifyListeners();
     try {
       await _googleSignIn.signOut();
       await _auth.signOut();
-      print('User signed out.');
-      // State updated by authStateChanges listener
     } catch (e) {
-      print('Error signing out: $e');
       rethrow;
     } finally {
       _isLoadingAuth = false;
@@ -147,22 +132,19 @@ class AuthKycService with ChangeNotifier {
     }
   }
 
-  // Internal method to fetch user profile
   Future<void> _fetchUserProfile(String uid) async {
     try {
       final docSnapshot = await _db.collection(_userCollectionPath).doc(uid).get();
       if (docSnapshot.exists) {
         _appUser = AppUser.fromFirestore(docSnapshot);
       } else {
-        _appUser = null; // User profile might not exist yet (new user)
+        _appUser = null;
       }
     } catch (e) {
-      print('Error fetching user profile: $e');
       _appUser = null;
     }
   }
 
-  // Public method to explicitly refresh the AppUser profile (e.g., after KYC)
   Future<void> refreshUserProfile() async {
     if (_currentUser != null) {
       _isLoadingAuth = true;
@@ -173,7 +155,6 @@ class AuthKycService with ChangeNotifier {
     }
   }
 
-  // Checks if a user's profile exists in Firestore and creates it if not.
   Future<void> _checkAndCreateUserProfile(User user) async {
     final userRef = _db.collection(_userCollectionPath).doc(user.uid);
     final docSnapshot = await userRef.get();
@@ -181,18 +162,11 @@ class AuthKycService with ChangeNotifier {
     if (!docSnapshot.exists) {
       final newAppUser = AppUser.fromFirebaseUser(user);
       await userRef.set(newAppUser.toFirestore());
-      print('New user profile created in Firestore for ${user.uid} with kycCompleted: false');
-      // Update local state and notify after creating profile
       _appUser = newAppUser;
       notifyListeners();
-    } else {
-      print('User profile already exists for ${user.uid}');
-      // Also ensure local _appUser is up-to-date if it was already fetched.
-      // This is primarily handled by _fetchUserProfile called from authStateChanges.
     }
   }
 
-  // Get user profile from Firestore (public method, primarily for internal use by provider)
   Future<AppUser?> getUserProfile(String uid) async {
     try {
       final docSnapshot = await _db.collection(_userCollectionPath).doc(uid).get();
@@ -201,12 +175,10 @@ class AuthKycService with ChangeNotifier {
       }
       return null;
     } catch (e) {
-      print('Error getting user profile: $e');
       return null;
     }
   }
 
-  // Update user profile in Firestore (for KYC data)
   Future<void> updateKycData({
     required String uid,
     required String phone,
@@ -230,11 +202,8 @@ class AuthKycService with ChangeNotifier {
         'kycCompleted': true,
         'updatedAt': Timestamp.now(),
       });
-      print('KYC data updated successfully for user $uid. KYC now complete.');
-      // Refresh local appUser state and notify
-      await _fetchUserProfile(uid); // Re-fetch to update _appUser in provider
+      await _fetchUserProfile(uid);
     } catch (e) {
-      print('Error updating KYC data: $e');
       rethrow;
     } finally {
       _isLoadingAuth = false;
@@ -242,38 +211,29 @@ class AuthKycService with ChangeNotifier {
     }
   }
 
-  // Pick image from gallery or camera
   Future<XFile?> pickImage(ImageSource source) async {
     try {
-      final XFile? image = await _picker.pickImage(source: source);
-      return image;
+      return await _picker.pickImage(source: source);
     } catch (e) {
-      print('Error picking image: $e');
       return null;
     }
   }
 
-  // Upload image to Firebase Storage
   Future<String?> uploadImage(File imageFile, String path) async {
     try {
       final ref = _storage.ref().child(path);
       final uploadTask = ref.putFile(imageFile);
       final snapshot = await uploadTask.whenComplete(() {});
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      print('Image uploaded to: $downloadUrl');
-      return downloadUrl;
+      return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      print('Error uploading image: $e');
       return null;
     }
   }
 
-  /// Stream the user's profile for real-time updates (e.g., saved reports/bookmarks)
   Stream<AppUser> getUserProfileStream(String uid) {
     return _db.collection(_userCollectionPath).doc(uid).snapshots().map((doc) => AppUser.fromFirestore(doc));
   }
 
-  /// Toggle a report as saved/unsaved for the user (add/remove from savedReports array)
   Future<void> toggleSavedReport(String uid, String reportId) async {
     final userRef = _db.collection(_userCollectionPath).doc(uid);
     final doc = await userRef.get();
@@ -281,16 +241,79 @@ class AuthKycService with ChangeNotifier {
     final appUser = AppUser.fromFirestore(doc);
     final List<String> currentSaved = List<String>.from(appUser.savedReports);
     final isSaved = currentSaved.contains(reportId);
-    if (isSaved) {
-      await userRef.update({
-        'savedReports': FieldValue.arrayRemove([reportId]),
-        'updatedAt': Timestamp.now(),
-      });
-    } else {
-      await userRef.update({
-        'savedReports': FieldValue.arrayUnion([reportId]),
-        'updatedAt': Timestamp.now(),
-      });
+    await userRef.update({
+      'savedReports': isSaved
+          ? FieldValue.arrayRemove([reportId])
+          : FieldValue.arrayUnion([reportId]),
+      'updatedAt': Timestamp.now(),
+    });
+  }
+
+  Future<void> reloadUser() async {
+    await _auth.currentUser?.reload();
+    if (_currentUser != null) {
+      await refreshUserProfile();
+    }
+    notifyListeners();
+  }
+
+  bool get isPhoneVerified => _currentUser?.phoneNumber?.isNotEmpty ?? false;
+
+  Future<bool> isPhoneVerifiedAsync() async {
+    await _auth.currentUser?.reload();
+    return _auth.currentUser?.phoneNumber?.isNotEmpty ?? false;
+  }
+
+  Future<void> verifyPhoneAndCompleteKyc({
+    required String phoneNumber,
+    required String accountNameOnId,
+    required Function(PhoneAuthCredential) onVerificationCompleted,
+    required Function(FirebaseAuthException) onVerificationFailed,
+    required Function(String, int?) onCodeSent,
+    required Function(String) onCodeAutoRetrievalTimeout,
+  }) async {
+    if (_currentUser == null) {
+      throw Exception('No user is currently signed in');
+    }
+
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await _auth.currentUser!.updatePhoneNumber(credential);
+        await updateKycData(
+          uid: _currentUser!.uid,
+          phone: phoneNumber,
+          whatsappNumber: phoneNumber,
+          accountNameOnId: accountNameOnId,
+        );
+        onVerificationCompleted(credential);
+      },
+      verificationFailed: onVerificationFailed,
+      codeSent: onCodeSent,
+      codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+    );
+  }
+
+  Future<void> confirmSmsCode({
+    required String smsCode,
+    required String verificationId,
+    required String phoneNumber,
+    required String accountNameOnId,
+  }) async {
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+      await _auth.currentUser!.updatePhoneNumber(credential);
+      await updateKycData(
+        uid: _currentUser!.uid,
+        phone: phoneNumber,
+        whatsappNumber: phoneNumber,
+        accountNameOnId: accountNameOnId,
+      );
+    } catch (e) {
+      rethrow;
     }
   }
 }

@@ -39,7 +39,7 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
           .listen((appUser) {
         if (mounted) {
           setState(() {
-            _currentSavedReportIds = appUser.savedReports ?? [];
+            _currentSavedReportIds = appUser?.savedReports ?? [];
           });
         }
       }, onError: (error) {

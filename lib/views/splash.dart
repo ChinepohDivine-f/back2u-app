@@ -5,6 +5,8 @@ import 'package:back2u/views/onboarding/index.dart'; // Your onboarding screen
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
+import 'package:provider/provider.dart';
+import 'package:back2u/services/auth_kyc_service.dart';
 
 // Constant for the SharedPreferences key to track initial setup completion
 const String _kHasCompletedInitialSetup = 'has_completed_initial_setup';
@@ -47,9 +49,10 @@ class _SplashState extends State<Splash> {
       // Case 1: No user is currently signed in.
       // Attempt to sign in anonymously. This is treated as a "first-time" authentication attempt.
       try {
-        await FirebaseAuth.instance.signInAnonymously();
+        // Use AuthKycService for anonymous sign-in
+        final authService = Provider.of<AuthKycService>(context, listen: false);
+        await authService.signInAnonymously();
         print("Signed in with temporary account.");
-
         // If anonymous sign-in is successful for a previously unauthenticated user,
         // mark the initial setup as complete (they are now authenticated for the first time)
         // and navigate them to the Onboarding screen.
@@ -65,7 +68,7 @@ class _SplashState extends State<Splash> {
         // If authentication fails (e.g., "operation-not-allowed"), or any other error,
         // we still need to guide the user, so direct them to Onboarding.
         print(
-          "Firebase Auth error during anonymous sign-in: ${e.code} - ${e.message}",
+          "Firebase Auth error during anonymous sign-in: \\${e.code} - \\${e.message}",
         );
         if (mounted) {
           Navigator.pushReplacement(

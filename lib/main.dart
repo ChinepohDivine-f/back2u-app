@@ -2,6 +2,7 @@ import 'package:back2u/providers/theme_provider.dart';
 import 'package:back2u/views/my_reports/index.dart';
 import 'package:back2u/views/saved_reports/index.dart';
 import 'package:back2u/views/settings/index.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,8 +24,8 @@ import 'package:back2u/views/onboarding/index.dart';
 import 'package:back2u/views/report/index.dart';
 import 'package:back2u/views/auth/kyc_form_page.dart';
 import 'package:back2u/views/data/data_seeder.dart';
-
-import 'package:back2u/views/auth/auth_page.dart'; // <--- NEW: Import the AuthPage
+import 'package:back2u/views/auth/phone_verification_page.dart';
+import 'package:back2u/views/auth/auth_page.dart';
 import 'package:back2u/constants/app_theme.dart'; // NEW
 
 void main() async {
@@ -35,7 +36,19 @@ void main() async {
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+    
   );
+    // Initialize App Check after Firebase.initializeApp
+  await FirebaseAppCheck.instance.activate(
+    // You can use a combination of providers.
+    // For Android, usually one of the following:
+    androidProvider: AndroidProvider.playIntegrity, // Recommended for new Android apps
+    // androidProvider: AndroidProvider.safetyNet, // Older alternative for Android
+    // If you have a web version:
+    // webProvider: ReCaptchaV3Provider('YOUR_RECAPTCHA_SITE_KEY'),
+  );
+
+  
 
   runApp(
     MultiProvider(
@@ -116,9 +129,9 @@ class MyAppState extends State<MyApp> {
         '/data_seeder': (context) => const DataSeederPage(),
         '/settings': (context) => const SettingsPage(),
         '/my_reports': (context) => const MyReportsPage(),
-        '/saved_reports': (context) => const SavedReportsPage(), // Net)w route for saved reports
-        '/auth': (context) =>
-            const AuthPage(), // <--- NEW: Route for the AuthPage
+        '/saved_reports': (context) => const SavedReportsPage(),
+        '/auth': (context) => const AuthPage(),
+        '/phone_verification': (context) => const PhoneVerificationPage(),
       },
     );
   }

@@ -17,6 +17,7 @@ import 'package:back2u/models/location_model.dart';
 
 // Import the new data fetching service
 import 'package:back2u/services/form_data_fetch_service.dart';
+import 'package:back2u/views/report/document_verification_page.dart';
 
 class ReportForm extends StatefulWidget {
   final Report report; // The report to be edited (or a new empty report)
@@ -266,20 +267,6 @@ class _ReportFormState extends State<ReportForm> {
       return;
     }
 
-    // Validate images for 'Found' reports
-    final totalImagesAfterRemoval = _newlySelectedLocalImages.length +
-        _existingImageUrls.where((url) => !_imagesToDelete.contains(url)).length;
-
-    if (widget.report.type == 'found' && totalImagesAfterRemoval == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('At least one image is required for Found reports.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     if (_formKey.currentState!.validate()) {
       // Create a *copy* of the report with updated details
       final updatedReport = widget.report.copyWith(
@@ -291,21 +278,17 @@ class _ReportFormState extends State<ReportForm> {
         subLocationLost: _selectedSubLocationName ?? '',
         notes: _notesController!.text.trim(),
         reward: _addReward ? _rewardAmountController!.text.trim() : '0',
-        // Existing images will be filtered during the final upload/update process
-        // No need to pass them here; the ContactPage will handle them.
       );
 
-      // Pass the updated report, newly selected images, and images to delete
+      // Route to DocumentVerificationPage instead of ContactPage
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ContactPage(
-            report: updatedReport,
-            localImageFiles: _newlySelectedLocalImages,
-            existingImageUrls: _existingImageUrls,
-            imagesToDelete: _imagesToDelete,
-            isEditing: widget.isEditing, // Indicate that this is an edit flow
-          ),
+          // builder: (context) => DocumentVerificationPage(
+          //   report: updatedReport,
+          //   isEditing: widget.isEditing,
+          // ),
+          builder: (context) => ContactPage(report: updatedReport, isEditing: widget.isEditing),
         ),
       );
     } else {
