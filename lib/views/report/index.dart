@@ -211,7 +211,7 @@ class _ReportPageState extends State<ReportPage> {
 
   Widget _buildReportButtons(ThemeData theme, ColorScheme colors,
       AppUser? appUser, String reporterUid) {
-    final kycCompleted = appUser?.kycCompleted ?? false;
+    final kycCompleted = appUser?.verified ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

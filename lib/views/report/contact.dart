@@ -33,9 +33,8 @@ class ContactPage extends StatefulWidget {
 
 class _ContactPageState extends State<ContactPage> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _whatsappController;
   late TextEditingController _phoneController;
-  bool _saveToProfile = false;
+  bool _useSameForWhatsApp = false;
   bool _isLoadingContactInfo = false;
 
   final DataFetchService _dataFetchService = DataFetchService();
@@ -44,8 +43,7 @@ class _ContactPageState extends State<ContactPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with existing report data or empty string
-    _whatsappController = TextEditingController(text: widget.report.whatsappNumber);
+    // Initialize controller with existing report data or empty string
     _phoneController = TextEditingController(text: widget.report.contactPhone);
 
     _getCurrentUserAndFetchContactInfo();
@@ -63,11 +61,8 @@ class _ContactPageState extends State<ContactPage> {
 
       if (appUser != null) {
         setState(() {
-          // Only pre-fill from profile if the report's contact fields are empty.
-          // This way, if we're editing and numbers were already set, they persist.
-          if (widget.report.whatsappNumber.isEmpty && appUser.whatsappNumber != null) {
-            _whatsappController.text = appUser.whatsappNumber!;
-          }
+          // Only pre-fill from profile if the report's contact field is empty.
+          // This way, if we're editing and number was already set, it persists.
           if (widget.report.contactPhone.isEmpty && appUser.phone != null) {
             _phoneController.text = appUser.phone!;
           }
@@ -83,55 +78,27 @@ class _ContactPageState extends State<ContactPage> {
     });
   }
 
-  // Validator to ensure at least one number is provided
-  String? _validateContactNumbers(String? whatsapp, String? phone) {
-    if ((whatsapp == null || whatsapp.trim().isEmpty) && (phone == null || phone.trim().isEmpty)) {
-      return 'Please provide at least one contact number.';
+  // Validator to ensure phone number is provided
+  String? _validatePhoneNumber(String? phone) {
+    if (phone == null || phone.trim().isEmpty) {
+      return 'Please provide a phone number.';
+    }
+    if (phone.length < 9) {
+      return 'Number must be 9 digits.';
     }
     return null;
   }
 
   void _navigateToSummary() async {
-    final String whatsappText = _whatsappController.text.trim();
     final String phoneText = _phoneController.text.trim();
-    final String? combinedError = _validateContactNumbers(whatsappText, phoneText);
+    final String whatsappText = _useSameForWhatsApp ? phoneText : '';
 
-    if (_formKey.currentState!.validate() && combinedError == null) {
-      // If 'Save to profile' is checked and user is logged in, update profile
-      if (_saveToProfile && _currentUserId != null) {
-        try {
-          // Use .set with merge: true to avoid overwriting other user data
-          await FirebaseFirestore.instance
-              .collection(_dataFetchService.usersCollectionPath())
-              .doc(_currentUserId!)
-              .set(
-                {
-                  'whatsappNumber': whatsappText.isNotEmpty ? whatsappText : null, // Set to null if empty
-                  'phone': phoneText.isNotEmpty ? phoneText : null, // Set to null if empty
-                  'updatedAt': FieldValue.serverTimestamp(), // Use server timestamp
-                },
-                SetOptions(merge: true),
-              );
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Contact info saved to profile!')),
-            );
-          }
-        } catch (e) {
-          debugPrint('Error saving contact info to profile: $e');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to save contact info to profile.'), backgroundColor: Colors.red),
-            );
-          }
-        }
-      }
-
+    if (_formKey.currentState!.validate()) {
       // Create a *copy* of the report object and update its contact properties
       // Note: createdAt will be set in SummaryPage for new reports, not here.
       final updatedReport = widget.report.copyWith(
-        whatsappNumber: whatsappText,
         contactPhone: phoneText,
+        whatsappNumber: whatsappText,
       );
 
       // Pass all necessary data to the SummaryPage for final processing
@@ -149,18 +116,11 @@ class _ContactPageState extends State<ContactPage> {
           ),
         );
       }
-    } else {
-      if (mounted && combinedError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(combinedError), backgroundColor: Theme.of(context).colorScheme.error),
-        );
-      }
     }
   }
 
   @override
   void dispose() {
-    _whatsappController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -185,33 +145,10 @@ class _ContactPageState extends State<ContactPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      'Provide your contact details. At least one number is required.',
+                      'Provide your contact details for people to reach you.',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 24),
-
-                    // WhatsApp Number Field
-                    TextFormField(
-                      controller: _whatsappController,
-                      keyboardType: TextInputType.phone,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(9), // Standard 9 digits for Cameroon
-                      ],
-                      decoration: InputDecoration(
-                        labelText: 'WhatsApp Number (e.g., 67X XXX XXXX)',
-                        hintText: 'e.g., 671234567',
-                        prefixIcon: const Icon(Icons.message),
-                        border: const OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value != null && value.isNotEmpty && value.length < 9) {
-                          return 'Number must be 9 digits.';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
 
                     // Phone Number Field
                     TextFormField(
@@ -222,52 +159,35 @@ class _ContactPageState extends State<ContactPage> {
                         LengthLimitingTextInputFormatter(9), // Standard 9 digits for Cameroon
                       ],
                       decoration: InputDecoration(
-                        labelText: 'Phone Number (e.g., 69X XXX XXXX)',
-                        hintText: 'e.g., 698765432',
+                        labelText: 'Phone Number (e.g., 67X XXX XXXX)',
+                        hintText: 'e.g., 671234567',
                         prefixIcon: const Icon(Icons.phone),
                         border: const OutlineInputBorder(),
                       ),
-                       validator: (value) {
-                        if (value != null && value.isNotEmpty && value.length < 9) {
-                          return 'Number must be 9 digits.';
-                        }
-                        return null;
-                      },
+                      validator: _validatePhoneNumber,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
-                    // Checkbox to save to profile
+                    // Checkbox to use same number for WhatsApp
                     Row(
                       children: [
                         Checkbox(
-                          value: _saveToProfile,
-                          onChanged: _currentUserId != null
-                              ? (bool? newValue) {
-                                  setState(() {
-                                    _saveToProfile = newValue ?? false;
-                                  });
-                                }
-                              : null, // Disable if user is not logged in
+                          value: _useSameForWhatsApp,
+                          onChanged: (bool? newValue) {
+                            setState(() {
+                              _useSameForWhatsApp = newValue ?? false;
+                            });
+                          },
                           activeColor: colorScheme.primary,
                         ),
                         Expanded(
                           child: Text(
-                            'Save this information to my profile',
+                            'Use the same number for WhatsApp',
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
                       ],
                     ),
-                    if (_currentUserId == null)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 40.0, top: 4.0),
-                        child: Text(
-                          'Sign in to enable this option.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
                     const SizedBox(height: 30),
 
                     // Submit Button

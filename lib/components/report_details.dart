@@ -225,11 +225,10 @@ Shared via Back2U''';
 
       if (shouldVerify && mounted) {
         // Navigate to phone verification page with isFromReportDetails flag
-        final result = await Navigator.push(
+        final result = await Navigator.pushNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => const PhoneVerificationPage(isFromReportDetails: true),
-          ),
+          'phone_verification'
+          
         );
         
         if (result != true) {

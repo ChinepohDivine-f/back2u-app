@@ -131,7 +131,7 @@ class MyAppState extends State<MyApp> {
         '/my_reports': (context) => const MyReportsPage(),
         '/saved_reports': (context) => const SavedReportsPage(),
         '/auth': (context) => const AuthPage(),
-        '/phone_verification': (context) => const PhoneVerificationPage(),
+        '/phone_verification': (context) => const KycFormPage(),
       },
     );
   }

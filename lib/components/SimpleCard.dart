@@ -77,7 +77,8 @@ class SimpleCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       clipBehavior: Clip.hardEdge,
-      elevation: 5.0,
+      elevation: 2.0,
+      shadowColor: colors.onPrimaryFixedVariant.withOpacity(0.2),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap ?? () => Navigator.push(

@@ -24,7 +24,7 @@ class AuthKycService with ChangeNotifier {
   AppUser? get appUser => _appUser;
   bool get isLoadingAuth => _isLoadingAuth;
   bool get isAuthenticated => _currentUser != null && !_currentUser!.isAnonymous;
-  bool get kycCompleted => _appUser?.kycCompleted ?? false;
+  bool get kycCompleted => _appUser?.verified ?? false;
 
   AuthKycService() {
     _auth.authStateChanges().listen((user) async {
@@ -50,18 +50,9 @@ class AuthKycService with ChangeNotifier {
     notifyListeners();
     try {
       final result = await _auth.signInAnonymously();
-      final user = result.user;
-      if (user != null) {
-        final userRef = _db.collection(_userCollectionPath).doc(user.uid);
-        final docSnapshot = await userRef.get();
-        if (!docSnapshot.exists) {
-          final newAppUser = AppUser.fromFirebaseUser(user);
-          await userRef.set(newAppUser.toFirestore());
-          _appUser = newAppUser;
-        } else {
-          _appUser = AppUser.fromFirestore(docSnapshot);
-        }
-      }
+      // Anonymous users don't get Firestore profiles
+      // They will be redirected to sign in with Google
+      print('Anonymous user signed in: ${result.user?.uid}');
       return result;
     } catch (e) {
       rethrow;
@@ -134,6 +125,12 @@ class AuthKycService with ChangeNotifier {
 
   Future<void> _fetchUserProfile(String uid) async {
     try {
+      // Check if current user is anonymous
+      if (_currentUser?.isAnonymous == true) {
+        _appUser = null;
+        return;
+      }
+      
       final docSnapshot = await _db.collection(_userCollectionPath).doc(uid).get();
       if (docSnapshot.exists) {
         _appUser = AppUser.fromFirestore(docSnapshot);
@@ -156,15 +153,29 @@ class AuthKycService with ChangeNotifier {
   }
 
   Future<void> _checkAndCreateUserProfile(User user) async {
+    // Don't create profiles for anonymous users
+    if (user.isAnonymous) {
+      print('Anonymous user detected, skipping Firestore profile creation');
+      _appUser = null;
+      notifyListeners();
+      return;
+    }
+    
     final userRef = _db.collection(_userCollectionPath).doc(user.uid);
     final docSnapshot = await userRef.get();
-
+    
     if (!docSnapshot.exists) {
+      // Only create if user doesn't exist and is not anonymous
       final newAppUser = AppUser.fromFirebaseUser(user);
       await userRef.set(newAppUser.toFirestore());
+      print('New user profile created for ${user.uid}');
       _appUser = newAppUser;
-      notifyListeners();
+    } else {
+      // User already exists, load existing profile
+      _appUser = AppUser.fromFirestore(docSnapshot);
+      print('Existing user profile loaded for ${user.uid}');
     }
+    notifyListeners();
   }
 
   Future<AppUser?> getUserProfile(String uid) async {
@@ -179,27 +190,20 @@ class AuthKycService with ChangeNotifier {
     }
   }
 
-  Future<void> updateKycData({
+  Future<void> updateUserVerification({
     required String uid,
+    required String name,
     required String phone,
-    required String whatsappNumber,
-    required String accountNameOnId,
-    String? profileImageUrl,
-    String? idCardFrontUrl,
-    String? idCardBackUrl,
+    required bool verified,
   }) async {
     _isLoadingAuth = true;
     notifyListeners();
     try {
       final userRef = _db.collection(_userCollectionPath).doc(uid);
       await userRef.update({
+        'username': name,
         'phone': phone,
-        'whatsappNumber': whatsappNumber,
-        'accountNameOnId': accountNameOnId,
-        'profileImageUrl': profileImageUrl,
-        'idCardFrontUrl': idCardFrontUrl,
-        'idCardBackUrl': idCardBackUrl,
-        'kycCompleted': true,
+        'verified': verified,
         'updatedAt': Timestamp.now(),
       });
       await _fetchUserProfile(uid);
@@ -280,11 +284,11 @@ class AuthKycService with ChangeNotifier {
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
         await _auth.currentUser!.updatePhoneNumber(credential);
-        await updateKycData(
+        await updateUserVerification(
           uid: _currentUser!.uid,
+          name: _currentUser!.displayName ?? '',
           phone: phoneNumber,
-          whatsappNumber: phoneNumber,
-          accountNameOnId: accountNameOnId,
+          verified: true,
         );
         onVerificationCompleted(credential);
       },
@@ -306,11 +310,11 @@ class AuthKycService with ChangeNotifier {
         smsCode: smsCode,
       );
       await _auth.currentUser!.updatePhoneNumber(credential);
-      await updateKycData(
+      await updateUserVerification(
         uid: _currentUser!.uid,
+        name: _currentUser!.displayName ?? '',
         phone: phoneNumber,
-        whatsappNumber: phoneNumber,
-        accountNameOnId: accountNameOnId,
+        verified: true,
       );
     } catch (e) {
       rethrow;

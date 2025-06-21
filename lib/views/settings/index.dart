@@ -220,13 +220,13 @@ class _SettingsPageState extends State<SettingsPage> {
                         style: theme.textTheme.bodyLarge),
                     subtitle: Text(
                       userLoggedIn
-                          ? (_appUser?.kycCompleted == true
+                          ? (_appUser?.verified == true
                               ? 'Verified'
                               : 'Not Verified')
                           : 'Sign in to view KYC status',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: userLoggedIn &&
-                                (_appUser?.kycCompleted == true)
+                                (_appUser?.verified == true)
                             ? Colors.green
                             : (userLoggedIn
                                 ? Colors.red
@@ -236,7 +236,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             : FontWeight.normal,
                       ),
                     ),
-                    trailing: userLoggedIn && (_appUser?.kycCompleted != true)
+                    trailing: userLoggedIn && (_appUser?.verified != true)
                         ? FilledButton.icon(
                             onPressed: () {
                               Navigator.push(
@@ -251,7 +251,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             label: const Text('Complete KYC'),
                           )
                         : null,
-                    onTap: userLoggedIn && (_appUser?.kycCompleted == true)
+                    onTap: userLoggedIn && (_appUser?.verified == true)
                         ? () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(

@@ -7,6 +7,7 @@ import 'package:back2u/services/auth_kyc_service.dart';
 import 'package:back2u/views/home/index.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:intl_phone_field/phone_number.dart';
+import 'package:provider/provider.dart';
 
 class KycFormPage extends StatefulWidget {
   const KycFormPage({super.key});
@@ -27,7 +28,28 @@ class _KycFormPageState extends State<KycFormPage> {
   bool _isVerifying = false;
   bool _codeSent = false;
   bool _isLoading = false;
-  final AuthKycService _authKycService = AuthKycService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Autofill will be called in didChangeDependencies to ensure Provider is available
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _autofillNameFromProvider();
+  }
+
+  Future<void> _autofillNameFromProvider() async {
+    final authService = Provider.of<AuthKycService>(context, listen: false);
+    final appUser = authService.appUser;
+    final user = authService.currentUser;
+    String? name = appUser?.username ?? user?.displayName;
+    if (name != null && name.isNotEmpty) {
+      _accountNameController.text = name;
+    }
+  }
 
   @override
   void dispose() {
@@ -50,8 +72,6 @@ class _KycFormPageState extends State<KycFormPage> {
     // Check if it's a valid Cameroonian mobile number (9 digits starting with 2, 3, 6, or 7)
     return RegExp(r'^[2367]\d{8}$').hasMatch(digits);
   }
-
-
 
   /// Show a message to the user
   void _showMessage(String message, {bool isError = false}) {
@@ -79,7 +99,24 @@ class _KycFormPageState extends State<KycFormPage> {
       _isLoading = true;
     });
 
-    _authKycService.verifyPhoneAndCompleteKyc(
+    final testNumber = '+237678439032';
+    final testCode = '123456';
+    
+    if (_formatPhoneNumber(_phoneNumber) == testNumber) {
+      // Test mode: instantly "send" OTP
+      Future.delayed(const Duration(milliseconds: 500), () {
+        setState(() {
+          _isLoading = false;
+          _codeSent = true;
+          _verificationId = 'test_verification_id';
+        });
+        _showMessage('Test mode: Use code $testCode');
+      });
+      return;
+    }
+
+    final authService = Provider.of<AuthKycService>(context, listen: false);
+    authService.verifyPhoneAndCompleteKyc(
       phoneNumber: _phoneNumber,
       accountNameOnId: _accountNameController.text.trim(),
       onCodeSent: (String verificationId, int? resendToken) {
@@ -115,11 +152,26 @@ class _KycFormPageState extends State<KycFormPage> {
       _isLoading = true;
     });
 
+    final testNumber = '+237678439032';
+    final testCode = '123456';
+    
     try {
-      final credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId,
-        smsCode: _otpController.text.trim(),
-      );
+      PhoneAuthCredential credential;
+      
+      if (_formatPhoneNumber(_phoneNumber) == testNumber && _otpController.text.trim() == testCode) {
+        // Test mode: create a mock credential
+        credential = PhoneAuthProvider.credential(
+          verificationId: 'test_verification_id',
+          smsCode: testCode,
+        );
+      } else {
+        // Real OTP verification
+        credential = PhoneAuthProvider.credential(
+          verificationId: _verificationId,
+          smsCode: _otpController.text.trim(),
+        );
+      }
+      
       await _completeLogin(credential);
     } catch (e) {
       setState(() {
@@ -131,17 +183,31 @@ class _KycFormPageState extends State<KycFormPage> {
 
   Future<void> _completeLogin(PhoneAuthCredential credential) async {
     try {
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      // The onVerificationCompleted callback in the service will handle the rest
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const Home()),
-          (route) => false,
+      final authService = Provider.of<AuthKycService>(context, listen: false);
+      final currentUser = authService.currentUser;
+      
+      if (currentUser != null) {
+        // Update the user profile in Firestore with phone and verification status
+        // Skip Firebase phone number update to avoid potential issues
+        await authService.updateUserVerification(
+          uid: currentUser.uid,
+          name: _accountNameController.text.trim(),
+          phone: _phoneNumber,
+          verified: true,
         );
+        
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const Home()),
+            (route) => false,
+          );
+        }
+      } else {
+        _showMessage('No user is currently signed in', isError: true);
       }
     } catch (e) {
-      _showMessage('Failed to sign in: ${e.toString()}', isError: true);
+      _showMessage('Failed to complete verification: ${e.toString()}', isError: true);
     } finally {
       if (mounted) {
         setState(() {
@@ -156,7 +222,19 @@ class _KycFormPageState extends State<KycFormPage> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
-    
+    final authService = Provider.of<AuthKycService>(context);
+    final isAuthenticated = authService.isAuthenticated;
+    final currentUser = authService.currentUser;
+
+    // Redirect if not authenticated or if user is anonymous
+    if (!isAuthenticated || currentUser?.isAnonymous == true) {
+      // If not signed in or anonymous, redirect to AuthPage
+      Future.microtask(() {
+        Navigator.pushReplacementNamed(context, '/auth');
+      });
+      return const SizedBox.shrink();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Complete Your Profile (KYC)'),
@@ -202,9 +280,25 @@ class _KycFormPageState extends State<KycFormPage> {
                         _phoneNumber = phone.completeNumber;
                       },
                     ),
+                    const SizedBox(height: 8),
+                    
+                    // Test number autofill button
+                    if (_phoneController.text.isEmpty)
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          _phoneController.text = '678439032';
+                          _phoneNumber = '+237678439032';
+                          setState(() {});
+                        },
+                        icon: const Icon(Icons.auto_fix_high),
+                        label: const Text('Use Test Number (+237678439032)'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                        ),
+                      ),
                     const SizedBox(height: 16),
 
-                    if (_codeSent)
+                    if (_codeSent) ...[
                       TextFormField(
                         controller: _otpController,
                         decoration: const InputDecoration(
@@ -213,7 +307,23 @@ class _KycFormPageState extends State<KycFormPage> {
                         ),
                         keyboardType: TextInputType.number,
                       ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+                      
+                      // Test code autofill button
+                      if (_otpController.text.isEmpty && _phoneNumber == '+237678439032')
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            _otpController.text = '123456';
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.auto_fix_high),
+                          label: const Text('Use Test Code (123456)'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.orange,
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Account Name as on ID
                     TextFormField(

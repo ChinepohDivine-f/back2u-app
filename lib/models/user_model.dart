@@ -7,10 +7,9 @@ class AppUser {
   final String username;
   final String? phone;
   final String? whatsappNumber;
-  final bool phoneVerified;
+  final bool verified;
   final String? profileImageUrl; // Changed from List<String> to single String URL
   final String? accountNameOnId; // New field for KYC
-  final bool kycCompleted; // New field to track KYC status
   final Timestamp createdAt;
   final Timestamp updatedAt;
   final Timestamp? joinedDate; // Can be null if not explicitly set
@@ -25,10 +24,9 @@ class AppUser {
     required this.username,
     this.phone,
     this.whatsappNumber,
-    this.phoneVerified = false,
+    this.verified = false,
     this.profileImageUrl,
     this.accountNameOnId,
-    this.kycCompleted = false, // Default to false
     required this.createdAt,
     required this.updatedAt,
     this.joinedDate,
@@ -39,14 +37,14 @@ class AppUser {
   factory AppUser.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return AppUser(
-      userId: doc.id, // Document ID is the userId
+      userId: doc.id,
       email: data['email'] ?? '',
       username: data['username'] ?? '',
       phone: data['phone'],
-      phoneVerified: data['phoneVerified'] ?? false,
+      whatsappNumber: data['whatsappNumber'],
+      verified: data['verified'] ?? false,
       profileImageUrl: data['profileImageUrl'],
       accountNameOnId: data['accountNameOnId'],
-      kycCompleted: data['kycCompleted'] ?? false,
       createdAt: data['createdAt'] ?? Timestamp.now(),
       updatedAt: data['updatedAt'] ?? Timestamp.now(),
       joinedDate: data['joinedDate'],
@@ -61,10 +59,9 @@ class AppUser {
       'username': username,
       'phone': phone,
       'whatsappNumber': whatsappNumber,
-      'phoneVerified': phoneVerified,
+      'verified': verified,
       'profileImageUrl': profileImageUrl,
       'accountNameOnId': accountNameOnId,
-      'kycCompleted': kycCompleted,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'joinedDate': joinedDate,
@@ -74,19 +71,21 @@ class AppUser {
   }
 
   // Helper to create a new user from Firebase User object
-  // kycCompleted is explicitly set to false for new users here
   static AppUser fromFirebaseUser(User user) {
     return AppUser(
       userId: user.uid,
       email: user.email ?? '',
       username: user.displayName ?? 'New User',
+      phone: null,
+      whatsappNumber: null,
+      verified: false,
       profileImageUrl: user.photoURL,
-      phoneVerified: user.phoneNumber != null, // Consider phone verified if user has a phone number
+      accountNameOnId: null,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       joinedDate: Timestamp.now(),
       lastLogin: 'Active',
-      kycCompleted: false, // New users start with KYC incomplete
+      savedReports: const [],
     );
   }
 }
