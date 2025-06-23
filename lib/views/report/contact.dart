@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:back2u/services/form_data_fetch_service.dart';
+import 'package:back2u/utils/phone_number_formatter.dart';
 
 class ContactPage extends StatefulWidget {
   final Report report;
@@ -36,6 +37,7 @@ class _ContactPageState extends State<ContactPage> {
   late TextEditingController _phoneController;
   bool _useSameForWhatsApp = false;
   bool _isLoadingContactInfo = false;
+  bool _isPhoneFromProfile = false;
 
   final DataFetchService _dataFetchService = DataFetchService();
   String? _currentUserId;
@@ -65,6 +67,7 @@ class _ContactPageState extends State<ContactPage> {
           // This way, if we're editing and number was already set, it persists.
           if (widget.report.contactPhone.isEmpty && appUser.phone != null) {
             _phoneController.text = appUser.phone!;
+            _isPhoneFromProfile = true;
           }
         });
       }
@@ -83,7 +86,9 @@ class _ContactPageState extends State<ContactPage> {
     if (phone == null || phone.trim().isEmpty) {
       return 'Please provide a phone number.';
     }
-    if (phone.length < 9) {
+    // Adjust validation to account for spaces from the formatter
+    final digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.length < 9) {
       return 'Number must be 9 digits.';
     }
     return null;
@@ -153,19 +158,55 @@ class _ContactPageState extends State<ContactPage> {
                     // Phone Number Field
                     TextFormField(
                       controller: _phoneController,
+                      readOnly: _isPhoneFromProfile, // Make read-only if from profile
                       keyboardType: TextInputType.phone,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(9), // Standard 9 digits for Cameroon
+                        LengthLimitingTextInputFormatter(9),
+                        PhoneNumberFormatter(), // Apply custom formatter
                       ],
                       decoration: InputDecoration(
-                        labelText: 'Phone Number (e.g., 67X XXX XXXX)',
-                        hintText: 'e.g., 671234567',
+                        labelText: 'Phone Number',
+                        hintText: '671 234 567',
+                        prefixText: '+237 ',
                         prefixIcon: const Icon(Icons.phone),
                         border: const OutlineInputBorder(),
+                        filled: _isPhoneFromProfile, // Add a visual cue
+                        fillColor: _isPhoneFromProfile
+                            ? Colors.grey.shade200
+                            : Colors.transparent,
                       ),
                       validator: _validatePhoneNumber,
                     ),
+                    const SizedBox(height: 10),
+
+                    // Info box if phone is from profile
+                    if (_isPhoneFromProfile)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'This is the verified phone number from your profile.',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 16),
 
                     // Checkbox to use same number for WhatsApp

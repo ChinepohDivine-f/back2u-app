@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:back2u/models/report_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart'; // For creating dummy XFile for existing images
+import 'package:flutter/foundation.dart' hide Category;
 
 // Import your category and location models
 import 'package:back2u/models/category_model.dart';
@@ -17,8 +18,10 @@ import 'package:back2u/models/location_model.dart';
 
 // Import the new data fetching service
 import 'package:back2u/services/form_data_fetch_service.dart';
+import 'package:back2u/services/report_validation_service.dart';
 import 'package:back2u/utils/text_formatter.dart';
 import 'package:back2u/views/report/document_verification_page.dart';
+import 'package:back2u/components/report_details.dart';
 
 class ReportForm extends StatefulWidget {
   final Report report; // The report to be edited (or a new empty report)
@@ -70,10 +73,12 @@ class _ReportFormState extends State<ReportForm> {
   List<String> _existingImageUrls = [];
   // Set to track which EXISTING images are marked for removal
   Set<String> _imagesToDelete = {};
+  bool _isLoading = false;
 
   bool _addReward = false;
 
   final DataFetchService _dataFetchService = DataFetchService();
+  final ReportValidationService _validationService = ReportValidationService();
 
   List<Category> _allCategories = [];
   List<Location> _allLocations = [];
@@ -256,7 +261,16 @@ class _ReportFormState extends State<ReportForm> {
     });
   }
 
-  void _navigateToContactPage() {
+  void _proceedToContactPage(Report report) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ContactPage(report: report, isEditing: widget.isEditing),
+      ),
+    );
+  }
+
+  void _navigateToContactPage() async {
     // Validate incident date manually since it's not a TextFormField
     if (_incidentDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -269,8 +283,14 @@ class _ReportFormState extends State<ReportForm> {
     }
 
     if (_formKey.currentState!.validate()) {
-      // Create a *copy* of the report with updated details
-      final updatedReport = widget.report.copyWith(
+      if (kDebugMode) {
+        print('[ReportForm] Form is valid. Starting duplicate check...');
+      }
+      setState(() {
+        _isLoading = true;
+      });
+
+      final reportData = widget.report.copyWith(
         ownerName: toTitleCase(_ownerNameController!.text.trim()),
         category: _selectedCategoryName!,
         subcategory: _selectedSubcategoryName!,
@@ -281,14 +301,35 @@ class _ReportFormState extends State<ReportForm> {
         reward: _addReward ? _rewardAmountController!.text.trim() : '0',
       );
 
-      // Route to DocumentVerificationPage instead of ContactPage
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ContactPage(report: updatedReport, isEditing: widget.isEditing),
-        ),
-      );
+      final dynamic potentialDuplicates;
+      !widget.isEditing ? potentialDuplicates = await _validationService.findPotentialDuplicates(
+        ownerName: reportData.ownerName!,
+        category: reportData.category,
+        subcategory: reportData.subcategory,
+        locationLost: reportData.locationLost,
+      ) : potentialDuplicates = {};
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (kDebugMode) {
+        if (potentialDuplicates.isNotEmpty || potentialDuplicates!= null ) {
+          print('[ReportForm] Duplicate check found ${potentialDuplicates.length} items. Showing modal.');
+        } else {
+          print('[ReportForm] No duplicates found. Proceeding to contact page.');
+        }
+      }
+
+      if (potentialDuplicates.isNotEmpty && !widget.isEditing) {
+        _showDuplicateReportModal(potentialDuplicates, reportData);
+      } else {
+        _proceedToContactPage(reportData);
+      }
     } else {
+      if (kDebugMode) {
+        print('[ReportForm] Form validation failed.');
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill in all required fields and fix errors.'),
@@ -296,6 +337,121 @@ class _ReportFormState extends State<ReportForm> {
         ),
       );
     }
+  }
+
+  void _showDuplicateReportModal(List<Report> duplicates, Report newReport) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Similar Report Found')),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'A report with very similar details already exists in our system. Please review it to avoid creating a duplicate.',
+                style: TextStyle(fontSize: 15),
+              ),
+              const SizedBox(height: 20),
+              _buildDuplicateTile(context, duplicates.first),
+              if (duplicates.length > 1)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    '+${duplicates.length - 1} other similar reports found.',
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+                  ),
+                ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Continue Anyway'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _proceedToContactPage(newReport);
+              },
+            ),
+            FilledButton(
+              child: const Text('View Existing Report'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ReportDetails(report: duplicates.first),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDuplicateTile(BuildContext context, Report report) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.primaryContainer),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            report.ownerName ?? 'N/A',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _buildDetailRow(
+            context,
+            Icons.category_outlined,
+            '${report.category} / ${report.subcategory}',
+          ),
+          const SizedBox(height: 4),
+          _buildDetailRow(
+            context,
+            Icons.location_on_outlined,
+            '${report.locationLost}',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(BuildContext context, IconData icon, String text) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 
   void _resetForm() {
@@ -341,6 +497,433 @@ class _ReportFormState extends State<ReportForm> {
         _existingImageUrls.where((url) => !_imagesToDelete.contains(url)).length;
     final int remainingSlots = 2 - totalImages;
 
+    final List<Widget> children = [
+      // Owner's Name Field (Required)
+      TextFormField(
+        controller: _ownerNameController,
+        decoration: const InputDecoration(
+          labelText: "Owner's Name (or Name on Item)*",
+          border: OutlineInputBorder(),
+        ),
+        textInputAction: TextInputAction.next,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter the owner\'s name or name on the item';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+
+      // Category Dropdown (Required)
+      DropdownButtonFormField<String>(
+        decoration: const InputDecoration(
+          labelText: 'Category*',
+          border: OutlineInputBorder(),
+        ),
+        value: _selectedCategoryName,
+        items: _allCategories.map((category) {
+          return DropdownMenuItem<String>(
+            value: category.nameEn,
+            child: Text(category.nameEn),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedCategoryName = value;
+            _selectedSubcategoryName = null; // Reset subcategory when category changes
+          });
+        },
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a category';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+
+      // Subcategory Dropdown (Required)
+      DropdownButtonFormField<String>(
+        decoration: const InputDecoration(
+          labelText: 'Subcategory*',
+          border: OutlineInputBorder(),
+        ),
+        value: _selectedSubcategoryName,
+        // Filter subcategories based on the selected category
+        items: _selectedCategoryName != null
+            ? _allCategories
+                .firstWhere(
+                  (cat) => cat.nameEn == _selectedCategoryName!,
+                  orElse: () => Category(
+                    categoryId: '', createdAt: Timestamp.now(), nameEn: '', nameFr: '', subcategories: [], updatedAt: Timestamp.now()
+                  ),
+                )
+                .subcategories
+                .map((subcat) {
+                  return DropdownMenuItem<String>(
+                    value: subcat.nameEn,
+                    child: Text(subcat.nameEn),
+                  );
+                }).toList()
+            : [],
+        onChanged: _selectedCategoryName != null
+            ? (value) {
+                setState(() {
+                  _selectedSubcategoryName = value;
+                });
+              }
+            : null, // Disable if no category selected
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a subcategory';
+          }
+          return null;
+        },
+        disabledHint: const Text('Select a category first'),
+      ),
+      const SizedBox(height: 16),
+
+      // Incident Date Picker (Required)
+      InkWell(
+        onTap: () => _selectDate(context),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: 'Incident Date*',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.calendar_today_rounded),
+            // Only show error if incidentDate is null AND form has been validated (tried to submit)
+            errorText: (_incidentDate == null && (_formKey.currentState?.validate() ?? false))
+                ? 'Please select the incident date'
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                _incidentDate != null
+                    ? DateFormat('MMM dd, yyyy').format(_incidentDate!) // Corrected date format
+                    : 'Select Date',
+                style: _incidentDate == null
+                    ? TextStyle(color: Colors.grey[600])
+                    : null,
+              ),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // Location Dropdown (Required)
+      DropdownButtonFormField<String>(
+        decoration: const InputDecoration(
+          labelText: 'Main Location*',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.location_on),
+        ),
+        value: _selectedLocationName,
+        items: _allLocations.map((location) {
+          return DropdownMenuItem<String>(
+            value: location.nameEn,
+            child: Text(location.nameEn),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedLocationName = value;
+            _selectedSubLocationName = null; // Reset sublocation
+          });
+        },
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a main location';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+
+      // Sub-Location Dropdown (Required)
+      DropdownButtonFormField<String>(
+        decoration: const InputDecoration(
+          labelText: 'Sub-Location*',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.location_city),
+        ),
+        value: _selectedSubLocationName,
+        // Filter sublocations based on the selected location
+        items: _selectedLocationName != null
+            ? _allLocations
+                .firstWhere(
+                  (loc) => loc.nameEn == _selectedLocationName!,
+                  orElse: () => Location(
+                    createdAt: Timestamp.now(), locationId: '', nameEn: '', nameFr: '', sublocations: [], updatedAt: Timestamp.now()
+                  ),
+                )
+                .sublocations
+                .map((subloc) {
+                  return DropdownMenuItem<String>(
+                    value: subloc.nameEn,
+                    child: Text(subloc.nameEn),
+                  );
+                }).toList()
+            : [],
+        onChanged: _selectedLocationName != null
+            ? (value) {
+                setState(() {
+                  _selectedSubLocationName = value;
+                });
+              }
+            : null, // Disable if no main location selected
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a sub-location';
+          }
+          return null;
+        },
+        disabledHint: const Text('Select a main location first'),
+      ),
+      const SizedBox(height: 24),
+
+      // Image Picker Section
+      Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Images (${widget.report.type == 'found' ? 'Required, ' : ''}Max 2)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: totalImages < 2 ? _pickImages : null,
+              icon: const Icon(Icons.add_photo_alternate),
+              label: Text(totalImages < 2 ? 'Add Image (${remainingSlots} left)' : 'Max 2 Images Uploaded'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              ),
+            ),
+            if (widget.report.type == 'found' && totalImages == 0 && (_formKey.currentState?.validate() ?? false))
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'At least one image is required for Found reports.',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                ),
+              ),
+            if (_existingImageUrls.isNotEmpty || _newlySelectedLocalImages.isNotEmpty) const SizedBox(height: 16),
+            if (_existingImageUrls.isNotEmpty || _newlySelectedLocalImages.isNotEmpty)
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _existingImageUrls.length + _newlySelectedLocalImages.length,
+                  itemBuilder: (context, index) {
+                    if (index < _existingImageUrls.length) {
+                      // Existing image
+                      final imageUrl = _existingImageUrls[index];
+                      final isMarkedForDeletion = _imagesToDelete.contains(imageUrl);
+                      return Stack(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(right: 8.0),
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                              color: isMarkedForDeletion ? Colors.grey[300] : null,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: ColorFiltered(
+                                colorFilter: isMarkedForDeletion
+                                    ? const ColorFilter.mode(Colors.black38, BlendMode.darken)
+                                    : ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                                child: Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Center(child: Icon(Icons.broken_image)),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 12,
+                            child: GestureDetector(
+                              onTap: () => _markExistingImageForRemoval(imageUrl),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: isMarkedForDeletion ? Colors.green : Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                    isMarkedForDeletion ? Icons.undo : Icons.close,
+                                    size: 18,
+                                    color: Colors.white),
+                              ),
+                            ),
+                          ),
+                          if (isMarkedForDeletion)
+                            const Positioned.fill(
+                              child: Center(
+                                child: Icon(
+                                  Icons.delete_forever,
+                                  color: Colors.red,
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    } else {
+                      // Newly selected image
+                      final newImageIndex = index - _existingImageUrls.length;
+                      return Stack(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(right: 8.0),
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File(_newlySelectedLocalImages[newImageIndex].path),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 12,
+                            child: GestureDetector(
+                              onTap: () => _removeNewImage(newImageIndex),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close, size: 18, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // Additional Notes Text Field (Directly integrated)
+      TextFormField(
+        controller: _notesController,
+        maxLines: 5,
+        decoration: const InputDecoration(
+          labelText: 'Additional Notes (Optional)',
+          border: OutlineInputBorder(),
+          hintText: 'Enter any extra information here...',
+          alignLabelWithHint: true,
+        ),
+        textInputAction: TextInputAction.newline,
+      ),
+      const SizedBox(height: 16),
+
+      // Reward Section (Only for 'lost' reports)
+      if (widget.report.type.toLowerCase() == 'lost')
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Switch(
+                    value: _addReward,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _addReward = value;
+                        if (!value) {
+                          _rewardAmountController!.clear();
+                        }
+                      });
+                    },
+                    activeColor: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Offer Reward?',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              if (_addReward) const SizedBox(height: 12),
+              if (_addReward)
+                TextFormField(
+                  controller: _rewardAmountController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Reward Amount (XAF)',
+                    border: const OutlineInputBorder(),
+                    prefixText: 'XAF ',
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                  ),
+                  validator: (value) {
+                    if (_addReward) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter the reward amount';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Please enter a valid number';
+                      }
+                      if (double.parse(value) <= 0) {
+                        return 'Amount must be greater than zero';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+            ],
+          ),
+        )
+      else
+        const SizedBox(), // Render nothing if not a 'Lost' report
+
+      const SizedBox(height: 24),
+
+      // Next Button
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _navigateToContactPage,
+          icon: const Icon(Icons.arrow_forward),
+          label: const Text('NEXT: Contact Information'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            textStyle: const TextStyle(fontSize: 18),
+          ),
+        ),
+      ),
+      const SizedBox(height: 24),
+    ];
+
+    if (_isLoading) {
+      children.insert(0, const LinearProgressIndicator());
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -360,430 +943,7 @@ class _ReportFormState extends State<ReportForm> {
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.all(15.0),
-            // Using default platform physics
-            children: <Widget>[
-              // Owner's Name Field (Required)
-              TextFormField(
-                controller: _ownerNameController,
-                decoration: const InputDecoration(
-                  labelText: "Owner's Name (or Name on Item)*",
-                  border: OutlineInputBorder(),
-                ),
-                textInputAction: TextInputAction.next,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the owner\'s name or name on the item';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Category Dropdown (Required)
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Category*',
-                  border: OutlineInputBorder(),
-                ),
-                value: _selectedCategoryName,
-                items: _allCategories.map((category) {
-                  return DropdownMenuItem<String>(
-                    value: category.nameEn,
-                    child: Text(category.nameEn),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategoryName = value;
-                    _selectedSubcategoryName = null; // Reset subcategory when category changes
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a category';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Subcategory Dropdown (Required)
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Subcategory*',
-                  border: OutlineInputBorder(),
-                ),
-                value: _selectedSubcategoryName,
-                // Filter subcategories based on the selected category
-                items: _selectedCategoryName != null
-                    ? _allCategories
-                        .firstWhere(
-                          (cat) => cat.nameEn == _selectedCategoryName!,
-                          orElse: () => Category(
-                            categoryId: '', createdAt: Timestamp.now(), nameEn: '', nameFr: '', subcategories: [], updatedAt: Timestamp.now()
-                          ),
-                        )
-                        .subcategories
-                        .map((subcat) {
-                          return DropdownMenuItem<String>(
-                            value: subcat.nameEn,
-                            child: Text(subcat.nameEn),
-                          );
-                        }).toList()
-                    : [],
-                onChanged: _selectedCategoryName != null
-                    ? (value) {
-                        setState(() {
-                          _selectedSubcategoryName = value;
-                        });
-                      }
-                    : null, // Disable if no category selected
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a subcategory';
-                  }
-                  return null;
-                },
-                disabledHint: const Text('Select a category first'),
-              ),
-              const SizedBox(height: 16),
-
-              // Incident Date Picker (Required)
-              InkWell(
-                onTap: () => _selectDate(context),
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'Incident Date*',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.calendar_today_rounded),
-                    // Only show error if incidentDate is null AND form has been validated (tried to submit)
-                    errorText: (_incidentDate == null && (_formKey.currentState?.validate() ?? false))
-                        ? 'Please select the incident date'
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text(
-                        _incidentDate != null
-                            ? DateFormat('MMM dd, yyyy').format(_incidentDate!) // Corrected date format
-                            : 'Select Date',
-                        style: _incidentDate == null
-                            ? TextStyle(color: Colors.grey[600])
-                            : null,
-                      ),
-                      const Icon(Icons.arrow_drop_down),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Location Dropdown (Required)
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Main Location*',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.location_on),
-                ),
-                value: _selectedLocationName,
-                items: _allLocations.map((location) {
-                  return DropdownMenuItem<String>(
-                    value: location.nameEn,
-                    child: Text(location.nameEn),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedLocationName = value;
-                    _selectedSubLocationName = null; // Reset sublocation
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a main location';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Sub-Location Dropdown (Required)
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Sub-Location*',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.location_city),
-                ),
-                value: _selectedSubLocationName,
-                // Filter sublocations based on the selected location
-                items: _selectedLocationName != null
-                    ? _allLocations
-                        .firstWhere(
-                          (loc) => loc.nameEn == _selectedLocationName!,
-                          orElse: () => Location(
-                            createdAt: Timestamp.now(), locationId: '', nameEn: '', nameFr: '', sublocations: [], updatedAt: Timestamp.now()
-                          ),
-                        )
-                        .sublocations
-                        .map((subloc) {
-                          return DropdownMenuItem<String>(
-                            value: subloc.nameEn,
-                            child: Text(subloc.nameEn),
-                          );
-                        }).toList()
-                    : [],
-                onChanged: _selectedLocationName != null
-                    ? (value) {
-                        setState(() {
-                          _selectedSubLocationName = value;
-                        });
-                      }
-                    : null, // Disable if no main location selected
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a sub-location';
-                  }
-                  return null;
-                },
-                disabledHint: const Text('Select a main location first'),
-              ),
-              const SizedBox(height: 24),
-
-              // Image Picker Section
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Images (${widget.report.type == 'found' ? 'Required, ' : ''}Max 2)',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton.icon(
-                      onPressed: totalImages < 2 ? _pickImages : null,
-                      icon: const Icon(Icons.add_photo_alternate),
-                      label: Text(totalImages < 2 ? 'Add Image (${remainingSlots} left)' : 'Max 2 Images Uploaded'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      ),
-                    ),
-                    if (widget.report.type == 'found' && totalImages == 0 && (_formKey.currentState?.validate() ?? false))
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          'At least one image is required for Found reports.',
-                          style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-                        ),
-                      ),
-                    if (_existingImageUrls.isNotEmpty || _newlySelectedLocalImages.isNotEmpty) const SizedBox(height: 16),
-                    if (_existingImageUrls.isNotEmpty || _newlySelectedLocalImages.isNotEmpty)
-                      SizedBox(
-                        height: 100,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _existingImageUrls.length + _newlySelectedLocalImages.length,
-                          itemBuilder: (context, index) {
-                            if (index < _existingImageUrls.length) {
-                              // Existing image
-                              final imageUrl = _existingImageUrls[index];
-                              final isMarkedForDeletion = _imagesToDelete.contains(imageUrl);
-                              return Stack(
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(right: 8.0),
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: isMarkedForDeletion ? Colors.grey[300] : null,
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: ColorFiltered(
-                                        colorFilter: isMarkedForDeletion
-                                            ? const ColorFilter.mode(Colors.black38, BlendMode.darken)
-                                            : ColorFilter.mode(Colors.transparent, BlendMode.multiply),
-                                        child: Image.network(
-                                          imageUrl,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) =>
-                                              const Center(child: Icon(Icons.broken_image)),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 12,
-                                    child: GestureDetector(
-                                      onTap: () => _markExistingImageForRemoval(imageUrl),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          color: isMarkedForDeletion ? Colors.green : Colors.black54,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                            isMarkedForDeletion ? Icons.undo : Icons.close,
-                                            size: 18,
-                                            color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                  if (isMarkedForDeletion)
-                                    const Positioned.fill(
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.delete_forever,
-                                          color: Colors.red,
-                                          size: 40,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              );
-                            } else {
-                              // Newly selected image
-                              final newImageIndex = index - _existingImageUrls.length;
-                              return Stack(
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(right: 8.0),
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(
-                                        File(_newlySelectedLocalImages[newImageIndex].path),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 12,
-                                    child: GestureDetector(
-                                      onTap: () => _removeNewImage(newImageIndex),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black54,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.close, size: 18, color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Additional Notes Text Field (Directly integrated)
-              TextFormField(
-                controller: _notesController,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Additional Notes (Optional)',
-                  border: OutlineInputBorder(),
-                  hintText: 'Enter any extra information here...',
-                  alignLabelWithHint: true,
-                ),
-                textInputAction: TextInputAction.newline,
-              ),
-              const SizedBox(height: 16),
-
-              // Reward Section (Only for 'lost' reports)
-              if (widget.report.type.toLowerCase() == 'lost')
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Switch(
-                            value: _addReward,
-                            onChanged: (bool value) {
-                              setState(() {
-                                _addReward = value;
-                                if (!value) {
-                                  _rewardAmountController!.clear();
-                                }
-                              });
-                            },
-                            activeColor: colorScheme.primary,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Offer Reward?',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      if (_addReward) const SizedBox(height: 12),
-                      if (_addReward)
-                        TextFormField(
-                          controller: _rewardAmountController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Reward Amount (XAF)',
-                            border: const OutlineInputBorder(),
-                            prefixText: 'XAF ',
-                            filled: true,
-                            fillColor: colorScheme.surface,
-                          ),
-                          validator: (value) {
-                            if (_addReward) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter the reward amount';
-                              }
-                              if (double.tryParse(value) == null) {
-                                return 'Please enter a valid number';
-                              }
-                              if (double.parse(value) <= 0) {
-                                return 'Amount must be greater than zero';
-                              }
-                            }
-                            return null;
-                          },
-                        ),
-                    ],
-                  ),
-                )
-              else
-                const SizedBox(), // Render nothing if not a 'Lost' report
-
-              const SizedBox(height: 24),
-
-              // Next Button
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _navigateToContactPage,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('NEXT: Contact Information'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
+            children: children,
           ),
         ),
       ),
