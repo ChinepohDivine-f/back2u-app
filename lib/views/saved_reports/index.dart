@@ -1,5 +1,6 @@
 import 'package:back2u/components/SimpleCard.dart';
 import 'package:back2u/components/report_details.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:back2u/models/report_model.dart';
 import 'package:back2u/services/saved_report_servoce.dart';
 import 'package:back2u/services/auth_kyc_service.dart';
@@ -56,9 +57,10 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
   }
 
   void _toggleSaveReport(String reportId) async {
+    final loc = AppLocalizations.of(context);
     if (_currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to save reports.')),
+        SnackBar(content: Text(loc.pleaseLogInToSave)),
       );
       return;
     }
@@ -74,8 +76,8 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
       SnackBar(
         content: Text(
           _currentSavedReportIds.contains(reportId)
-              ? 'Report removed from saved.'
-              : 'Report added to saved.',
+              ? loc.reportRemovedFromSaved
+              : loc.reportAddedToSaved,
         ),
       ),
     );
@@ -85,14 +87,15 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final loc = AppLocalizations.of(context);
 
     if (_currentUser == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('My Saved Reports'),
+          title: Text(loc.mySavedReportsTitle),
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
-          leading: BackButtonIcon(),
+          leading: const BackButtonIcon(),
         ),
         drawer: const AppDrawer(),
         body: Center(
@@ -101,7 +104,7 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
             children: [
               Icon(Icons.bookmark_border, size: 64, color: colorScheme.onSurfaceVariant),
               const SizedBox(height: 24),
-              Text('Please log in to view your saved reports.', style: textTheme.titleMedium),
+              Text(loc.logInToViewSaved, style: textTheme.titleMedium),
             ],
           ),
         ),
@@ -110,7 +113,7 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Saved Reports'),
+        title: Text(loc.mySavedReportsTitle),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
       ),
@@ -125,7 +128,7 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
                 children: [
                   CircularProgressIndicator(color: colorScheme.primary),
                   const SizedBox(height: 16),
-                  Text('Loading your saved reports...', style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                  Text(loc.loadingSavedReports, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
                 ],
               ),
             );
@@ -146,7 +149,7 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
                       child: Icon(Icons.error_outline, size: 64, color: colorScheme.error),
                     ),
                     const SizedBox(height: 24),
-                    Text('Error loading saved reports', textAlign: TextAlign.center, style: textTheme.headlineSmall?.copyWith(color: colorScheme.error, fontWeight: FontWeight.w500)),
+                    Text(loc.errorLoadingSavedReports, textAlign: TextAlign.center, style: textTheme.headlineSmall?.copyWith(color: colorScheme.error, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 8),
                     Text(snapshot.error.toString(), textAlign: TextAlign.center, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
                   ],
@@ -171,13 +174,13 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
                       child: Icon(Icons.bookmark_border, size: 64, color: colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 24),
-                    Text('No saved reports yet', textAlign: TextAlign.center, style: textTheme.headlineSmall?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
+                    Text(loc.noSavedReportsYet, textAlign: TextAlign.center, style: textTheme.headlineSmall?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 8),
-                    Text('Browse reports and tap the bookmark icon to save them here.', textAlign: TextAlign.center, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                    Text(loc.browseAndSaveReports, textAlign: TextAlign.center, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 24),
                     ElevatedButton(onPressed: () {
                       Navigator.pushNamed(context, '/home');
-                    }, child: const Text('Browse Reports')),
+                    }, child: Text(loc.browseReports)),
                   ],
                 ),
               ),
@@ -193,7 +196,7 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
                       Icon(Icons.bookmark, size: 24, color: colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
-                        '${savedReports.length} saved report${savedReports.length != 1 ? 's' : ''}',
+                        loc.savedReportsCount(savedReports.length),
                         style: textTheme.titleLarge?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w500),
                       ),
                     ],

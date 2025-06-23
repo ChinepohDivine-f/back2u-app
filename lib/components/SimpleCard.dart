@@ -83,7 +83,7 @@ class SimpleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap ?? () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ReportDetails(report: report)),
+          MaterialPageRoute(builder: (context) => ReportDetails(report: report,)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),

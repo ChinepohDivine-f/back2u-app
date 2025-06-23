@@ -1,3 +1,4 @@
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:back2u/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp
@@ -48,6 +49,7 @@ class _ReportPageState extends State<ReportPage> {
   Future<void> _showKycPromptDialog(
       String reportType, BuildContext context) async {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context);
     // Access AuthKycService without listening in a method if you don't need UI rebuilds based on it
     final authService = Provider.of<AuthKycService>(context, listen: false);
 
@@ -59,26 +61,26 @@ class _ReportPageState extends State<ReportPage> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
-            'Complete Your Profile (KYC)',
+            loc.completeYourProfileTitle,
             style: theme.textTheme.titleLarge,
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Your profile is not fully verified. Completing KYC enhances trust and security for interactions on Back2u.',
+                loc.kycEnhancesTrust,
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),
               Text(
-                'Do you want to complete it now or proceed with your report without it?',
+                loc.completeOrProceed,
                 style: theme.textTheme.bodyMedium,
               ),
             ],
           ),
           actions: [
             TextButton(
-              child: const Text('Continue Anyway'),
+              child: Text(loc.continueAnyway),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 if (authService.currentUser != null) {
@@ -98,7 +100,7 @@ class _ReportPageState extends State<ReportPage> {
                   authService.refreshUserProfile();
                 });
               },
-              child: const Text('Complete Now'),
+              child: Text(loc.completeNow),
             ),
           ],
         );
@@ -110,6 +112,7 @@ class _ReportPageState extends State<ReportPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final loc = AppLocalizations.of(context);
 
     // Listen to AuthKycService for user data and loading state
     final authService = Provider.of<AuthKycService>(context);
@@ -120,7 +123,7 @@ class _ReportPageState extends State<ReportPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create a Report'),
+        title: Text(loc.createReport),
         // centerTitle: true,
         // elevation: 0,
         // backgroundColor: colors.background,
@@ -135,8 +138,8 @@ class _ReportPageState extends State<ReportPage> {
                 children: [
                   Text(
                     isAuthenticated
-                        ? 'What would you like to report?'
-                        : 'Register',
+                        ? loc.whatToReport
+                        : loc.register,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -157,10 +160,11 @@ class _ReportPageState extends State<ReportPage> {
 
   // Modified _buildAuthPrompt to navigate to AuthPage
   Widget _buildAuthPrompt(ThemeData theme, ColorScheme colors) {
+    final loc = AppLocalizations.of(context);
     return Column(
       children: [
         Text(
-          'Please sign in to create a report and help us keep the community safe.',
+          loc.pleaseSignInToReport,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge,
         ),
@@ -183,7 +187,7 @@ class _ReportPageState extends State<ReportPage> {
                       builder: (context) => const AuthPage()), // Go to AuthPage
                 );
               },
-              child: Text("Sign in", style: theme.textTheme.titleMedium)),
+              child: Text(loc.signIn, style: theme.textTheme.titleMedium)),
           // child: ElevatedButton.icon(
           //   onPressed: () {
           //     // Navigate to the separate AuthPage
@@ -212,6 +216,7 @@ class _ReportPageState extends State<ReportPage> {
   Widget _buildReportButtons(ThemeData theme, ColorScheme colors,
       AppUser? appUser, String reporterUid) {
     final kycCompleted = appUser?.verified ?? false;
+    final loc = AppLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -230,7 +235,7 @@ class _ReportPageState extends State<ReportPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Your profile is not fully verified. Consider completing KYC for full trust.',
+                    loc.profileNotVerifiedWarning,
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: colors.onTertiaryContainer),
                   ),
@@ -248,7 +253,7 @@ class _ReportPageState extends State<ReportPage> {
                     });
                   },
                   child: Text(
-                    'Verify Now',
+                    loc.verifyNow,
                     style: theme.textTheme.labelLarge
                         ?.copyWith(color: colors.tertiary),
                   ),
@@ -266,7 +271,7 @@ class _ReportPageState extends State<ReportPage> {
           children: [
             _actionCard(
               icon: Icons.search_off,
-              label: 'Lost Item',
+              label: loc.lostItem,
               bgColor: colors.primaryContainer,
               fgColor: colors.onPrimaryContainer,
               onTap: () {
@@ -279,7 +284,7 @@ class _ReportPageState extends State<ReportPage> {
             ),
             _actionCard(
               icon: Icons.volunteer_activism,
-              label: 'Found Item',
+              label: loc.foundItem,
               bgColor: colors.secondaryContainer,
               fgColor: colors.onSecondaryContainer,
               onTap: () {

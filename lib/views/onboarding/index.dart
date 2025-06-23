@@ -1,3 +1,4 @@
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:back2u/views/onboarding/connect_page.dart';
 import 'package:back2u/views/onboarding/how_it_works_oage.dart';
 import 'package:back2u/views/onboarding/welcome_page.dart';
@@ -48,6 +49,7 @@ class _OnboardingState extends State<Onboarding> {
   Widget build(BuildContext context) {
     // Using Material 3 colors from the theme
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       body: Stack(
@@ -79,7 +81,7 @@ class _OnboardingState extends State<Onboarding> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              child: const Text("Skip"),
+              child: Text(loc.skip),
             ),
           ),
 
@@ -127,7 +129,7 @@ class _OnboardingState extends State<Onboarding> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    child: Text(_isLastPage ? "Get Started" : "Next"),
+                    child: Text(_isLastPage ? loc.getStarted : loc.next),
                   ),
                 ],
               ),

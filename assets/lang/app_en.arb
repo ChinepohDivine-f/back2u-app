@@ -1,0 +1,514 @@
+{
+  "@@locale": "en",
+  "appTitle": "Back2U",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "Welcome message"
+  },
+  
+  "getStarted": "Get Started",
+  "@getStarted": {
+    "description": "Get started button text"
+  },
+  
+  "howItWorks": "How It Works",
+  "@howItWorks": {
+    "description": "How it works section title"
+  },
+  
+  "connect": "Connect",
+  "@connect": {
+    "description": "Connect section title"
+  },
+  
+  "signIn": "Sign In",
+  "@signIn": {
+    "description": "Sign in button text"
+  },
+  
+  "signInWithGoogle": "Sign in with Google",
+  "@signInWithGoogle": {
+    "description": "Sign in with Google button text"
+  },
+  
+  "signInAnonymously": "Continue as Guest",
+  "@signInAnonymously": {
+    "description": "Sign in anonymously button text"
+  },
+  
+  "signOut": "Sign Out",
+  "@signOut": {
+    "description": "Sign out button text"
+  },
+  
+  "email": "Email",
+  "@email": {
+    "description": "Email field label"
+  },
+  
+  "password": "Password",
+  "@password": {
+    "description": "Password field label"
+  },
+  
+  "phoneNumber": "Phone Number",
+  "@phoneNumber": {
+    "description": "Phone number field label"
+  },
+  
+  "fullName": "Full Name",
+  "@fullName": {
+    "description": "Full name field label"
+  },
+  
+  "fullNameAsOnId": "Full Name (as on ID Card)",
+  "@fullNameAsOnId": {
+    "description": "Full name as on ID card field label"
+  },
+  
+  "whatsappNumber": "WhatsApp Number",
+  "@whatsappNumber": {
+    "description": "WhatsApp number field label"
+  },
+  
+  "useSameForWhatsApp": "Use the same number for WhatsApp",
+  "@useSameForWhatsApp": {
+    "description": "Checkbox text for using same number for WhatsApp"
+  },
+  
+  "contactInformation": "Contact Information",
+  "@contactInformation": {
+    "description": "Contact information page title"
+  },
+  
+  "provideContactDetails": "Provide your contact details for people to reach you.",
+  "@provideContactDetails": {
+    "description": "Contact details instruction text"
+  },
+  
+  "nextReviewReport": "NEXT: Review Report",
+  "@nextReviewReport": {
+    "description": "Next button text for review report"
+  },
+  
+  "completeYourProfile": "Complete Your Profile",
+  "@completeYourProfile": {
+    "description": "Complete profile page title"
+  },
+  
+  "completeYourKyc": "Complete your KYC",
+  "@completeYourKyc": {
+    "description": "Complete KYC section title"
+  },
+  
+  "sendOtp": "Send OTP",
+  "@sendOtp": {
+    "description": "Send OTP button text"
+  },
+  
+  "verifyOtp": "Verify OTP",
+  "@verifyOtp": {
+    "description": "Verify OTP button text"
+  },
+  
+  "otpCode": "OTP Code",
+  "@otpCode": {
+    "description": "OTP code field label"
+  },
+  
+  "useTestNumber": "Use Test Number (+237678439032)",
+  "@useTestNumber": {
+    "description": "Test number autofill button text"
+  },
+  
+  "useTestCode": "Use Test Code (123456)",
+  "@useTestCode": {
+    "description": "Test code autofill button text"
+  },
+  
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Privacy policy text"
+  },
+  
+  "agreeToPolicy": "I have read and agree to the Privacy Policy",
+  "@agreeToPolicy": {
+    "description": "Privacy policy agreement text"
+  },
+  
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings page title"
+  },
+  
+  "accountSettings": "Account Settings",
+  "@accountSettings": {
+    "description": "Account settings section title"
+  },
+  
+  "profileInformation": "Profile Information",
+  "@profileInformation": {
+    "description": "Profile information menu item"
+  },
+  
+  "kycSettings": "KYC Settings",
+  "@kycSettings": {
+    "description": "KYC settings section title"
+  },
+  
+  "kycVerificationStatus": "KYC Verification Status",
+  "@kycVerificationStatus": {
+    "description": "KYC verification status menu item"
+  },
+  
+  "verified": "Verified",
+  "@verified": {
+    "description": "Verified status text"
+  },
+  
+  "notVerified": "Not Verified",
+  "@notVerified": {
+    "description": "Not verified status text"
+  },
+  
+  "language": "Language",
+  "@language": {
+    "description": "Language setting"
+  },
+  
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  
+  "french": "French",
+  "@french": {
+    "description": "French language option"
+  },
+  
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme setting"
+  },
+  
+  "light": "Light",
+  "@light": {
+    "description": "Light theme option"
+  },
+  
+  "dark": "Dark",
+  "@dark": {
+    "description": "Dark theme option"
+  },
+  
+  "system": "System",
+  "@system": {
+    "description": "System theme option"
+  },
+  
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications setting"
+  },
+  
+  "enableNotifications": "Enable Notifications",
+  "@enableNotifications": {
+    "description": "Enable notifications setting"
+  },
+  
+  "about": "About",
+  "@about": {
+    "description": "About section title"
+  },
+  
+  "version": "Version",
+  "@version": {
+    "description": "Version text"
+  },
+  
+  "deleteAccount": "Delete Account",
+  "@deleteAccount": {
+    "description": "Delete account menu item"
+  },
+  
+  "deleteAccountConfirmation": "Are you sure you want to delete your account? This action cannot be undone.",
+  "@deleteAccountConfirmation": {
+    "description": "Delete account confirmation message"
+  },
+  
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button text"
+  },
+  
+  "home": "Home",
+  "@home": {
+    "description": "Home page title"
+  },
+  
+  "search": "Search",
+  "@search": {
+    "description": "Search page title"
+  },
+  
+  "myReports": "My Reports",
+  "@myReports": {
+    "description": "My reports page title"
+  },
+  
+  "savedReports": "Saved Reports",
+  "@savedReports": {
+    "description": "Saved reports page title"
+  },
+  
+  "createReport": "Create a Report",
+  "@createReport": {
+    "description": "Create report page title"
+  },
+  
+  "whatWouldYouLikeToReport": "What would you like to report?",
+  "@whatWouldYouLikeToReport": {
+    "description": "Report creation question"
+  },
+  
+  "register": "Register",
+  "@register": {
+    "description": "Register text"
+  },
+  
+  "pleaseSignIn": "Please sign in to create a report and help us keep the community safe.",
+  "@pleaseSignIn": {
+    "description": "Sign in prompt message"
+  },
+  
+  "lostItem": "Lost Item",
+  "@lostItem": {
+    "description": "Lost item option"
+  },
+  
+  "foundItem": "Found Item",
+  "@foundItem": {
+    "description": "Found item option"
+  },
+  
+  "profileNotVerified": "Your profile is not fully verified. Consider completing KYC for full trust.",
+  "@profileNotVerified": {
+    "description": "Profile not verified warning"
+  },
+  
+  "verifyNow": "Verify Now",
+  "@verifyNow": {
+    "description": "Verify now button text"
+  },
+  
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading text"
+  },
+  
+  "error": "Error",
+  "@error": {
+    "description": "Error text"
+  },
+  
+  "success": "Success",
+  "@success": {
+    "description": "Success text"
+  },
+  
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button text"
+  },
+  
+  "noData": "No data available",
+  "@noData": {
+    "description": "No data available text"
+  },
+  
+  "save": "Save",
+  "@save": {
+    "description": "Save button text"
+  },
+  
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button text"
+  },
+  
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button text"
+  },
+  
+  "back": "Back",
+  "@back": {
+    "description": "Back button text"
+  },
+  
+  "next": "Next",
+  "@next": {
+    "description": "Next button text"
+  },
+  
+  "submit": "Submit",
+  "@submit": {
+    "description": "Submit button text"
+  },
+  
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button text"
+  },
+  
+  "yes": "Yes",
+  "@yes": {
+    "description": "Yes button text"
+  },
+  
+  "no": "No",
+  "@no": {
+    "description": "No button text"
+  },
+  
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button text"
+  },
+  
+  "close": "Close",
+  "@close": {
+    "description": "Close button text"
+  },
+  
+  "done": "Done",
+  "@done": {
+    "description": "Done button text"
+  },
+  
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip button text"
+  },
+  
+  "continue": "Continue",
+  "@continue": {
+    "description": "Continue button text"
+  },
+  
+  "finish": "Finish",
+  "@finish": {
+    "description": "Finish button text"
+  },
+  
+  "required": "Required",
+  "@required": {
+    "description": "Required field indicator"
+  },
+  
+  "optional": "Optional",
+  "@optional": {
+    "description": "Optional field indicator"
+  },
+  
+  "invalidInput": "Invalid input",
+  "@invalidInput": {
+    "description": "Invalid input error message"
+  },
+  
+  "pleaseEnterValidData": "Please enter valid data",
+  "@pleaseEnterValidData": {
+    "description": "Please enter valid data message"
+  },
+  
+  "networkError": "Network error",
+  "@networkError": {
+    "description": "Network error message"
+  },
+  
+  "tryAgainLater": "Please try again later",
+  "@tryAgainLater": {
+    "description": "Try again later message"
+  },
+  
+  "connectionFailed": "Connection failed",
+  "@connectionFailed": {
+    "description": "Connection failed message"
+  },
+  
+  "checkYourConnection": "Please check your internet connection",
+  "@checkYourConnection": {
+    "description": "Check internet connection message"
+  },
+  
+  "searchLostFound": "Search Lost & Found",
+  "@searchLostFound": {
+    "description": "Search page title"
+  },
+  
+  "searchByOwner": "Search by owner, document, location...",
+  "@searchByOwner": {
+    "description": "Search field placeholder"
+  },
+  
+  "filterSearch": "Filter Search",
+  "@filterSearch": {
+    "description": "Filter search tooltip"
+  },
+  
+  "startTypingToSearch": "Start typing to search for lost or found items, or use filters to narrow down results.",
+  "@startTypingToSearch": {
+    "description": "Search instruction text"
+  },
+  
+  "fetchingReports": "Fetching reports...",
+  "@fetchingReports": {
+    "description": "Loading reports text"
+  },
+  
+  "noResultsFound": "No results found matching your criteria.",
+  "@noResultsFound": {
+    "description": "No search results message"
+  },
+  
+  "noReportsFound": "No reports found. Try a different search or adjust your filters.",
+  "@noReportsFound": {
+    "description": "No reports found message"
+  },
+  
+  "recentSearches": "Recent Searches",
+  "@recentSearches": {
+    "description": "Recent searches section title"
+  },
+  
+  "errorLoadingReports": "Error loading reports: {error}",
+  "@errorLoadingReports": {
+    "description": "Error loading reports message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+  
+  "errorLoadingFilterOptions": "Error loading filter options: {error}",
+  "@errorLoadingFilterOptions": {
+    "description": "Error loading filter options message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  }
+} 

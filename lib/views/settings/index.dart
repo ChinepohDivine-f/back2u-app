@@ -7,9 +7,14 @@ import 'package:back2u/services/auth_kyc_service.dart'; // Your auth service
 import 'package:back2u/models/user_model.dart'; // Your AppUser model
 import 'package:back2u/views/auth/kyc_form_page.dart';
 import 'package:provider/provider.dart'; // Your KYC form page
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:back2u/l10n/app_localizations.dart';
+import 'package:back2u/main.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  final void Function(Locale)? onLocaleChanged;
+  
+  const SettingsPage({super.key, this.onLocaleChanged});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -91,13 +96,15 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final bool userLoggedIn = _currentUser != null && !_currentUser!.isAnonymous;
 
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Settings'),
+          title: Text(loc?.settings ?? 'Settings'),
           backgroundColor: colors.primary,
           foregroundColor: colors.onPrimary,
         ),
@@ -107,12 +114,9 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
 
-    final bool userLoggedIn =
-        _currentUser != null && !_currentUser!.isAnonymous;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(loc?.settings ?? 'Settings'),
         backgroundColor: colors.primary,
         foregroundColor: colors.onPrimary,
       ),
@@ -123,7 +127,7 @@ class _SettingsPageState extends State<SettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // --- User Account Settings ---
-            _buildSectionHeader(context, 'Account Settings'),
+            _buildSectionHeader(context, loc?.accountSettings ?? 'Account Settings'),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Column(
@@ -131,14 +135,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.person_outline,
                         color: colors.onSurfaceVariant),
-                    title: Text('Profile Information',
+                    title: Text(loc?.profileInformation ?? 'Profile Information',
                         style: theme.textTheme.bodyLarge),
                     subtitle: Text(
                       userLoggedIn
                           ? (_appUser?.username ??
                               _currentUser?.displayName ??
                               'Not set')
-                          : 'Sign in to manage profile',
+                          : (loc?.signInToManage ?? 'Sign in to manage profile'),
                       style: theme.textTheme.bodyMedium?.copyWith(
                           color: colors.onSurfaceVariant.withOpacity(0.7)),
                     ),
@@ -195,7 +199,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ListTile(
                       leading:
                           Icon(Icons.delete_outline, color: colors.error),
-                      title: Text('Delete Account',
+                      title: Text(loc?.deleteAccount ?? 'Delete Account',
                           style: theme.textTheme.bodyLarge
                               ?.copyWith(color: colors.error)),
                       onTap: () {
@@ -208,7 +212,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             // --- KYC Settings ---
-            _buildSectionHeader(context, 'KYC Settings'),
+            _buildSectionHeader(context, loc?.kycSettings ?? 'KYC Settings'),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Column(
@@ -216,14 +220,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.verified_user_outlined,
                         color: colors.onSurfaceVariant),
-                    title: Text('KYC Verification Status',
+                    title: Text(loc?.kycVerificationStatus ?? 'KYC Verification Status',
                         style: theme.textTheme.bodyLarge),
                     subtitle: Text(
                       userLoggedIn
                           ? (_appUser?.verified == true
-                              ? 'Verified'
-                              : 'Not Verified')
-                          : 'Sign in to view KYC status',
+                              ? (loc?.verified ?? 'Verified')
+                              : (loc?.notVerified ?? 'Not Verified'))
+                          : (loc?.signInToViewKyc ?? 'Sign in to view KYC status'),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: userLoggedIn &&
                                 (_appUser?.verified == true)
@@ -248,7 +252,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   .uid)); // Reload user data after KYC
                             },
                             icon: const Icon(Icons.how_to_reg),
-                            label: const Text('Complete KYC'),
+                            label: Text(loc?.completeKyc ?? 'Complete KYC'),
                           )
                         : null,
                     onTap: userLoggedIn && (_appUser?.verified == true)
@@ -266,7 +270,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             // --- System Settings ---
-            _buildSectionHeader(context, 'System Settings'),
+            _buildSectionHeader(context, loc?.systemSettings ?? 'System Settings'),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Column(
@@ -305,35 +309,26 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(
-                    leading:
-                        Icon(Icons.language, color: colors.onSurfaceVariant),
-                    title: Text('Language', style: theme.textTheme.bodyLarge),
-                    trailing: DropdownButton<String>(
-                      value: _selectedLanguage,
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedLanguage = newValue;
-                            _saveLocalSettings();
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Language set to $newValue')),
-                          );
-                        }
-                      },
-                      items: <String>['English', 'Français']
-                          .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child:
-                              Text(value, style: theme.textTheme.bodyLarge),
+                    leading: Icon(Icons.language, color: colors.onSurfaceVariant),
+                    title: Text(loc?.language ?? 'Language', style: theme.textTheme.bodyLarge),
+                    trailing: DropdownButton<Locale>(
+                      value: Localizations.localeOf(context),
+                      items: AppLocalizations.supportedLocales.map((locale) {
+                        return DropdownMenuItem<Locale>(
+                          value: locale,
+                          child: Text(
+                            locale.languageCode == 'en' 
+                              ? (loc?.english ?? 'English') 
+                              : (loc?.french ?? 'French'),
+                          ),
                         );
                       }).toList(),
+                      onChanged: (Locale? newLocale) {
+                        if (newLocale != null) {
+                          MyApp.of(context)?.changeLocale(newLocale);
+                        }
+                      },
                     ),
-                    onTap: () {
-                      // Tapping the ListTile opens the dropdown
-                    },
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(

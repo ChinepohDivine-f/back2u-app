@@ -3,22 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:back2u/services/auth_kyc_service.dart';
+import 'package:back2u/utils/text_formatter.dart';
 import 'package:back2u/views/auth/phone_verification_page.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ReportDetails extends StatefulWidget {
   final Report report;
-  final String? currentUserId;
-  final List<String>? userSavedReports;
   final bool showActions; // This prop is currently not used to hide/show AppBar actions
   final VoidCallback? onBack; // This prop is currently not used
 
   const ReportDetails({
     Key? key,
     required this.report,
-    this.currentUserId,
-    this.userSavedReports,
     this.showActions = true,
     this.onBack,
   }) : super(key: key);
@@ -29,13 +26,11 @@ class ReportDetails extends StatefulWidget {
 
 class _ReportDetailsState extends State<ReportDetails> {
   bool _isSaving = false;
-  bool _isSaved = false;
   bool _isOwner = false;
 
   @override
   void initState() {
     super.initState();
-    _isSaved = widget.userSavedReports?.contains(widget.report.reportId) ?? false;
     _checkOwnership();
   }
 
@@ -50,7 +45,10 @@ class _ReportDetailsState extends State<ReportDetails> {
   }
 
   Future<void> _toggleSave() async {
-    if (widget.currentUserId == null) {
+    final authService = context.read<AuthKycService>();
+    final currentUserId = authService.currentUser?.uid;
+
+    if (currentUserId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please sign in to save reports')),
@@ -59,18 +57,20 @@ class _ReportDetailsState extends State<ReportDetails> {
       return;
     }
 
+    final isCurrentlySaved =
+        authService.appUser?.savedReports.contains(widget.report.reportId) ?? false;
+
     setState(() => _isSaving = true);
     try {
-      await AuthKycService().toggleSavedReport(
-        widget.currentUserId!,
+      await authService.toggleSavedReport(
+        currentUserId,
         widget.report.reportId,
       );
-      setState(() => _isSaved = !_isSaved);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isSaved ? 'Report saved!' : 'Report removed'),
+            content: Text(!isCurrentlySaved ? 'Report saved!' : 'Report removed'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -366,6 +366,9 @@ Shared via Back2U''';
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
 
+    final authService = context.watch<AuthKycService>();
+    final isSaved = authService.appUser?.savedReports.contains(widget.report.reportId) ?? false;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('${widget.report.type} Report'),
@@ -461,9 +464,7 @@ Shared via Back2U''';
               ),
             _buildDetailRow(
               'Reward',
-              widget.report.reward.isNotEmpty && widget.report.reward != '0 CFA'
-                  ? widget.report.reward
-                  : 'No reward',
+              formatReward(widget.report.reward),
               icon: Icons.monetization_on_outlined,
             ),
             const SizedBox(height: 24),
@@ -534,19 +535,19 @@ Shared via Back2U''';
                   child: OutlinedButton.icon(
                     onPressed: _isSaving ? null : _toggleSave,
                     icon: Icon(
-                      _isSaved ? Icons.bookmark : Icons.bookmark_border,
-                      color: _isSaved ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: isSaved ? colorScheme.primary : colorScheme.onSurfaceVariant,
                     ),
                     label: Text(
-                      _isSaved ? 'Saved' : 'Save',
+                      isSaved ? 'Saved' : 'Save',
                       style: TextStyle(
-                        color: _isSaved ? colorScheme.primary : colorScheme.onSurface,
+                        color: isSaved ? colorScheme.primary : colorScheme.onSurface,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                       side: BorderSide(
-                        color: _isSaved
+                        color: isSaved
                             ? colorScheme.primary
                             : colorScheme.outlineVariant,
                       ),

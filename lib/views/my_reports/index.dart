@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:back2u/components/SimpleCard.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:back2u/utils/app_drawer.dart';
 import 'package:back2u/views/report/edit_report.dart';
 import 'package:flutter/material.dart';
@@ -70,6 +71,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
   }
 
   Future<void> _editReport(Report report) async {
+    final loc = AppLocalizations.of(context);
     // Navigate to edit report page
     final result = await Navigator.push(
       context,
@@ -83,7 +85,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Report updated successfully'),
+            content: Text(loc.reportUpdatedSuccess),
             backgroundColor: Theme.of(context).colorScheme.tertiary,
             behavior: SnackBarBehavior.floating,
           ),
@@ -93,6 +95,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
   }
 
   Future<void> _deleteReport(Report report) async {
+    final loc = AppLocalizations.of(context);
     final confirmed = await _showDeleteConfirmationDialog();
     if (confirmed == true) {
       try {
@@ -105,7 +108,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Report deleted successfully'),
+              content: Text(loc.reportDeletedSuccess),
               backgroundColor: Theme.of(context).colorScheme.tertiary,
               behavior: SnackBarBehavior.floating,
             ),
@@ -115,7 +118,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to delete report: $e'),
+              content: Text(loc.failedToDeleteReport(e.toString())),
               backgroundColor: Theme.of(context).colorScheme.error,
               behavior: SnackBarBehavior.floating,
             ),
@@ -126,6 +129,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
   }
 
   Future<void> _toggleResolveStatus(Report report) async {
+    final loc = AppLocalizations.of(context);
     try {
       // Determine new status based on current status
       final newStatus = report.status.toLowerCase() == 'resolved' ? 'active' : 'resolved';
@@ -142,7 +146,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Report marked as ${newStatus.toUpperCase()}'),
+            content: Text(loc.reportMarkedAs(newStatus.toUpperCase())),
             backgroundColor: Theme.of(context).colorScheme.tertiary,
             behavior: SnackBarBehavior.floating,
           ),
@@ -152,7 +156,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update status: $e'),
+            content: Text(loc.failedToUpdateStatus(e.toString())),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -162,6 +166,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
   }
 
   Future<bool?> _showDeleteConfirmationDialog() {
+    final loc = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -172,14 +177,12 @@ class _MyReportsPageState extends State<MyReportsPage> {
             color: colors.error,
             size: 32,
           ),
-          title: const Text('Delete Report'),
-          content: const Text(
-            'Are you sure you want to delete this report? This action cannot be undone.',
-          ),
+          title: Text(loc.deleteReportTitle),
+          content: Text(loc.deleteReportConfirm),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(loc.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
@@ -187,7 +190,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                 backgroundColor: colors.error,
                 foregroundColor: colors.onError,
               ),
-              child: const Text('Delete'),
+              child: Text(loc.delete),
             ),
           ],
         );
@@ -199,6 +202,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final loc = AppLocalizations.of(context);
 
     // Use Consumer or Provider.of to listen to AuthKycService for UI updates
     final authService = Provider.of<AuthKycService>(context);
@@ -207,7 +211,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
     if (authService.isLoadingAuth) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('My Reports'),
+          title: Text(loc.myReportsTitle),
          centerTitle: true,
         elevation: 1,
         backgroundColor: colors.primary,
@@ -221,7 +225,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
               CircularProgressIndicator(color: colors.primary),
               const SizedBox(height: 16),
               Text(
-                'Loading authentication status...',
+                loc.loadingAuthStatus,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
@@ -235,7 +239,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
     if (!isAuthenticated) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('My Reports'),
+          title: Text(loc.myReportsTitle),
           centerTitle: true,
         elevation: 1,
         backgroundColor: colors.primary,
@@ -262,7 +266,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Sign in to view your reports',
+                  loc.signInToViewReports,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     color: colors.onSurface,
@@ -271,7 +275,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Track and manage all your submitted reports in one place',
+                  loc.trackAndManageReports,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colors.onSurfaceVariant,
@@ -287,7 +291,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                     );
                   },
                   icon: const Icon(Icons.login),
-                  label: const Text('Sign In'),
+                  label: Text(loc.signIn),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
@@ -303,7 +307,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
     // as it's initialized in initState and updated by _authStateSubscription.
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Reports'),
+        title: Text(loc.myReportsTitle),
         centerTitle: true,
         elevation: 1,
         backgroundColor: colors.primary,
@@ -314,7 +318,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
               Navigator.pushNamed(context, '/report');
             },
             icon: const Icon(Icons.add),
-            tooltip: 'Create New Report',
+            tooltip: loc.createNewReport,
           ),
         ],
       ),
@@ -330,7 +334,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                   CircularProgressIndicator(color: colors.primary),
                   const SizedBox(height: 16),
                   Text(
-                    'Loading your reports...',
+                    loc.loadingYourReports,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -361,7 +365,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Error loading reports',
+                      loc.errorLoadingReports(snapshot.error.toString()),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: colors.error,
@@ -385,7 +389,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                         });
                       },
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: Text(loc.retry),
                       style: FilledButton.styleFrom(
                         backgroundColor: colors.error,
                       ),
@@ -417,7 +421,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'No reports yet',
+                      loc.noReportsYet,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: colors.onSurface,
@@ -426,7 +430,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Create your first report to help find lost items or report found ones',
+                      loc.createFirstReport,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colors.onSurfaceVariant,
@@ -438,7 +442,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                         Navigator.pushNamed(context, '/report');
                       },
                       icon: const Icon(Icons.add_circle_outline),
-                      label: const Text('Create Report'),
+                      label: Text(loc.createReport),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                       ),
@@ -465,7 +469,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${reports.length} report${reports.length != 1 ? 's' : ''}',
+                        loc.reportsCount(reports.length),
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: colors.primary,
                           fontWeight: FontWeight.w500,

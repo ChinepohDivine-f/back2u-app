@@ -17,6 +17,7 @@ import 'package:back2u/models/location_model.dart';
 
 // Import the new data fetching service
 import 'package:back2u/services/form_data_fetch_service.dart';
+import 'package:back2u/utils/text_formatter.dart';
 import 'package:back2u/views/report/document_verification_page.dart';
 
 class ReportForm extends StatefulWidget {
@@ -270,13 +271,13 @@ class _ReportFormState extends State<ReportForm> {
     if (_formKey.currentState!.validate()) {
       // Create a *copy* of the report with updated details
       final updatedReport = widget.report.copyWith(
-        ownerName: _ownerNameController!.text.trim(),
+        ownerName: toTitleCase(_ownerNameController!.text.trim()),
         category: _selectedCategoryName!,
         subcategory: _selectedSubcategoryName!,
         reportedDate: Timestamp.fromDate(_incidentDate!),
         locationLost: _selectedLocationName!,
         subLocationLost: _selectedSubLocationName ?? '',
-        notes: _notesController!.text.trim(),
+        notes: toSentenceCase(_notesController!.text.trim()),
         reward: _addReward ? _rewardAmountController!.text.trim() : '0',
       );
 
@@ -284,10 +285,6 @@ class _ReportFormState extends State<ReportForm> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          // builder: (context) => DocumentVerificationPage(
-          //   report: updatedReport,
-          //   isEditing: widget.isEditing,
-          // ),
           builder: (context) => ContactPage(report: updatedReport, isEditing: widget.isEditing),
         ),
       );

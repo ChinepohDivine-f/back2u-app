@@ -5,6 +5,7 @@ import 'package:back2u/models/report_model.dart';
 import 'dart:async';
 
 import 'package:back2u/services/report_search_service.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -87,7 +88,7 @@ class _SearchPageState extends State<SearchPage> {
           setState(() {
             _isLoading = false;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error loading reports: $error')),
+              SnackBar(content: Text(AppLocalizations.of(context).errorLoadingReports(error.toString()))),
             );
           });
         }
@@ -110,7 +111,7 @@ class _SearchPageState extends State<SearchPage> {
       },
       onError: (error) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading filter options: $error')),
+          SnackBar(content: Text(AppLocalizations.of(context).errorLoadingFilterOptions(error.toString()))),
         );
         debugPrint('Error fetching filter options: $error');
       },
@@ -240,6 +241,8 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSearchResultsContent() {
+    final l10n = AppLocalizations.of(context);
+    
     if (!_hasSearched) {
       return Center(
         child: Padding(
@@ -250,7 +253,7 @@ class _SearchPageState extends State<SearchPage> {
               Icon(Icons.search, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
               Text(
-                'Start typing to search for lost or found items, or use filters to narrow down results.',
+                l10n.startTypingToSearch,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[600], fontSize: 16),
               ),
@@ -268,7 +271,7 @@ class _SearchPageState extends State<SearchPage> {
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
             Text(
-              "Fetching reports...",
+              l10n.fetchingReports,
               style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
             ),
           ],
@@ -285,11 +288,11 @@ class _SearchPageState extends State<SearchPage> {
           _filterLocation != null ||
           _filterSubLocation != null ||
           _filterIsResolved != null) {
-        message = 'No results found matching your criteria.';
+        message = l10n.noResultsFound;
       } else {
         // This case should ideally not be reached if _hasSearched is true,
         // unless a search with no query/filters also yields no results.
-        message = 'No reports found. Try a different search or adjust your filters.';
+        message = l10n.noReportsFound;
       }
       return Center(
         child: Padding(
@@ -338,12 +341,13 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     bool showSuggestionsOrHistory = _searchFocusNode.hasFocus &&
         (_searchController.text.isNotEmpty || _searchHistory.isNotEmpty);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search Lost & Found'),
+        title: Text(l10n.searchLostFound),
         centerTitle: true,
         elevation: 1,
         backgroundColor: colorScheme.primary,
@@ -372,7 +376,7 @@ class _SearchPageState extends State<SearchPage> {
                       controller: _searchController,
                       focusNode: _searchFocusNode,
                       decoration: InputDecoration(
-                        hintText: 'Search by owner, document, location...',
+                        hintText: l10n.searchByOwner,
                         hintStyle: TextStyle(
                           color: colorScheme.onSurfaceVariant.withOpacity(0.6),
                         ),
@@ -419,7 +423,7 @@ class _SearchPageState extends State<SearchPage> {
                   child: IconButton(
                     icon: const Icon(Icons.filter_list, color: Colors.white),
                     onPressed: () => _applyFilters(context),
-                    tooltip: 'Filter Search',
+                    tooltip: l10n.filterSearch,
                   ),
                 ),
               ],
@@ -459,13 +463,14 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSearchHistoryList() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Text(
-            'Recent Searches',
+            l10n.recentSearches,
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),

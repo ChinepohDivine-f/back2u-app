@@ -249,8 +249,9 @@ class AuthKycService with ChangeNotifier {
       'savedReports': isSaved
           ? FieldValue.arrayRemove([reportId])
           : FieldValue.arrayUnion([reportId]),
-      'updatedAt': Timestamp.now(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
+    await refreshUserProfile();
   }
 
   Future<void> reloadUser() async {
@@ -261,11 +262,11 @@ class AuthKycService with ChangeNotifier {
     notifyListeners();
   }
 
-  bool get isPhoneVerified => _currentUser?.phoneNumber?.isNotEmpty ?? false;
+  bool get isPhoneVerified => _currentUser?.phoneNumber != null;
 
   Future<bool> isPhoneVerifiedAsync() async {
     await _auth.currentUser?.reload();
-    return _auth.currentUser?.phoneNumber?.isNotEmpty ?? false;
+    return _auth.currentUser?.phoneNumber != null;
   }
 
   Future<void> verifyPhoneAndCompleteKyc({

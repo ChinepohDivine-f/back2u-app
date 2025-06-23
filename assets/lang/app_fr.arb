@@ -1,0 +1,274 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Back2U",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  
+  "welcome": "Bienvenue",
+  "@welcome": {
+    "description": "Welcome message"
+  },
+  
+  "getStarted": "Commencer",
+  "@getStarted": {
+    "description": "Get started button text"
+  },
+  
+  "howItWorks": "Comment ça marche",
+  "@howItWorks": {
+    "description": "How it works section title"
+  },
+  
+  "connect": "Se connecter",
+  "@connect": {
+    "description": "Connect section title"
+  },
+  
+  "signIn": "Se connecter",
+  "@signIn": {
+    "description": "Sign in button text"
+  },
+  
+  "signInWithGoogle": "Se connecter avec Google",
+  "@signInWithGoogle": {
+    "description": "Sign in with Google button text"
+  },
+  
+  "signInAnonymously": "Continuer en tant qu'invité",
+  "@signInAnonymously": {
+    "description": "Sign in anonymously button text"
+  },
+  
+  "signOut": "Se déconnecter",
+  "@signOut": {
+    "description": "Sign out button text"
+  },
+  
+  "email": "Email",
+  "@email": {
+    "description": "Email field label"
+  },
+  
+  "password": "Mot de passe",
+  "@password": {
+    "description": "Password field label"
+  },
+  
+  "phoneNumber": "Numéro de téléphone",
+  "@phoneNumber": {
+    "description": "Phone number field label"
+  },
+  
+  "fullName": "Nom complet",
+  "@fullName": {
+    "description": "Full name field label"
+  },
+  
+  "fullNameAsOnId": "Nom complet (comme sur la carte d'identité)",
+  "@fullNameAsOnId": {
+    "description": "Full name as on ID card field label"
+  },
+  
+  "whatsappNumber": "Numéro WhatsApp",
+  "@whatsappNumber": {
+    "description": "WhatsApp number field label"
+  },
+  
+  "useSameForWhatsApp": "Utiliser le même numéro pour WhatsApp",
+  "@useSameForWhatsApp": {
+    "description": "Checkbox text for using same number for WhatsApp"
+  },
+  
+  "contactInformation": "Informations de contact",
+  "@contactInformation": {
+    "description": "Contact information page title"
+  },
+  
+  "provideContactDetails": "Fournissez vos coordonnées pour que les gens puissent vous joindre.",
+  "@provideContactDetails": {
+    "description": "Contact details instruction text"
+  },
+  
+  "nextReviewReport": "SUIVANT: Examiner le rapport",
+  "@nextReviewReport": {
+    "description": "Next button text for review report"
+  },
+  
+  "completeYourProfile": "Complétez votre profil",
+  "@completeYourProfile": {
+    "description": "Complete profile page title"
+  },
+  
+  "completeYourKyc": "Complétez votre KYC",
+  "@completeYourKyc": {
+    "description": "Complete KYC section title"
+  },
+  
+  "sendOtp": "Envoyer OTP",
+  "@sendOtp": {
+    "description": "Send OTP button text"
+  },
+  
+  "verifyOtp": "Vérifier OTP",
+  "@verifyOtp": {
+    "description": "Verify OTP button text"
+  },
+  
+  "otpCode": "Code OTP",
+  "@otpCode": {
+    "description": "OTP code field label"
+  },
+  
+  "useTestNumber": "Utiliser le numéro de test (+237678439032)",
+  "@useTestNumber": {
+    "description": "Test number autofill button text"
+  },
+  
+  "useTestCode": "Utiliser le code de test (123456)",
+  "@useTestCode": {
+    "description": "Test code autofill button text"
+  },
+  
+  "privacyPolicy": "Politique de confidentialité",
+  "@privacyPolicy": {
+    "description": "Privacy policy text"
+  },
+  
+  "agreeToPolicy": "J'ai lu et j'accepte la politique de confidentialité",
+  "@agreeToPolicy": {
+    "description": "Privacy policy agreement text"
+  },
+  
+  "settings": "Paramètres",
+  "@settings": {
+    "description": "Settings page title"
+  },
+  
+  "accountSettings": "Paramètres du compte",
+  "@accountSettings": {
+    "description": "Account settings section title"
+  },
+  
+  "profileInformation": "Informations du profil",
+  "@profileInformation": {
+    "description": "Profile information menu item"
+  },
+  
+  "kycSettings": "Paramètres KYC",
+  "@kycSettings": {
+    "description": "KYC settings section title"
+  },
+  
+  "kycVerificationStatus": "Statut de vérification KYC",
+  "@kycVerificationStatus": {
+    "description": "KYC verification status menu item"
+  },
+  
+  "verified": "Vérifié",
+  "@verified": {
+    "description": "Verified status text"
+  },
+  
+  "notVerified": "Non vérifié",
+  "@notVerified": {
+    "description": "Not verified status text"
+  },
+  
+  "language": "Langue",
+  "@language": {
+    "description": "Language setting"
+  },
+  
+  "english": "Anglais",
+  "@english": {
+    "description": "English language option"
+  },
+  
+  "french": "Français",
+  "@french": {
+    "description": "French language option"
+  },
+  
+  "theme": "Thème",
+  "@theme": {
+    "description": "Theme setting"
+  },
+  
+  "light": "Clair",
+  "@light": {
+    "description": "Light theme option"
+  },
+  
+  "dark": "Sombre",
+  "@dark": {
+    "description": "Dark theme option"
+  },
+  
+  "system": "Système",
+  "@system": {
+    "description": "System theme option"
+  },
+  
+  "searchLostFound": "Rechercher Objets Perdus & Trouvés",
+  "@searchLostFound": {
+    "description": "Search page title"
+  },
+  
+  "searchByOwner": "Rechercher par propriétaire, document, lieu...",
+  "@searchByOwner": {
+    "description": "Search field placeholder"
+  },
+  
+  "filterSearch": "Filtrer la recherche",
+  "@filterSearch": {
+    "description": "Filter search tooltip"
+  },
+  
+  "startTypingToSearch": "Commencez à taper pour rechercher des objets perdus ou trouvés, ou utilisez les filtres pour affiner les résultats.",
+  "@startTypingToSearch": {
+    "description": "Search instruction text"
+  },
+  
+  "fetchingReports": "Récupération des rapports...",
+  "@fetchingReports": {
+    "description": "Loading reports text"
+  },
+  
+  "noResultsFound": "Aucun résultat trouvé correspondant à vos critères.",
+  "@noResultsFound": {
+    "description": "No search results message"
+  },
+  
+  "noReportsFound": "Aucun rapport trouvé. Essayez une recherche différente ou ajustez vos filtres.",
+  "@noReportsFound": {
+    "description": "No reports found message"
+  },
+  
+  "recentSearches": "Recherches récentes",
+  "@recentSearches": {
+    "description": "Recent searches section title"
+  },
+  
+  "errorLoadingReports": "Erreur lors du chargement des rapports: {error}",
+  "@errorLoadingReports": {
+    "description": "Error loading reports message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+  
+  "errorLoadingFilterOptions": "Erreur lors du chargement des options de filtre: {error}",
+  "@errorLoadingFilterOptions": {
+    "description": "Error loading filter options message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  }
+} 

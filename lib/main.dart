@@ -71,14 +71,17 @@ void main() async {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => MyAppState();
+  State<MyApp> createState() => _MyAppState();
+
+  static _MyAppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_MyAppState>();
 }
 
-class MyAppState extends State<MyApp> {
-  Locale? _locale;
+class _MyAppState extends State<MyApp> {
+  Locale? locale;
 
   @override
   void initState() {
@@ -88,21 +91,20 @@ class MyAppState extends State<MyApp> {
 
   Future<void> _loadLocale() async {
     final prefs = await SharedPreferences.getInstance();
-    final languageCode = prefs.getString('language') ?? 'en';
-    final locale = languageCode == 'fr' ? const Locale('fr') : const Locale('en');
-    if (mounted) {
+    final languageCode = prefs.getString('language_code');
+    if (languageCode != null) {
       setState(() {
-        _locale = locale;
+        locale = Locale(languageCode);
       });
     }
   }
 
-  void changeLocale(Locale locale) {
-    if (mounted) {
-      setState(() {
-        _locale = locale;
-      });
-    }
+  void changeLocale(Locale newLocale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language_code', newLocale.languageCode);
+    setState(() {
+      locale = newLocale;
+    });
   }
 
   @override
@@ -111,14 +113,13 @@ class MyAppState extends State<MyApp> {
 
     return MaterialApp(
       title: 'Back2U',
-      locale: _locale,
-      supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => SafeArea(child: child ?? const SizedBox.shrink()),
-      theme: AppTheme.lightTheme, // UPDATED
-      darkTheme: AppTheme.darkTheme, // UPDATED
       home: const Splash(),
       routes: {
         '/splash': (context) => const Splash(),

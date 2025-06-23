@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:back2u/components/SimpleCard.dart'; // This will be updated to handle images
 import 'package:back2u/utils/app_drawer.dart';
@@ -32,6 +33,8 @@ class _HomeState extends State<Home> {
   List<Report> _displayedReports = [];
   String? _errorMessage;
 
+  bool _isInit = true;
+
   final List<String> filters = ['All', 'Lost', 'Found'];
   final ScrollController _scrollController = ScrollController();
 
@@ -43,7 +46,7 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _initConnectivityListener();
+    // _initConnectivityListener();
     _setupScrollListener();
     // Reports will be loaded after _reportService is initialized in didChangeDependencies
   }
@@ -51,13 +54,19 @@ class _HomeState extends State<Home> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize ReportService here using Provider
-    _reportService = Provider.of<ReportService>(context);
-    // Listen to reports only after _reportService is initialized
-    _listenToReports();
-    // Load initial reports once service is ready
-    if (_displayedReports.isEmpty && _isLoadingInitial) {
-      _loadInitialReports();
+    if (_isInit) {
+      // Initialize ReportService here using Provider
+      _reportService = Provider.of<ReportService>(context);
+      // Listen to reports only after _reportService is initialized
+      _listenToReports();
+      _initConnectivityListener();
+      // Load initial reports once service is ready
+      if (_displayedReports.isEmpty && _isLoadingInitial) {
+        _loadInitialReports();
+      }
+      setState(() {
+        _isInit = false;
+      });
     }
   }
 
@@ -73,6 +82,7 @@ class _HomeState extends State<Home> {
 
   /// Initialize connectivity listener
   void _initConnectivityListener() {
+    final loc = AppLocalizations.of(context);
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
       List<ConnectivityResult> results,
     ) {
@@ -82,7 +92,7 @@ class _HomeState extends State<Home> {
         setState(() {
           _isOffline = true;
           _errorMessage =
-              'No internet connection. Please check your network settings.';
+              loc.checkYourConnection;
           _isLoadingInitial =
               false; // Stop initial loading spinner if it was running
           _isLoadingMore = false; // Stop more loading spinner
@@ -93,7 +103,7 @@ class _HomeState extends State<Home> {
           _isOffline = false;
           // Clear network-specific error message only if it's the one we set
           if (_errorMessage ==
-              'No internet connection. Please check your network settings.') {
+              loc.checkYourConnection) {
             _errorMessage = null;
           }
         });
@@ -111,10 +121,10 @@ class _HomeState extends State<Home> {
   /// Show persistent offline notification
   void _showOfflineSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('You are offline. Data might be outdated.'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).offlineDataMightBeOutdated),
         backgroundColor: Colors.orange,
-        duration: Duration(days: 365), // Persistent snackbar
+        duration: const Duration(days: 365), // Persistent snackbar
       ),
     );
   }
@@ -154,7 +164,7 @@ class _HomeState extends State<Home> {
     if (!error.contains('No internet connection')) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $error'),
+          content: Text('${AppLocalizations.of(context).error}: $error'),
           duration: const Duration(seconds: 5),
           backgroundColor: Colors.red,
         ),
@@ -190,12 +200,13 @@ class _HomeState extends State<Home> {
 
   /// Load initial reports
   Future<void> _loadInitialReports() async {
+    final loc = AppLocalizations.of(context);
     // Check connectivity before attempting to load
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult.contains(ConnectivityResult.none)) {
       setState(() {
         _isOffline = true;
-        _errorMessage = 'No internet connection. Cannot load reports.';
+        _errorMessage = loc.checkYourConnection;
         _isLoadingInitial = false;
       });
       _showOfflineSnackBar();
@@ -283,7 +294,7 @@ class _HomeState extends State<Home> {
   Map<String, List<Report>> _groupReportsByMonth(List<Report> reports) {
     final Map<String, List<Report>> groupedReports = {};
     // Use 'MMMM yyyy' for full month name and year (e.g., June 2025)
-    final DateFormat formatter = DateFormat('MMMM yyyy');
+    final DateFormat formatter = DateFormat('MMMM yyyy', AppLocalizations.of(context).locale.languageCode);
 
     for (var report in reports) {
       final String monthYear = formatter.format(report.createdAt.toDate());
@@ -294,14 +305,15 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Home'),
+          title: Text(loc.home),
           actions: [
             IconButton(
               icon: const Icon(Icons.search),
-              tooltip: 'Search items',
+              tooltip: loc.searchItems,
               onPressed:
                   () => Navigator.push(
                     context,
@@ -311,26 +323,26 @@ class _HomeState extends State<Home> {
             // More options button (can be a PopupMenuButton)
             IconButton(
               icon: const Icon(Icons.more_vert),
-              tooltip: 'More options',
+              tooltip: loc.moreOptions,
               onPressed: () {
                 // Example of a simple dialog for more options
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: const Text("More Options"),
+                      title: Text(loc.moreOptions),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
                           ListTile(
                             leading: const Icon(Icons.feedback_outlined),
-                            title: const Text('Send Feedback'),
+                            title: Text(loc.sendFeedback),
                             onTap: () {
                               Navigator.pop(context); // Close dialog
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
+                                SnackBar(
                                   content: Text(
-                                    'Feedback feature coming soon!',
+                                    loc.feedbackComingSoon,
                                   ),
                                 ),
                               );
@@ -338,13 +350,13 @@ class _HomeState extends State<Home> {
                           ),
                           ListTile(
                             leading: const Icon(Icons.help_outline),
-                            title: const Text('Help'),
+                            title: Text(loc.help),
                             onTap: () {
                               Navigator.pop(context); // Close dialog
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
+                                SnackBar(
                                   content: Text(
-                                    'Help content not yet available.',
+                                    loc.helpNotAvailable,
                                   ),
                                 ),
                               );
@@ -380,6 +392,12 @@ class _HomeState extends State<Home> {
 
   /// Build filter chips
   Widget _buildFilterChips() {
+    final loc = AppLocalizations.of(context);
+    final translatedFilters = {
+      'All': loc.all,
+      'Lost': loc.lost,
+      'Found': loc.found,
+    };
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
       child: Wrap(
@@ -389,7 +407,7 @@ class _HomeState extends State<Home> {
               final isSelected = _activeFilter == filter;
               return ChoiceChip(
                 label: Text(
-                  filter,
+                  translatedFilters[filter]!,
                   style: TextStyle(
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
@@ -415,6 +433,7 @@ class _HomeState extends State<Home> {
 
   /// Build offline status bar
   Widget _buildOfflineStatusBar() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       color: Theme.of(context).colorScheme.error,
@@ -424,7 +443,7 @@ class _HomeState extends State<Home> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'You are offline. Data might not be current.',
+              loc.offlineDataMightBeOutdated,
               style: TextStyle(color: Theme.of(context).colorScheme.onError),
             ),
           ),
@@ -435,6 +454,7 @@ class _HomeState extends State<Home> {
 
   /// Build floating action button
   Widget _buildFloatingActionButton() {
+    final loc = AppLocalizations.of(context);
     return FloatingActionButton.extended(
       onPressed: () {
         Navigator.push(
@@ -442,9 +462,9 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (context) => const ReportPage()),
         );
       },
-      label: const Text('Make a Report'),
+      label: Text(loc.makeAReport),
       icon: const Icon(Icons.add),
-      tooltip: 'Create a new lost or found report',
+      tooltip: loc.createNewReportTooltip,
       // backgroundColor: Theme.of(context).colorScheme.tertiary, // Use a distinct color
       // foregroundColor: Theme.of(context).colorScheme.onTertiary,
     );
@@ -475,6 +495,7 @@ class _HomeState extends State<Home> {
 
   /// Build loading view
   Widget _buildLoadingView() {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -484,7 +505,7 @@ class _HomeState extends State<Home> {
           ),
           const SizedBox(height: 16),
           Text(
-            "Loading reports...",
+            loc.loadingReports,
             style: TextStyle(
               fontSize: 16,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -497,15 +518,16 @@ class _HomeState extends State<Home> {
 
   /// Build no reports view
   Widget _buildNoReportsView() {
+    final loc = AppLocalizations.of(context);
     String message;
     String subMessage;
 
     if (_activeFilter != 'All') {
-      message = 'No ${_activeFilter.toLowerCase()} reports found.';
-      subMessage = 'Try changing your filter or create a new report.';
+      message = loc.noReportsFoundForFilter(_activeFilter.toLowerCase());
+      subMessage = loc.tryChangingFilter;
     } else {
-      message = 'No reports found yet.';
-      subMessage = 'Be the first to make a report!';
+      message = loc.noReportsFoundYet;
+      subMessage = loc.beTheFirstToReport;
     }
 
     return Center(
@@ -540,7 +562,7 @@ class _HomeState extends State<Home> {
             if (_isOffline) ...[
               const SizedBox(height: 24),
               Text(
-                "You are offline. Content may not be up-to-date.",
+                loc.offlineContentOutdated,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.error,
@@ -556,6 +578,7 @@ class _HomeState extends State<Home> {
 
   /// Build error view
   Widget _buildErrorView() {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -569,7 +592,7 @@ class _HomeState extends State<Home> {
             ),
             const SizedBox(height: 16),
             Text(
-              "Oops! Something went wrong.",
+              loc.oopsSomethingWentWrong,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.error,
@@ -578,7 +601,7 @@ class _HomeState extends State<Home> {
             ),
             const SizedBox(height: 8),
             Text(
-              _errorMessage ?? 'An unknown error occurred.',
+              _errorMessage ?? loc.unknownErrorOccurred,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -593,7 +616,7 @@ class _HomeState extends State<Home> {
                 _loadInitialReports(); // Attempt to reload
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
+              label: Text(loc.retry),
               style: ElevatedButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 backgroundColor: Theme.of(context).colorScheme.primary,
@@ -611,7 +634,7 @@ class _HomeState extends State<Home> {
     final sortedMonths =
         groupedReports.keys.toList()..sort((a, b) {
           // Parse "MMMM yyyy" to DateTime for correct sorting
-          final DateFormat formatter = DateFormat('MMMM yyyy');
+          final DateFormat formatter = DateFormat('MMMM yyyy', AppLocalizations.of(context).locale.languageCode);
           final DateTime dateA = formatter.parse(a);
           final DateTime dateB = formatter.parse(b);
           return dateB.compareTo(
@@ -679,6 +702,7 @@ class _HomeState extends State<Home> {
 
   /// Build pagination footer (loading indicator or "No more reports")
   Widget _buildPaginationFooter() {
+    final loc = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20.0),
       child: Center(
@@ -691,7 +715,7 @@ class _HomeState extends State<Home> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Loading more reports...',
+                      loc.loadingMoreReports,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -700,8 +724,8 @@ class _HomeState extends State<Home> {
                 )
                 : Text(
                   _reportService.hasMoreReports
-                      ? 'Scroll down to load more' // Message when more reports are available
-                      : 'No more reports', // Message when all reports are loaded
+                      ? loc.scrollDownToLoadMore // Message when more reports are available
+                      : loc.noMoreReports, // Message when all reports are loaded
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
