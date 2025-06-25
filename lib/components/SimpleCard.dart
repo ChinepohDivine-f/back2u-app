@@ -135,7 +135,7 @@ class SimpleCard extends StatelessWidget {
                   ),
                   // Actions
                   if (showActions) _buildOwnerActions(colors)
-                  else if (onToggleSave != null) _buildSaveButton(colors)
+                  else if (onToggleSave != null) _buildSaveActionMenu(context, colors)
                 ],
               ),
 
@@ -256,7 +256,7 @@ class SimpleCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSaveButton(ColorScheme colors) {
+  Widget _buildSaveActionMenu(BuildContext context, ColorScheme colors) {
     return loading
         ? SizedBox(
             width: 28,
@@ -266,13 +266,26 @@ class SimpleCard extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2, color: colors.primary),
             ),
           )
-        : IconButton(
-            icon: Icon(
-              isSaved ? Icons.bookmark : Icons.bookmark_border,
-              color: isSaved ? colors.primary : colors.onSurfaceVariant,
-            ),
-            onPressed: onToggleSave,
-            tooltip: isSaved ? 'Unsave Report' : 'Save Report',
+        : PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'toggle_save' && onToggleSave != null) {
+                onToggleSave!();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'toggle_save',
+                child: ListTile(
+                  leading: Icon(
+                    isSaved ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined,
+                    color: isSaved ? colors.error : colors.primary,
+                  ),
+                  title: Text(isSaved ? 'Unsave Report' : 'Save Report'),
+                ),
+              ),
+            ],
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Options',
           );
   }
 }

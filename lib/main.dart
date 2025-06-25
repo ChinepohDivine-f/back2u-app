@@ -27,6 +27,7 @@ import 'package:back2u/views/data/data_seeder.dart';
 import 'package:back2u/views/auth/phone_verification_page.dart';
 import 'package:back2u/views/auth/auth_page.dart';
 import 'package:back2u/constants/app_theme.dart'; // NEW
+import 'views/notifications_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,12 +41,9 @@ void main() async {
   );
     // Initialize App Check after Firebase.initializeApp
   await FirebaseAppCheck.instance.activate(
-    // You can use a combination of providers.
-    // For Android, usually one of the following:
-    androidProvider: AndroidProvider.playIntegrity, // Recommended for new Android apps
-    // androidProvider: AndroidProvider.safetyNet, // Older alternative for Android
-    // If you have a web version:
-    // webProvider: ReCaptchaV3Provider('YOUR_RECAPTCHA_SITE_KEY'),
+    // webRecaptchaSiteKey: 'recaptcha-v3-site-key',
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.debug,
   );
 
   
@@ -133,6 +131,7 @@ class _MyAppState extends State<MyApp> {
         '/saved_reports': (context) => const SavedReportsPage(),
         '/auth': (context) => const AuthPage(),
         '/phone_verification': (context) => const KycFormPage(),
+        '/notifications': (context) => const NotificationsPage(),
       },
     );
   }

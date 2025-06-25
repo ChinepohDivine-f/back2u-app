@@ -10,7 +10,8 @@ import 'package:intl_phone_field/phone_number.dart';
 import 'package:provider/provider.dart';
 
 class KycFormPage extends StatefulWidget {
-  const KycFormPage({super.key});
+  final bool isFromClaimFlow;
+  const KycFormPage({super.key, this.isFromClaimFlow = false});
 
   @override
   State<KycFormPage> createState() => _KycFormPageState();
@@ -159,18 +160,18 @@ class _KycFormPageState extends State<KycFormPage> {
       PhoneAuthCredential credential;
       
       if (_formatPhoneNumber(_phoneNumber) == testNumber && _otpController.text.trim() == testCode) {
-        // Test mode: create a mock credential
-        credential = PhoneAuthProvider.credential(
+        // Test mode: create a mock credential and complete login directly
+        await _completeLogin(PhoneAuthProvider.credential(
           verificationId: 'test_verification_id',
           smsCode: testCode,
-        );
-      } else {
-        // Real OTP verification
-        credential = PhoneAuthProvider.credential(
-          verificationId: _verificationId,
-          smsCode: _otpController.text.trim(),
-        );
+        ));
+        return;
       }
+      // Real OTP verification
+      credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId,
+        smsCode: _otpController.text.trim(),
+      );
       
       await _completeLogin(credential);
     } catch (e) {
@@ -197,11 +198,15 @@ class _KycFormPageState extends State<KycFormPage> {
         );
         
         if (mounted) {
+          if (widget.isFromClaimFlow) {
+            Navigator.of(context).pop();
+          } else {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const Home()),
             (route) => false,
           );
+          }
         }
       } else {
         _showMessage('No user is currently signed in', isError: true);

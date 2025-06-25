@@ -78,7 +78,7 @@ class ButtonExample extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Custom Text Button Example')),
-      body: Center(
+      body: SafeArea(child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -129,7 +129,7 @@ class ButtonExample extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),);
   }
 }
 

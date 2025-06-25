@@ -262,7 +262,7 @@ class AuthKycService with ChangeNotifier {
     notifyListeners();
   }
 
-  bool get isPhoneVerified => _currentUser?.phoneNumber != null;
+  bool get isPhoneVerified => _appUser?.verified == true;
 
   Future<bool> isPhoneVerifiedAsync() async {
     await _auth.currentUser?.reload();

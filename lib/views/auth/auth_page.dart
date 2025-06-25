@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:back2u/services/auth_kyc_service.dart'; // Import your AuthKycService
+import 'package:back2u/utils/app_drawer.dart';
 
 class AuthPage extends StatelessWidget {
   const AuthPage({super.key});
@@ -20,12 +21,13 @@ class AuthPage extends StatelessWidget {
         foregroundColor: colors.onPrimary,
         leading: IconButton( // Back button
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pushNamed(context, '/home'),
         ),
       ),
+      // drawer: const AppDrawer(),
       body: authService.isLoadingAuth // Show loading indicator if auth operation is in progress
           ? Center(child: CircularProgressIndicator(color: colors.primary))
-          : Padding(
+          : SafeArea(child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -109,7 +111,7 @@ class AuthPage extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
+            ),),
     );
   }
 }

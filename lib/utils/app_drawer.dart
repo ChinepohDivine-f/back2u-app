@@ -90,6 +90,7 @@ class _AppDrawerState extends State<AppDrawer> {
         padding: EdgeInsets.zero,
         children: <Widget>[
           // --- Drawer Header Section ---
+          // SizedBox(height: 10),
           _buildDrawerHeader(context, colorScheme, userLoggedIn),
 
           // --- Common Menu Items ---
@@ -148,6 +149,14 @@ class _AppDrawerState extends State<AppDrawer> {
                 },
               ),
               ListTile(
+                leading: Icon(Icons.notifications_active_outlined, color: colorScheme.onSurfaceVariant),
+                title: Text('Notifications', style: Theme.of(context).textTheme.bodyLarge),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/notifications'); // New route for notifications
+                },
+              ),
+              ListTile(
                 leading: Icon(Icons.logout, color: colorScheme.error),
                 title: Text('Logout', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.error)),
                 onTap: () {
@@ -195,7 +204,7 @@ class _AppDrawerState extends State<AppDrawer> {
       return UserAccountsDrawerHeader(
         accountName: Text(
           _appUser?.username ?? _currentUser?.displayName ?? 'User Name', // Fallback name
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.onPrimary),
         ),
         accountEmail: Text(
           _appUser?.email ?? _currentUser?.email ?? 'user@example.com', // Fallback email
@@ -220,7 +229,7 @@ class _AppDrawerState extends State<AppDrawer> {
         decoration: BoxDecoration(
           color: colorScheme.primary,
         ),
-        child: Column(
+        child: SafeArea(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -248,7 +257,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   ),
             ),
           ],
-        ),
+        ),),
       );
     }
   }

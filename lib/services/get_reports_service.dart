@@ -262,6 +262,16 @@ class ReportService {
     }
   }
 
+  /// Get a single report by its ID.
+  Future<Report?> getReportById(String reportId) async {
+    try {
+      final reports = await _fetchReportsByIds([reportId]);
+      return reports.isNotEmpty ? reports.first : null;
+    } catch (e) {
+      debugPrint('Error fetching report by ID: $e');
+      return null;
+    }
+  }
 
   /// Getter to check if more reports are available for general feed pagination.
   bool get hasMoreReports => _hasMore;

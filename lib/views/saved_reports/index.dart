@@ -64,6 +64,34 @@ class _SavedReportsPageState extends State<SavedReportsPage> {
       );
       return;
     }
+
+    // If we are unsaving, show a confirmation dialog first
+    if (_currentSavedReportIds.contains(reportId)) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirm Unsave'),
+          content: const Text('Are you sure you want to remove this report from your saved items?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Unsave'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) {
+        return; // User cancelled
+      }
+    }
+
     setState(() {
       _loadingReports.add(reportId);
     });

@@ -218,7 +218,7 @@ class _ReportFormState extends State<ReportForm> {
   Future<void> _pickImages() async {
     try {
       final ImagePicker picker = ImagePicker();
-      final List<XFile>? images = await picker.pickMultiImage();
+      final List<XFile>? images = await picker.pickMultiImage(imageQuality: 35);
 
       if (images != null && images.isNotEmpty) {
         final currentTotalImages = _newlySelectedLocalImages.length +
