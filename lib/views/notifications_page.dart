@@ -25,6 +25,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<Claim> _claims = [];
   String _sortBy = 'date'; // 'date' or 'status'
   String _sortOrder = 'desc'; // 'asc' or 'desc'
+  int _previousClaimCount = 0; // Track previous claim count for popup notifications
 
   @override
   void initState() {
@@ -65,6 +66,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
           _claims = allClaims;
           _isLoading = false;
         });
+        
+        // Show popup notification for new claims
+        _showPopupNotifications();
       }
     } catch (e) {
       if (mounted) {
@@ -97,7 +101,142 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _refreshNotifications() async {
+    final previousCount = _claims.length;
     await _loadNotifications();
+    
+    // Show popup for new claims during manual refresh
+    if (_claims.length > previousCount) {
+      final newClaims = _claims.take(_claims.length - previousCount).toList();
+      for (final claim in newClaims) {
+        _showPopupNotification(claim);
+      }
+    }
+  }
+
+  void _showPopupNotifications() {
+    if (_previousClaimCount > 0 && _claims.length > _previousClaimCount) {
+      final newClaimsCount = _claims.length - _previousClaimCount;
+      final newClaims = _claims.take(newClaimsCount).toList();
+      
+      for (final claim in newClaims) {
+        _showPopupNotification(claim);
+      }
+    }
+    _previousClaimCount = _claims.length;
+  }
+
+  void _showPopupNotification(Claim claim) {
+    final theme = Theme.of(context);
+    final isOwner = claim.ownerId == context.read<AuthKycService>().currentUser?.uid;
+    
+    String title;
+    String message;
+    IconData icon;
+
+    if (isOwner) {
+      title = 'New Claim Received';
+      message = 'Someone wants to claim your ${claim.type}';
+      icon = Icons.notification_important;
+    } else {
+      title = 'Claim Status Update';
+      switch (claim.status) {
+        case 'accepted':
+          message = 'Your claim was accepted! Contact the owner.';
+          icon = Icons.check_circle;
+          break;
+        case 'rejected':
+          message = 'Your claim was not accepted.';
+          icon = Icons.cancel;
+          break;
+        default:
+          message = 'Your claim is being reviewed.';
+          icon = Icons.pending;
+      }
+    }
+
+    // Show overlay notification
+    OverlayEntry? overlayEntry;
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(
+                color: _getStatusColor(claim.status).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(claim.status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: _getStatusColor(claim.status),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        message,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () {
+                    overlayEntry?.remove();
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(overlayEntry);
+
+    // Auto-remove after 2.5 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      overlayEntry?.remove();
+    });
   }
 
   Widget _buildNotificationTile(Claim claim, String userId) {

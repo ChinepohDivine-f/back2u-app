@@ -12,6 +12,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'package:back2u/services/image_upload_service.dart';
 import 'package:back2u/services/update_report_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class SummaryPage extends StatefulWidget {
   final Report report;
@@ -167,12 +168,12 @@ class _SummaryPageState extends State<SummaryPage> {
                                     padding: const EdgeInsets.only(right: 8.0),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        imageUrl,
+                                      child: CachedNetworkImage(
+                                        imageUrl: imageUrl,
                                         width: 100,
                                         height: 100,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
+                                        errorWidget: (context, url, error) =>
                                             const Center(child: Icon(Icons.broken_image)),
                                       ),
                                     ),
@@ -380,7 +381,7 @@ class _SummaryPageState extends State<SummaryPage> {
         );
 
         // Small delay to allow the user to see the success message and button state
-        await Future.delayed(const Duration(milliseconds: 1500));
+        await Future.delayed(const Duration(milliseconds: 800));
 
         // Navigate to Home and remove all previous routes
         if (mounted) {

@@ -35,23 +35,22 @@ void main() async {
   // Load environment variables
   await dotenv.load(fileName: '.env');
 
+  // Initialize Firebase with optimized settings
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-    
   );
-    // Initialize App Check after Firebase.initializeApp
+  
+  // Initialize App Check after Firebase.initializeApp
   await FirebaseAppCheck.instance.activate(
     // webRecaptchaSiteKey: 'recaptcha-v3-site-key',
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
   );
 
-  
-
   runApp(
     MultiProvider(
       providers: [
-        // <--- UPDATED: AuthKycService is now a ChangeNotifierProvider --->
+        // AuthKycService is now a ChangeNotifierProvider
         ChangeNotifierProvider<AuthKycService>(
           create: (_) => AuthKycService(),
         ),

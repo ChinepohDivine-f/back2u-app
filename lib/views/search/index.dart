@@ -130,7 +130,7 @@ class _SearchPageState extends State<SearchPage> {
     final input = _searchController.text.trim();
 
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () async {
+    _debounce = Timer(const Duration(milliseconds: 200), () async {
       if (!mounted) return;
 
       List<String> remote = [];

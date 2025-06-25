@@ -40,8 +40,8 @@ class _HomeState extends State<Home> {
 
   // Pagination configuration
   static const double _scrollThreshold =
-      200.0; // Pixels from bottom to trigger load
-  static const int _pageSize = 10; // Items per page
+      100.0; // Reduced from 200.0 for faster loading
+  static const int _pageSize = 8; // Reduced from 10 for faster initial load
 
   @override
   void initState() {
@@ -500,14 +500,19 @@ class _HomeState extends State<Home> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: Theme.of(context).colorScheme.primary,
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+              strokeWidth: 3,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             loc.loadingReports,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),

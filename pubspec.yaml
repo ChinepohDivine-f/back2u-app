@@ -61,6 +61,8 @@ dependencies:
   image: ^4.5.4
   firebase_app_check: ^0.3.2+7
   intl_phone_field: ^3.2.0
+  flutter_launcher_icons: ^0.14.4
+  cached_network_image: ^3.3.1
   # flutter_gesture_plugin: ^0.0.1
 
   # The following adds the Cupertino Icons font to your application.
@@ -111,6 +113,19 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
   # fonts:
   #   - family: Schyler
   #     fonts:

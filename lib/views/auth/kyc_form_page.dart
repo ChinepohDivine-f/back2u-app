@@ -105,7 +105,7 @@ class _KycFormPageState extends State<KycFormPage> {
     
     if (_formatPhoneNumber(_phoneNumber) == testNumber) {
       // Test mode: instantly "send" OTP
-      Future.delayed(const Duration(milliseconds: 500), () {
+      Future.delayed(const Duration(milliseconds: 200), () {
         setState(() {
           _isLoading = false;
           _codeSent = true;

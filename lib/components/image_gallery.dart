@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ImageGallery extends StatefulWidget {
   final List<String> images;
@@ -41,8 +42,8 @@ class _ImageGalleryState extends State<ImageGallery> {
                   tag: widget.images[index],
                   child: InteractiveViewer(
                     maxScale: 4,
-                    child: Image.network(
-                      widget.images[index],
+                    child: CachedNetworkImage(
+                      imageUrl: widget.images[index],
                       fit: BoxFit.contain,
                     ),
                   ),

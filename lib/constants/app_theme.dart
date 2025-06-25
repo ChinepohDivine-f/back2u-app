@@ -40,6 +40,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      fontFamily: 'Poppins',
       // scaffoldBackgroundColor: colorScheme.background,
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.primary,
@@ -49,6 +50,7 @@ class AppTheme {
           fontSize: 18,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.1,
+          fontFamily: 'Poppins',
         ),
         systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: 0,
@@ -83,6 +85,24 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
         ),
+      ),
+      // Performance optimizations
+      textTheme: TextTheme(
+        displayLarge: TextStyle(fontFamily: 'Poppins'),
+        displayMedium: TextStyle(fontFamily: 'Poppins'),
+        displaySmall: TextStyle(fontFamily: 'Poppins'),
+        headlineLarge: TextStyle(fontFamily: 'Poppins'),
+        headlineMedium: TextStyle(fontFamily: 'Poppins'),
+        headlineSmall: TextStyle(fontFamily: 'Poppins'),
+        titleLarge: TextStyle(fontFamily: 'Poppins'),
+        titleMedium: TextStyle(fontFamily: 'Poppins'),
+        titleSmall: TextStyle(fontFamily: 'Poppins'),
+        bodyLarge: TextStyle(fontFamily: 'Poppins'),
+        bodyMedium: TextStyle(fontFamily: 'Poppins'),
+        bodySmall: TextStyle(fontFamily: 'Poppins'),
+        labelLarge: TextStyle(fontFamily: 'Poppins'),
+        labelMedium: TextStyle(fontFamily: 'Poppins'),
+        labelSmall: TextStyle(fontFamily: 'Poppins'),
       ),
     );
   }

@@ -11,6 +11,7 @@ import 'package:back2u/models/report_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart'; // For creating dummy XFile for existing images
 import 'package:flutter/foundation.dart' hide Category;
+import 'package:cached_network_image/cached_network_image.dart';
 
 // Import your category and location models
 import 'package:back2u/models/category_model.dart';
@@ -216,6 +217,8 @@ class _ReportFormState extends State<ReportForm> {
   }
 
   Future<void> _pickImages() async {
+    // Image upload functionality temporarily disabled
+    /*
     try {
       final ImagePicker picker = ImagePicker();
       final List<XFile>? images = await picker.pickMultiImage(imageQuality: 35);
@@ -243,15 +246,21 @@ class _ReportFormState extends State<ReportForm> {
         SnackBar(content: Text('Error picking images: $e')),
       );
     }
+    */
   }
 
   void _removeNewImage(int index) {
+    // Image removal functionality temporarily disabled
+    /*
     setState(() {
       _newlySelectedLocalImages.removeAt(index);
     });
+    */
   }
 
   void _markExistingImageForRemoval(String imageUrl) {
+    // Image removal functionality temporarily disabled
+    /*
     setState(() {
       if (_imagesToDelete.contains(imageUrl)) {
         _imagesToDelete.remove(imageUrl); // Unmark
@@ -259,6 +268,7 @@ class _ReportFormState extends State<ReportForm> {
         _imagesToDelete.add(imageUrl); // Mark for removal
       }
     });
+    */
   }
 
   void _proceedToContactPage(Report report) {
@@ -493,9 +503,12 @@ class _ReportFormState extends State<ReportForm> {
       );
     }
 
+    // Image calculations temporarily disabled
+    /*
     final int totalImages = _newlySelectedLocalImages.length +
         _existingImageUrls.where((url) => !_imagesToDelete.contains(url)).length;
     final int remainingSlots = 2 - totalImages;
+    */
 
     final List<Widget> children = [
       // Owner's Name Field (Required)
@@ -686,7 +699,8 @@ class _ReportFormState extends State<ReportForm> {
       ),
       const SizedBox(height: 24),
 
-      // Image Picker Section
+      // Image Picker Section - Temporarily Disabled
+      /*
       Padding(
         padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
         child: Column(
@@ -742,10 +756,10 @@ class _ReportFormState extends State<ReportForm> {
                                 colorFilter: isMarkedForDeletion
                                     ? const ColorFilter.mode(Colors.black38, BlendMode.darken)
                                     : ColorFilter.mode(Colors.transparent, BlendMode.multiply),
-                                child: Image.network(
-                                  imageUrl,
+                                child: CachedNetworkImage(
+                                  imageUrl: imageUrl,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
+                                  errorWidget: (context, error, stackTrace) =>
                                       const Center(child: Icon(Icons.broken_image)),
                                 ),
                               ),
@@ -826,6 +840,7 @@ class _ReportFormState extends State<ReportForm> {
           ],
         ),
       ),
+      */
       const SizedBox(height: 16),
 
       // Additional Notes Text Field (Directly integrated)

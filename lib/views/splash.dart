@@ -27,8 +27,8 @@ class _SplashState extends State<Splash> {
   }
 
   Future<void> _initializeAppAndNavigate() async {
-    // Wait for a short duration to display the splash screen gracefully
-    await Future.delayed(const Duration(seconds: 3));
+    // Reduced delay for faster app startup
+    await Future.delayed(const Duration(seconds: 1));
 
     // Ensure the widget is still mounted before proceeding with navigation
     if (!mounted) return;

@@ -16,6 +16,7 @@ import 'package:back2u/services/claim_service.dart';
 import 'package:back2u/models/claim_model.dart';
 import 'package:back2u/services/image_upload_service.dart';
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ReportDetails extends StatefulWidget {
   final Report report;
@@ -561,12 +562,12 @@ Shared via Back2U''';
                     onTap: () => _showImageGallery(widget.report.images, index),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        imageUrl,
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        errorBuilder: (context, error, stackTrace) =>
+                        errorWidget: (context, url, error) =>
                             Container(
                               color: colorScheme.surfaceVariant,
                               child: const Icon(Icons.broken_image, size: 40),
