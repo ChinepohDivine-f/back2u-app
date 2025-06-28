@@ -215,7 +215,7 @@
     "description": "Search page title"
   },
   
-  "searchByOwner": "Rechercher par propriétaire, document, lieu...",
+  "searchByOwner": "Rechercher par propriétaire",
   "@searchByOwner": {
     "description": "Search field placeholder"
   },

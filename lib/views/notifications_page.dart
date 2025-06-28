@@ -10,6 +10,7 @@ import 'package:back2u/services/get_reports_service.dart';
 import 'package:back2u/components/report_details.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:back2u/models/user_model.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -20,9 +21,11 @@ class NotificationsPage extends StatefulWidget {
 
 class _NotificationsPageState extends State<NotificationsPage> {
   final ClaimService _claimService = ClaimService();
+  final ReportService _reportService = ReportService();
   bool _isLoading = false;
   String? _error;
   List<Claim> _claims = [];
+  Map<String, Report> _reportDetails = {}; // Store report details for owner names
   String _sortBy = 'date'; // 'date' or 'status'
   String _sortOrder = 'desc'; // 'asc' or 'desc'
   int _previousClaimCount = 0; // Track previous claim count for popup notifications
@@ -61,9 +64,24 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final allClaims = [...results[0], ...results[1]];
       _sortClaims(allClaims);
 
+      // Fetch report details for all claims to get owner names
+      final reportDetails = <String, Report>{};
+      for (final claim in allClaims) {
+        try {
+          final report = await _reportService.getReportById(claim.reportId);
+          if (report != null) {
+            reportDetails[claim.reportId] = report;
+          }
+        } catch (e) {
+          // If report not found, continue without it
+          debugPrint('Failed to load report ${claim.reportId}: $e');
+        }
+      }
+
       if (mounted) {
         setState(() {
           _claims = allClaims;
+          _reportDetails = reportDetails;
           _isLoading = false;
         });
         
@@ -243,13 +261,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final theme = Theme.of(context);
     final isOwner = claim.ownerId == userId;
     final isUnread = claim.status == 'pending';
+    final report = _reportDetails[claim.reportId];
+    final ownerName = report?.ownerName ?? 'Unknown Owner';
 
     String title;
     String subtitle;
     IconData icon;
 
     if (isOwner) {
-      title = 'New claim on your ${claim.type}';
+      title = 'New claim on your ${claim.type} report';
       icon = Icons.notification_important_outlined;
       switch (claim.status) {
         case 'pending':
@@ -265,20 +285,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
           subtitle = 'Status: ${claim.status}';
       }
     } else {
-      title = 'Your claim on ${claim.type}';
+      title = 'Your claim on ${claim.type} item';
+      subtitle = 'Owner: $ownerName';
       icon = Icons.send_outlined;
       switch (claim.status) {
         case 'pending':
-          subtitle = 'Waiting for owner review';
+          subtitle = 'Owner: $ownerName • Waiting for review';
           break;
         case 'accepted':
-          subtitle = 'Claim accepted! Contact owner';
+          subtitle = 'Owner: $ownerName • Claim accepted!';
           break;
         case 'rejected':
-          subtitle = 'Claim not accepted';
+          subtitle = 'Owner: $ownerName • Claim not accepted';
           break;
         default:
-          subtitle = 'Status: ${claim.status}';
+          subtitle = 'Owner: $ownerName • Status: ${claim.status}';
       }
     }
 
@@ -310,6 +331,36 @@ class _NotificationsPageState extends State<NotificationsPage> {
             Row(
               children: [
                 _StatusChip(status: claim.status),
+                if (claim.photoUrls.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.photo,
+                          size: 12,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${claim.photoUrls.length}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 Text(
                   _formatDate(claim.createdAt.toDate()),
@@ -354,6 +405,34 @@ class _NotificationsPageState extends State<NotificationsPage> {
     } else {
       return DateFormat('MMM dd').format(date);
     }
+  }
+
+  String _formatMonth(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return 'This Week';
+    } else if (difference.inDays < 30) {
+      return 'This Month';
+    } else {
+      return DateFormat('MMMM yyyy').format(date);
+    }
+  }
+
+  Map<String, List<Claim>> _groupClaimsByMonth() {
+    final grouped = <String, List<Claim>>{};
+    
+    for (final claim in _claims) {
+      final monthKey = _formatMonth(claim.createdAt.toDate());
+      grouped.putIfAbsent(monthKey, () => []).add(claim);
+    }
+    
+    return grouped;
   }
 
   Color _getStatusColor(String status) {
@@ -525,11 +604,53 @@ class _NotificationsPageState extends State<NotificationsPage> {
       );
     }
 
+    final groupedClaims = _groupClaimsByMonth();
+    final sortedMonths = groupedClaims.keys.toList()
+      ..sort((a, b) {
+        // Custom sorting for month keys
+        final monthOrder = {
+          'Today': 0,
+          'Yesterday': 1,
+          'This Week': 2,
+          'This Month': 3,
+        };
+        
+        final aOrder = monthOrder[a] ?? 4;
+        final bOrder = monthOrder[b] ?? 4;
+        
+        if (aOrder != 4 && bOrder != 4) {
+          return aOrder.compareTo(bOrder);
+        }
+        
+        // For actual month names, sort by date
+        return b.compareTo(a); // Reverse for newest first
+      });
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _claims.length,
+      itemCount: sortedMonths.length,
       itemBuilder: (context, index) {
-        return _buildNotificationTile(_claims[index], userId);
+        final month = sortedMonths[index];
+        final claims = groupedClaims[month]!;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Month header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                month,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+            // Claims for this month
+            ...claims.map((claim) => _buildNotificationTile(claim, userId)),
+          ],
+        );
       },
     );
   }
@@ -681,11 +802,14 @@ class _ClaimDetailsBottomSheetState extends State<_ClaimDetailsBottomSheet> {
   bool _isProcessing = false;
   bool _isLoadingReport = false;
   Report? _report;
+  AppUser? _claimerUser;
+  bool _isLoadingClaimer = true;
 
   @override
   void initState() {
     super.initState();
     _loadReportDetails();
+    _loadClaimerUser();
   }
 
   Future<void> _loadReportDetails() async {
@@ -705,6 +829,24 @@ class _ClaimDetailsBottomSheetState extends State<_ClaimDetailsBottomSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load report: $e')),
         );
+      }
+    }
+  }
+
+  Future<void> _loadClaimerUser() async {
+    setState(() => _isLoadingClaimer = true);
+    try {
+      final authService = AuthKycService();
+      final user = await authService.getUserProfile(widget.claim.claimerId);
+      if (mounted) {
+        setState(() {
+          _claimerUser = user;
+          _isLoadingClaimer = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingClaimer = false);
       }
     }
   }
@@ -841,6 +983,75 @@ class _ClaimDetailsBottomSheetState extends State<_ClaimDetailsBottomSheet> {
     return message;
   }
 
+  void _showImageGallery(List<String> imageUrls, int initialIndex) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black.withOpacity(0.95),
+      builder: (context) {
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.85,
+            child: Column(
+              children: [
+                // Header with close button
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Claim Images',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: PageController(initialPage: initialIndex),
+                    itemCount: imageUrls.length,
+                    itemBuilder: (context, index) {
+                      return InteractiveViewer(
+                        child: Center(
+                          child: Image.network(
+                            imageUrls[index],
+                            fit: BoxFit.contain,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded / 
+                                        loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: Colors.white,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) => const Center(
+                              child: Icon(Icons.broken_image, color: Colors.white, size: 80),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -970,8 +1181,146 @@ class _ClaimDetailsBottomSheetState extends State<_ClaimDetailsBottomSheet> {
                   const SizedBox(height: 16),
                 ],
 
+                // Claim images
+                if (widget.claim.photoUrls.isNotEmpty) ...[
+                  Text('Claim Images', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.claim.photoUrls.length} photo${widget.claim.photoUrls.length > 1 ? 's' : ''} submitted',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 1,
+                          ),
+                          itemCount: widget.claim.photoUrls.length,
+                          itemBuilder: (context, index) {
+                            final imageUrl = widget.claim.photoUrls[index];
+                            return GestureDetector(
+                              onTap: () => _showImageGallery(widget.claim.photoUrls, index),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outline.withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        color: theme.colorScheme.surfaceVariant,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded / 
+                                                  loadingProgress.expectedTotalBytes!
+                                                : null,
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: theme.colorScheme.surfaceVariant,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.broken_image,
+                                            size: 24,
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Failed to load',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: theme.colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
                 // Contact section
                 if (showContact && (phone != null || whatsapp != null)) ...[
+                  // Claimer info card
+                  if (_isLoadingClaimer) ...[
+                    const Center(child: CircularProgressIndicator()),
+                    const SizedBox(height: 16),
+                  ] else if (_claimerUser != null) ...[
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                            backgroundImage: _claimerUser!.profileImageUrl != null
+                                ? NetworkImage(_claimerUser!.profileImageUrl!)
+                                : null,
+                            child: _claimerUser!.profileImageUrl == null
+                                ? Icon(Icons.person, size: 28, color: theme.colorScheme.primary)
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(_claimerUser!.username, style: theme.textTheme.titleMedium),
+                                const SizedBox(height: 4),
+                                Text(_claimerUser!.email, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   // Safety advisory
                   Container(
                     width: double.infinity,

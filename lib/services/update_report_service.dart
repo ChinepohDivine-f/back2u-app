@@ -55,6 +55,7 @@ class UpdateReportService {
       final updatedReport = report.copyWith(
         images: finalImageUrls,
         reporterName: reporterName,
+        searchKeyWords: _generateSearchKeywords(report),
       );
       await _firestore
           .collection(_reportsCollectionPath)
@@ -71,6 +72,7 @@ class UpdateReportService {
         reporterUid: userId,
         reporterName: reporterName,
         images: finalImageUrls,
+        searchKeyWords: _generateSearchKeywords(report),
       );
       await newReportRef.set({
         ...newReport.toFirestore(),
@@ -103,19 +105,12 @@ class UpdateReportService {
   // Re-use your keyword generation logic - consider moving this to the Report model itself
   List<String> _generateSearchKeywords(Report r) {
     final keywords = <String>[];
-
     // Handle nullable ownerName safely
     if (r.ownerName != null && r.ownerName!.isNotEmpty) {
       keywords.add(r.ownerName!.toLowerCase());
     }
-
     for (var term in [
       r.ownerName, // Now includes nullable check directly via '?' in Report model
-      // r.category,
-      // r.subcategory,
-      // r.locationLost,
-      // r.subLocationLost,
-      // r.type,
     ]) {
       // Handle nullable terms safely
       if (term != null && term.isNotEmpty) {
@@ -133,7 +128,6 @@ class UpdateReportService {
         }
       }
     }
-
     if (r.notes.isNotEmpty) {
       keywords.addAll(r.notes
           .toLowerCase()
@@ -141,7 +135,6 @@ class UpdateReportService {
           .map((word) => word.replaceAll(RegExp(r'[^\w\s]'), ''))
           .where((word) => word.isNotEmpty));
     }
-
     return keywords.where((k) => k.isNotEmpty).toSet().toList();
   }
 }

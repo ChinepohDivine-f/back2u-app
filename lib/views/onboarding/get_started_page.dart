@@ -5,8 +5,8 @@ class GetStartedPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextTheme textTheme = Theme.of(context).textTheme;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       color: colorScheme.background,
@@ -15,28 +15,27 @@ class GetStartedPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.check_circle_outline_rounded, // Example icon
-            size: 120,
+            Icons.check_circle_outline_rounded,
+            size: 90,
             color: colorScheme.primary,
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 24),
           Text(
             "Ready to Get Started?",
-            style: textTheme.displayMedium?.copyWith(
-              color: colorScheme.onBackground,
+            style: textTheme.headlineMedium?.copyWith(
+              color: colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             "Let's help you find what's lost or return what's found. Your journey to peace of mind starts now.",
             style: textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onBackground.withOpacity(0.7),
+              color: colorScheme.secondary,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 60), // Extra space for the button at the bottom
         ],
       ),
     );

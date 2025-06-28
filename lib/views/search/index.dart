@@ -14,11 +14,12 @@ class SearchPage extends StatefulWidget {
   State<SearchPage> createState() => _SearchPageState();
 }
 
-
 class _SearchPageState extends State<SearchPage> {
   final ReportSearchService _searchService = ReportSearchService();
   StreamSubscription<List<Report>>? _filteredReportsSubscription;
   StreamSubscription<Map<String, List<String>>>? _filterOptionsSubscription;
+  StreamSubscription<bool>? _loadingStateSubscription;
+  StreamSubscription<bool>? _suggestionsLoadingSubscription;
 
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -26,6 +27,7 @@ class _SearchPageState extends State<SearchPage> {
   String _currentQuery = ''; // Actual query submitted for search
   List<Report> _displayedReports = []; // Data currently displayed
   bool _isLoading = false; // Track loading state for search results
+  bool _isLoadingSuggestions = false; // Track loading state for suggestions
   bool _hasSearched = false; // Track if a search has been performed
 
   // For search history and suggestions
@@ -43,8 +45,6 @@ class _SearchPageState extends State<SearchPage> {
   // Dynamic filter options from service
   List<String> _availableCategories = [];
   List<String> _availableLocations = [];
-  // No longer need to store all subcategories/sublocations here,
-  // as they are fetched on demand for the bottom sheet.
   final List<String> _reportTypes = ['Lost', 'Found']; // These are static
 
   @override
@@ -56,8 +56,7 @@ class _SearchPageState extends State<SearchPage> {
 
     _listenToFilteredReports();
     _listenToFilterOptions();
-
-    // No initial _performSearch() here. Results will only show after user input.
+    _listenToLoadingStates();
   }
 
   @override
@@ -69,6 +68,8 @@ class _SearchPageState extends State<SearchPage> {
     _debounce?.cancel();
     _filteredReportsSubscription?.cancel();
     _filterOptionsSubscription?.cancel();
+    _loadingStateSubscription?.cancel();
+    _suggestionsLoadingSubscription?.cancel();
     _searchService.dispose();
     super.dispose();
   }
@@ -79,14 +80,12 @@ class _SearchPageState extends State<SearchPage> {
         if (mounted) {
           setState(() {
             _displayedReports = reports;
-            _isLoading = false;
           });
         }
       },
       onError: (error) {
         if (mounted) {
           setState(() {
-            _isLoading = false;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(AppLocalizations.of(context).errorLoadingReports(error.toString()))),
             );
@@ -104,8 +103,6 @@ class _SearchPageState extends State<SearchPage> {
           setState(() {
             _availableCategories = options['categories'] ?? [];
             _availableLocations = options['locations'] ?? [];
-            // _availableSubCategories and _availableSubLocations are NOT needed here anymore
-            // as they are dynamically passed to the bottom sheet.
           });
         }
       },
@@ -114,6 +111,28 @@ class _SearchPageState extends State<SearchPage> {
           SnackBar(content: Text(AppLocalizations.of(context).errorLoadingFilterOptions(error.toString()))),
         );
         debugPrint('Error fetching filter options: $error');
+      },
+    );
+  }
+
+  void _listenToLoadingStates() {
+    _loadingStateSubscription = _searchService.loadingStateStream.listen(
+      (isLoading) {
+        if (mounted) {
+          setState(() {
+            _isLoading = isLoading;
+          });
+        }
+      },
+    );
+
+    _suggestionsLoadingSubscription = _searchService.suggestionsLoadingStream.listen(
+      (isLoading) {
+        if (mounted) {
+          setState(() {
+            _isLoadingSuggestions = isLoading;
+          });
+        }
       },
     );
   }
@@ -134,16 +153,22 @@ class _SearchPageState extends State<SearchPage> {
       if (!mounted) return;
 
       List<String> remote = [];
-      if (input.isNotEmpty) {
-        // Only fetch suggestions by owner name
+      if (input.isNotEmpty && input.length >= 2) {
+        // Fetch comprehensive suggestions
         remote = await _searchService.fetchSearchSuggestions(
           input: input,
+          filterType: _filterType,
+          filterCategory: _filterCategory,
+          filterSubCategory: _filterSubCategory,
+          filterLocation: _filterLocation,
+          filterSubLocation: _filterSubLocation,
+          filterIsResolved: _filterIsResolved,
         );
       }
 
       setState(() {
         if (input.isNotEmpty) {
-          final local = _searchHistory.where((h) => h.contains(input));
+          final local = _searchHistory.where((h) => h.toLowerCase().contains(input.toLowerCase()));
           _searchSuggestions = {...remote, ...local}.toList();
         } else {
           _searchSuggestions = [];
@@ -182,13 +207,20 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     setState(() {
-      _isLoading = true;
       _hasSearched = true;
       _currentQuery = query;
     });
 
-    // Only search by owner name
-    await _searchService.searchByOwnerName(query);
+    // Use comprehensive search instead of just owner name search
+    await _searchService.searchReportsComprehensive(
+      query: query,
+      filterType: _filterType,
+      filterCategory: _filterCategory,
+      filterSubCategory: _filterSubCategory,
+      filterLocation: _filterLocation,
+      filterSubLocation: _filterSubLocation,
+      filterIsResolved: _filterIsResolved,
+    );
   }
 
   void _clearSearch() {
@@ -206,6 +238,7 @@ class _SearchPageState extends State<SearchPage> {
       _hasSearched = false;
       _displayedReports = [];
     });
+    _searchService.resetPagination();
   }
 
   void _applyFilters(BuildContext context) {
@@ -214,7 +247,7 @@ class _SearchPageState extends State<SearchPage> {
       isScrollControlled: true,
       builder: (BuildContext context) {
         return FilterBottomSheet(
-          searchService: _searchService, // Pass the service instance
+          searchService: _searchService,
           initialFilterType: _filterType,
           initialFilterCategory: _filterCategory,
           initialFilterSubCategory: _filterSubCategory,
@@ -290,8 +323,6 @@ class _SearchPageState extends State<SearchPage> {
           _filterIsResolved != null) {
         message = l10n.noResultsFound;
       } else {
-        // This case should ideally not be reached if _hasSearched is true,
-        // unless a search with no query/filters also yields no results.
         message = l10n.noReportsFound;
       }
       return Center(
@@ -313,28 +344,35 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
 
-    return ListView.separated(
-      itemCount: _displayedReports.length,
-      shrinkWrap: true,
-      padding: const EdgeInsets.only(bottom: 40),
-      separatorBuilder: (context, index) => const SizedBox(
-        height: 1,
-      ),
-      itemBuilder: (context, index) {
-        final report = _displayedReports[index];
-        return SimpleCard(
-          //todo: i might use this later
-          // onTap: () {
-          //   Navigator.push(
-          //     context,
-          //     MaterialPageRoute(
-          //       builder: (context) => ReportDetails(report: report),
-          //     ),
-          //   );
-          // },
-          report: report,
-        );
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification scrollInfo) {
+        if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+          if (_searchService.hasMoreResults && !_searchService.isLoadingMore) {
+            _searchService.loadMoreResults();
+          }
+        }
+        return false;
       },
+      child: ListView.separated(
+        itemCount: _displayedReports.length + (_searchService.hasMoreResults ? 1 : 0),
+        shrinkWrap: true,
+        padding: const EdgeInsets.only(bottom: 40),
+        separatorBuilder: (context, index) => const SizedBox(height: 1),
+        itemBuilder: (context, index) {
+          if (index == _displayedReports.length) {
+            // Show loading indicator for pagination
+            return _searchService.isLoadingMore
+                ? const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : const SizedBox.shrink();
+          }
+
+          final report = _displayedReports[index];
+          return SimpleCard(report: report);
+        },
+      ),
     );
   }
 
@@ -448,10 +486,20 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildSuggestionsList() {
     return ListView.builder(
       shrinkWrap: true,
-      itemCount: _searchSuggestions.length,
+      itemCount: _searchSuggestions.length + (_isLoadingSuggestions ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index == _searchSuggestions.length) {
+          return _isLoadingSuggestions
+              ? const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : const SizedBox.shrink();
+        }
+
         final suggestion = _searchSuggestions[index];
         return ListTile(
+          leading: const Icon(Icons.search),
           title: Text(suggestion),
           onTap: () {
             _searchController.text = suggestion;

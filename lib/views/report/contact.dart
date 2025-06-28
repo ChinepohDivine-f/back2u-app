@@ -171,10 +171,6 @@ class _ContactPageState extends State<ContactPage> {
                         prefixText: '+237 ',
                         prefixIcon: const Icon(Icons.phone),
                         border: const OutlineInputBorder(),
-                        filled: _isPhoneFromProfile, // Add a visual cue
-                        fillColor: _isPhoneFromProfile
-                            ? Colors.grey.shade200
-                            : Colors.transparent,
                       ),
                       validator: _validatePhoneNumber,
                     ),

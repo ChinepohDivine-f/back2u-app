@@ -16,8 +16,6 @@ extension FirstWhereOrNullExtension<E> on Iterable<E> {
   }
 }
 
-
-
 class ReportSearchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final DataFetchService _dataFetchService = DataFetchService();
@@ -43,6 +41,10 @@ class ReportSearchService {
   Stream<Map<String, List<String>>> get filterOptionsStream =>
       _filterOptionsController.stream;
 
+  // Stream for suggestions loading state
+  final _suggestionsLoadingController = StreamController<bool>.broadcast();
+  Stream<bool> get suggestionsLoadingStream => _suggestionsLoadingController.stream;
+
   // Internal state
   List<Report> _allReportsCache = [];
   List<Category> _cachedCategories = [];
@@ -50,6 +52,12 @@ class ReportSearchService {
   StreamSubscription? _reportsSubscription;
   bool _isInitialLoad = true;
   bool _hasData = false;
+
+  // Pagination state
+  DocumentSnapshot? _lastDocument;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  static const int _pageSize = 15;
 
   // Filter state
   String _lastQuery = '';
@@ -66,29 +74,449 @@ class ReportSearchService {
     _initializeService();
   }
 
-  // Add the searchByOwnerName method
-Future<void> searchByOwnerName(String ownerName) async {
-  try {
-    _loadingStateController.add(true);
-    _errorStateController.add(null);
+  // Enhanced search by owner name with pagination
+  Future<void> searchByOwnerName(String ownerName, {bool loadMore = false}) async {
+    try {
+      if (!loadMore) {
+        _loadingStateController.add(true);
+        _errorStateController.add(null);
+        _lastDocument = null;
+        _hasMore = true;
+      } else if (!_hasMore || _isLoadingMore) {
+        return;
+      }
 
-    final query = _reportsCollection
-        .where('owner_name', isEqualTo: ownerName)
-        .orderBy('createdAt', descending: true);
+      _isLoadingMore = true;
 
-    final querySnapshot = await query.get();
-    final reports = querySnapshot.docs
-        .map((doc) => Report.fromFirestore(doc))
-        .toList();
-        
-    _filteredReportsController.add(reports);
-  } catch (e) {
-    _errorStateController.add('Failed to search by owner: ${e.toString()}');
-    _filteredReportsController.add([]);
-  } finally {
-    _loadingStateController.add(false);
+      Query query = _reportsCollection
+          .where('owner_name', isGreaterThanOrEqualTo: ownerName.toLowerCase())
+          .where('owner_name', isLessThan: ownerName.toLowerCase() + '\uf8ff')
+          .orderBy('owner_name')
+          .orderBy('createdAt', descending: true);
+
+      if (loadMore && _lastDocument != null) {
+        query = query.startAfterDocument(_lastDocument!);
+      }
+
+      query = query.limit(_pageSize);
+
+      final querySnapshot = await query.get();
+      final reports = querySnapshot.docs
+          .map((doc) => Report.fromFirestore(doc))
+          .toList();
+
+      if (loadMore) {
+        // Append to existing results - we'll need to track current results differently
+        final currentReports = _allReportsCache;
+        _allReportsCache = [...currentReports, ...reports];
+        _filteredReportsController.add(_allReportsCache);
+      } else {
+        _allReportsCache = reports;
+        _filteredReportsController.add(reports);
+      }
+
+      // Update pagination state
+      if (querySnapshot.docs.isNotEmpty) {
+        _lastDocument = querySnapshot.docs.last;
+        _hasMore = reports.length == _pageSize;
+      } else {
+        _hasMore = false;
+      }
+
+      _lastQuery = ownerName;
+    } catch (e) {
+      _errorStateController.add('Failed to search by owner: ${e.toString()}');
+      if (!loadMore) {
+        _filteredReportsController.add([]);
+      }
+    } finally {
+      if (!loadMore) {
+        _loadingStateController.add(false);
+      }
+      _isLoadingMore = false;
+    }
   }
-}
+
+  // Enhanced comprehensive search with multiple fields
+  Future<void> searchReportsComprehensive({
+    String query = '',
+    String? filterType,
+    String? filterCategory,
+    String? filterSubCategory,
+    String? filterLocation,
+    String? filterSubLocation,
+    bool? filterIsResolved,
+    bool loadMore = false,
+  }) async {
+    try {
+      if (!loadMore) {
+        _loadingStateController.add(true);
+        _errorStateController.add(null);
+        _lastDocument = null;
+        _hasMore = true;
+      } else if (!_hasMore || _isLoadingMore) {
+        return;
+      }
+
+      _isLoadingMore = true;
+
+      List<Report> reports = [];
+
+      if (query.isNotEmpty) {
+        // Try search_key_words first, then fallback to direct field search
+        try {
+          Query searchQuery = _reportsCollection;
+
+          // Apply filters
+          if (filterType != null && filterType.isNotEmpty) {
+            searchQuery = searchQuery.where('type', isEqualTo: filterType.toLowerCase());
+          }
+          if (filterCategory != null && filterCategory.isNotEmpty) {
+            searchQuery = searchQuery.where('category', isEqualTo: filterCategory);
+          }
+          if (filterSubCategory != null && filterSubCategory.isNotEmpty) {
+            searchQuery = searchQuery.where('subcategory', isEqualTo: filterSubCategory);
+          }
+          if (filterLocation != null && filterLocation.isNotEmpty) {
+            searchQuery = searchQuery.where('location_lost', isEqualTo: filterLocation);
+          }
+          if (filterSubLocation != null && filterSubLocation.isNotEmpty) {
+            searchQuery = searchQuery.where('sub_location_lost', isEqualTo: filterSubLocation);
+          }
+          if (filterIsResolved != null) {
+            searchQuery = searchQuery.where('resolved', isEqualTo: filterIsResolved);
+          }
+
+          // Try search_key_words first
+          searchQuery = searchQuery.where('search_key_words', arrayContains: query.toLowerCase());
+          
+          // Apply pagination
+          if (loadMore && _lastDocument != null) {
+            searchQuery = searchQuery.startAfterDocument(_lastDocument!);
+          }
+
+          // Order by createdAt and limit results
+          searchQuery = searchQuery.orderBy('createdAt', descending: true).limit(_pageSize);
+
+          final querySnapshot = await searchQuery.get();
+          reports = querySnapshot.docs.map((doc) => Report.fromFirestore(doc)).toList();
+
+          // If no results from search_key_words, try direct field search
+          if (reports.isEmpty) {
+            reports = await _searchInFieldsDirectly(
+              query: query,
+              filterType: filterType,
+              filterCategory: filterCategory,
+              filterSubCategory: filterSubCategory,
+              filterLocation: filterLocation,
+              filterSubLocation: filterSubLocation,
+              filterIsResolved: filterIsResolved,
+              loadMore: loadMore,
+            );
+          }
+        } catch (e) {
+          // If search_key_words fails, use direct field search
+          reports = await _searchInFieldsDirectly(
+            query: query,
+            filterType: filterType,
+            filterCategory: filterCategory,
+            filterSubCategory: filterSubCategory,
+            filterLocation: filterLocation,
+            filterSubLocation: filterSubLocation,
+            filterIsResolved: filterIsResolved,
+            loadMore: loadMore,
+          );
+        }
+      } else {
+        // No search query, just apply filters
+        Query searchQuery = _reportsCollection;
+
+        // Apply filters
+        if (filterType != null && filterType.isNotEmpty) {
+          searchQuery = searchQuery.where('type', isEqualTo: filterType.toLowerCase());
+        }
+        if (filterCategory != null && filterCategory.isNotEmpty) {
+          searchQuery = searchQuery.where('category', isEqualTo: filterCategory);
+        }
+        if (filterSubCategory != null && filterSubCategory.isNotEmpty) {
+          searchQuery = searchQuery.where('subcategory', isEqualTo: filterSubCategory);
+        }
+        if (filterLocation != null && filterLocation.isNotEmpty) {
+          searchQuery = searchQuery.where('location_lost', isEqualTo: filterLocation);
+        }
+        if (filterSubLocation != null && filterSubLocation.isNotEmpty) {
+          searchQuery = searchQuery.where('sub_location_lost', isEqualTo: filterSubLocation);
+        }
+        if (filterIsResolved != null) {
+          searchQuery = searchQuery.where('resolved', isEqualTo: filterIsResolved);
+        }
+
+        // Apply pagination
+        if (loadMore && _lastDocument != null) {
+          searchQuery = searchQuery.startAfterDocument(_lastDocument!);
+        }
+
+        // Order by createdAt and limit results
+        searchQuery = searchQuery.orderBy('createdAt', descending: true).limit(_pageSize);
+
+        final querySnapshot = await searchQuery.get();
+        reports = querySnapshot.docs.map((doc) => Report.fromFirestore(doc)).toList();
+      }
+
+      if (loadMore) {
+        final currentReports = _allReportsCache;
+        _allReportsCache = [...currentReports, ...reports];
+        _filteredReportsController.add(_allReportsCache);
+      } else {
+        _allReportsCache = reports;
+        _filteredReportsController.add(reports);
+      }
+
+      // Update pagination state
+      if (reports.isNotEmpty) {
+        _lastDocument = await _reportsCollection.doc(reports.last.reportId).get();
+        _hasMore = reports.length == _pageSize;
+      } else {
+        _hasMore = false;
+      }
+
+      // Update last search state
+      _lastQuery = query;
+      _lastFilterType = filterType;
+      _lastFilterCategory = filterCategory;
+      _lastFilterSubCategory = filterSubCategory;
+      _lastFilterLocation = filterLocation;
+      _lastFilterSubLocation = filterSubLocation;
+      _lastFilterIsResolved = filterIsResolved;
+
+    } catch (e) {
+      _errorStateController.add('Failed to search reports: ${e.toString()}');
+      if (!loadMore) {
+        _filteredReportsController.add([]);
+      }
+    } finally {
+      if (!loadMore) {
+        _loadingStateController.add(false);
+      }
+      _isLoadingMore = false;
+    }
+  }
+
+  // Fallback search method that searches in multiple fields directly
+  Future<List<Report>> _searchInFieldsDirectly({
+    required String query,
+    String? filterType,
+    String? filterSubCategory,
+    String? filterCategory,
+    String? filterLocation,
+    String? filterSubLocation,
+    bool? filterIsResolved,
+    bool loadMore = false,
+  }) async {
+    final List<Report> allResults = [];
+    final Set<String> seenIds = {};
+    final lowerQuery = query.toLowerCase();
+
+    // Get all reports and filter in memory (for small datasets)
+    final querySnapshot = await _reportsCollection
+        .orderBy('createdAt', descending: true)
+        .limit(100) // Limit to prevent performance issues
+        .get();
+
+    for (final doc in querySnapshot.docs) {
+      final report = Report.fromFirestore(doc);
+      
+      // Apply filters
+      if (filterType != null && filterType.isNotEmpty && 
+          report.type.toLowerCase() != filterType.toLowerCase()) continue;
+      if (filterCategory != null && filterCategory.isNotEmpty && 
+          report.category != filterCategory) continue;
+      if (filterSubCategory != null && filterSubCategory.isNotEmpty && 
+          report.subcategory != filterSubCategory) continue;
+      if (filterLocation != null && filterLocation.isNotEmpty && 
+          report.locationLost != filterLocation) continue;
+      if (filterSubLocation != null && filterSubLocation.isNotEmpty && 
+          report.subLocationLost != filterSubLocation) continue;
+      if (filterIsResolved != null && report.resolved != filterIsResolved) continue;
+
+      // Search in multiple fields
+      final searchableFields = [
+        report.ownerName ?? '',
+        report.category,
+        report.subcategory,
+        report.locationLost,
+        report.subLocationLost,
+        report.notes,
+      ];
+
+      bool matches = false;
+      for (final field in searchableFields) {
+        if (field.toLowerCase().contains(lowerQuery)) {
+          matches = true;
+          break;
+        }
+      }
+
+      if (matches && !seenIds.contains(report.reportId)) {
+        seenIds.add(report.reportId);
+        allResults.add(report);
+      }
+    }
+
+    // Sort by relevance and date
+    allResults.sort((a, b) {
+      // Prioritize exact matches
+      final aExactMatch = (a.ownerName?.toLowerCase() == lowerQuery) ||
+                         (a.category.toLowerCase() == lowerQuery);
+      final bExactMatch = (b.ownerName?.toLowerCase() == lowerQuery) ||
+                         (b.category.toLowerCase() == lowerQuery);
+      
+      if (aExactMatch && !bExactMatch) return -1;
+      if (!aExactMatch && bExactMatch) return 1;
+      
+      // Then sort by date
+      return b.createdAt.compareTo(a.createdAt);
+    });
+
+    // Apply pagination
+    return allResults.take(_pageSize).toList();
+  }
+
+  // Enhanced search suggestions with better relevance
+  Future<List<String>> fetchSearchSuggestions({
+    required String input,
+    String? filterType,
+    String? filterCategory,
+    String? filterSubCategory,
+    String? filterLocation,
+    String? filterSubLocation,
+    bool? filterIsResolved,
+  }) async {
+    try {
+      _suggestionsLoadingController.add(true);
+      
+      if (input.length < 2) {
+        return [];
+      }
+
+      final List<String> suggestions = [];
+      final Map<String, int> suggestionScores = {};
+
+      // Get all reports that match the current filters
+      Query baseQuery = _reportsCollection;
+      
+      if (filterType != null && filterType.isNotEmpty) {
+        baseQuery = baseQuery.where('type', isEqualTo: filterType.toLowerCase());
+      }
+      if (filterCategory != null && filterCategory.isNotEmpty) {
+        baseQuery = baseQuery.where('category', isEqualTo: filterCategory);
+      }
+      if (filterSubCategory != null && filterSubCategory.isNotEmpty) {
+        baseQuery = baseQuery.where('subcategory', isEqualTo: filterSubCategory);
+      }
+      if (filterLocation != null && filterLocation.isNotEmpty) {
+        baseQuery = baseQuery.where('location_lost', isEqualTo: filterLocation);
+      }
+      if (filterSubLocation != null && filterSubLocation.isNotEmpty) {
+        baseQuery = baseQuery.where('sub_location_lost', isEqualTo: filterSubLocation);
+      }
+      if (filterIsResolved != null) {
+        baseQuery = baseQuery.where('resolved', isEqualTo: filterIsResolved);
+      }
+
+      final querySnapshot = await baseQuery.limit(100).get();
+
+      for (var doc in querySnapshot.docs) {
+        final report = Report.fromFirestore(doc);
+        
+        // Searchable fields with their relevance weights
+        final searchableFields = [
+          (report.ownerName ?? '', 10), // Highest weight for owner name
+          (report.category, 8),
+          (report.subcategory, 7),
+          (report.locationLost, 6),
+          (report.subLocationLost, 5),
+          (report.notes, 3),
+        ];
+
+        for (var (field, weight) in searchableFields) {
+          if (field.isNotEmpty) {
+            final lowerField = field.toLowerCase();
+            final lowerInput = input.toLowerCase();
+            
+            if (lowerField.contains(lowerInput)) {
+              // Calculate relevance score
+              int score = weight;
+              
+              // Bonus for exact matches
+              if (lowerField == lowerInput) {
+                score += 100;
+              }
+              // Bonus for starts with
+              else if (lowerField.startsWith(lowerInput)) {
+                score += 50;
+              }
+              // Bonus for shorter matches (more specific)
+              else {
+                score += (10 - (lowerField.length - lowerInput.length)).clamp(0, 10);
+              }
+
+              // Keep the highest score for each unique suggestion
+              if (!suggestionScores.containsKey(field) || 
+                  suggestionScores[field]! < score) {
+                suggestionScores[field] = score;
+              }
+            }
+          }
+        }
+      }
+
+      // Sort by relevance score and take top suggestions
+      final sortedSuggestions = suggestionScores.entries
+          .toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+      return sortedSuggestions
+          .take(10)
+          .map((e) => e.key)
+          .toList();
+
+    } catch (e) {
+      _errorStateController.add('Failed to fetch suggestions: ${e.toString()}');
+      return [];
+    } finally {
+      _suggestionsLoadingController.add(false);
+    }
+  }
+
+  // Load more results for pagination
+  Future<void> loadMoreResults() async {
+    if (_lastQuery.isNotEmpty) {
+      await searchReportsComprehensive(
+        query: _lastQuery,
+        filterType: _lastFilterType,
+        filterCategory: _lastFilterCategory,
+        filterSubCategory: _lastFilterSubCategory,
+        filterLocation: _lastFilterLocation,
+        filterSubLocation: _lastFilterSubLocation,
+        filterIsResolved: _lastFilterIsResolved,
+        loadMore: true,
+      );
+    }
+  }
+
+  // Check if more results are available
+  bool get hasMoreResults => _hasMore;
+
+  // Check if currently loading more results
+  bool get isLoadingMore => _isLoadingMore;
+
+  // Reset pagination state
+  void resetPagination() {
+    _lastDocument = null;
+    _hasMore = true;
+    _isLoadingMore = false;
+  }
 
   Future<void> _initializeService() async {
     try {
@@ -139,15 +567,6 @@ Future<void> searchByOwnerName(String ownerName) async {
           _lastFilterLocation != null ||
           _lastFilterSubLocation != null ||
           _lastFilterIsResolved != null) {
-        // applySearchAndFilters(
-        //   currentQuery: _lastQuery,
-        //   filterType: _lastFilterType,
-        //   filterCategory: _lastFilterCategory,
-        //   filterSubCategory: _lastFilterSubCategory,
-        //   filterLocation: _lastFilterLocation,
-        //   filterSubLocation: _lastFilterSubLocation,
-        //   filterIsResolved: _lastFilterIsResolved,
-        // );
         // No-op: Only owner name search is supported now.
       } else {
         _filteredReportsController.add(_allReportsCache);
@@ -255,115 +674,11 @@ Future<void> searchByOwnerName(String ownerName) async {
     }
   }
 
-  // --- Firestore-powered search suggestions (max 7) ---
-  Future<List<String>> fetchSearchSuggestions({
-  required String input,
-  String? filterType,
-  String? filterCategory,
-  String? filterSubCategory,
-  String? filterLocation,
-  String? filterSubLocation,
-  bool? filterIsResolved,
-}) async {
-  try {
-    Query query = _reportsCollection;
-    
-    // Apply all active filters
-    if (filterType != null && filterType.isNotEmpty) {
-      query = query.where('type', isEqualTo: filterType.toLowerCase());
-    }
-    if (filterCategory != null && filterCategory.isNotEmpty) {
-      query = query.where('category', isEqualTo: filterCategory);
-    }
-    if (filterSubCategory != null && filterSubCategory.isNotEmpty) {
-      query = query.where('subcategory', isEqualTo: filterSubCategory);
-    }
-    if (filterLocation != null && filterLocation.isNotEmpty) {
-      query = query.where('location_lost', isEqualTo: filterLocation);
-    }
-    if (filterSubLocation != null && filterSubLocation.isNotEmpty) {
-      query = query.where('sub_location_lost', isEqualTo: filterSubLocation);
-    }
-    if (filterIsResolved != null) {
-      query = query.where('resolved', isEqualTo: filterIsResolved);
-    }
-    
-    // Get all relevant reports
-    final querySnapshot = await query.get();
-    
-    // Create a map to store unique suggestions with their relevance score
-    final Map<String, int> suggestionScores = {};
-
-    for (var doc in querySnapshot.docs) {
-      final report = Report.fromFirestore(doc);
-      final searchableFields = [
-        report.ownerName,
-        report.category,
-        report.subcategory,
-        report.locationLost,
-        report.subLocationLost,
-        report.notes,
-      ].where((field) => field != null && field.isNotEmpty).cast<String>().toList();
-
-      // Check each field for matches
-      for (var field in searchableFields) {
-        if (field.toLowerCase().contains(input.toLowerCase())) {
-          // Calculate a simple relevance score
-          final score = field.toLowerCase().indexOf(input.toLowerCase());
-          final isExactMatch = field.toLowerCase() == input.toLowerCase();
-          
-          // Prefer exact matches and longer matches
-          final relevanceScore = isExactMatch 
-              ? 0  // Highest priority for exact matches
-              : score >= 0 
-                  ? 1  // Higher priority for matches at the start
-                  : 2; // Lower priority for partial matches
-
-          // Store the most relevant version of each suggestion
-          if (!suggestionScores.containsKey(field) || 
-              suggestionScores[field]! > relevanceScore) {
-            suggestionScores[field] = relevanceScore;
-          }
-        }
-      }
-    }
-
-    // Sort suggestions by relevance and then alphabetically
-   // Sort suggestions by relevance and then alphabetically
-final sortedEntries = suggestionScores.entries.toList();
-sortedEntries.sort((a, b) {
-  // First sort by relevance score
-  final scoreCompare = a.value.compareTo(b.value);
-  if (scoreCompare != 0) return scoreCompare;
-  // Then sort alphabetically
-  return a.key.toLowerCase().compareTo(b.key.toLowerCase());
-});
-
-final sortedSuggestions = sortedEntries
-    .map((e) => e.key)
-    .take(7)
-    .toList();
-
-    return sortedSuggestions.take(7).toList();
-  } catch (e) {
-    _errorStateController.add('Failed to fetch suggestions: ${e.toString()}');
-    return [];
-  }
-}
-  // --- Update applySearchAndFilters to use Firestore-powered search ---
-  
   List<String> _generateSearchKeywords(Report r) {
     final keywords = <String>{};
 
     final List<String?> termsToProcess = [
       r.ownerName,
-      // r.documentName,
-      // r.category,
-      // r.subcategory,
-      // r.locationLost,
-      // r.subLocationLost,
-      // r.type,
-      // r.notes,
     ];
 
     for (var term in termsToProcess) {
@@ -435,5 +750,6 @@ final sortedSuggestions = sortedEntries
     _filterOptionsController.close();
     _loadingStateController.close();
     _errorStateController.close();
+    _suggestionsLoadingController.close();
   }
 }

@@ -26,7 +26,7 @@ class AuthPage extends StatelessWidget {
       ),
       // drawer: const AppDrawer(),
       body: authService.isLoadingAuth // Show loading indicator if auth operation is in progress
-          ? Center(child: CircularProgressIndicator(color: colors.primary))
+          ? Center(child: Column(children: [CircularProgressIndicator(color: colors.primary), Text('Setting up your account...')]))
           : SafeArea(child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -55,12 +55,24 @@ class AuthPage extends StatelessWidget {
                     onPressed: () async {
                       try {
                         await authService.signInWithGoogle();
+                        // Show success notification
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.check_circle, color: colors.secondary, size: 22),
+                                const SizedBox(width: 10),
+                                Expanded(child: Text('Sign-in successful! Start searching or report a lost/found item.')),
+                              ],
+                            ),
+                            backgroundColor: colors.onPrimary,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
                         // If sign-in is successful and page was pushed, pop it.
-                        // Check if the current route is not the root or an initial route
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);
                         } else {
-                          // If this is the first screen, navigate to home or desired destination
                           Navigator.pushReplacementNamed(context, '/home');
                         }
                       } catch (e) {
@@ -90,14 +102,24 @@ class AuthPage extends StatelessWidget {
                     onPressed: () async {
                       try {
                         await authService.signInAnonymously();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.check_circle, color: colors.secondary, size: 22),
+                                const SizedBox(width: 10),
+                                Expanded(child: Text('Signed in as guest! You can browse or report items.')),
+                              ],
+                            ),
+                            backgroundColor: colors.primary,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);
                         } else {
                           Navigator.pushReplacementNamed(context, '/home');
                         }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Signed in anonymously')),
-                        );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Anonymous sign-in failed: $e')),

@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:back2u/models/report_model.dart';
 import 'package:back2u/components/report_details.dart'; // Assuming this exists for onTap navigation
+import 'package:back2u/components/image_gallery.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart'; // For date formatting
 
 class SimpleCard extends StatelessWidget {
@@ -66,6 +68,20 @@ class SimpleCard extends StatelessWidget {
   // Helper to format date
   String _formatDate(DateTime dateTime) {
     return DateFormat('MMM dd, yyyy').format(dateTime);
+  }
+
+  void _showImageGallery(BuildContext context) {
+    if (report.images.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ImageGallery(
+            images: report.images,
+            initialIndex: 0,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -148,7 +164,7 @@ class SimpleCard extends StatelessWidget {
                   // Owner name and subcategory
                   Text(
                     report.ownerName ?? 'Anonymous',
-                    style: textTheme.titleLarge?.copyWith(
+                    style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -183,6 +199,95 @@ class SimpleCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  
+                  // Image display
+                  if (report.images.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: colors.outline.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: GestureDetector(
+                          onTap: () => _showImageGallery(context),
+                          child: Stack(
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: report.images.first,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                placeholder: (context, url) => Container(
+                                  color: colors.surfaceVariant,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      color: colors.primary,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: colors.surfaceVariant,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: 32,
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                              // Image count overlay
+                              if (report.images.length > 1)
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '+${report.images.length - 1}',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              // Tap indicator
+                              Positioned(
+                                bottom: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.7),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.fullscreen,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   
                   const SizedBox(height: 10),
                   
@@ -232,15 +337,7 @@ class SimpleCard extends StatelessWidget {
               title: Text('Edit Report'),
             ),
           ),
-        if (onDelete != null)
-          const PopupMenuItem<String>(
-            value: 'delete',
-            child: ListTile(
-              leading: Icon(Icons.delete_forever, color: Colors.red),
-              title: Text('Delete Report'),
-            ),
-          ),
-        if (onToggleResolve != null)
+          if (onToggleResolve != null)
           PopupMenuItem<String>(
             value: 'toggle_status',
             child: ListTile(
@@ -250,6 +347,15 @@ class SimpleCard extends StatelessWidget {
               title: Text(report.status == 'resolved' ? 'Mark as Active' : 'Mark as Resolved'),
             ),
           ),
+        if (onDelete != null)
+          const PopupMenuItem<String>(
+            value: 'delete',
+            child: ListTile(
+              leading: Icon(Icons.delete_forever, color: Colors.red),
+              title: Text('Delete Report'),
+            ),
+          ),
+        
       ],
       icon: Icon(Icons.more_vert, color: colors.onSurfaceVariant),
       tooltip: 'More options',

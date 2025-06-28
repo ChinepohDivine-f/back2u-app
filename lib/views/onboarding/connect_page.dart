@@ -5,8 +5,8 @@ class ConnectPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextTheme textTheme = Theme.of(context).textTheme;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       color: colorScheme.background,
@@ -15,24 +15,24 @@ class ConnectPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.people_alt_rounded, // Example icon
-            size: 120,
+            Icons.people_alt_rounded,
+            size: 90,
             color: colorScheme.primary,
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 24),
           Text(
             "Connect with Your Community",
-            style: textTheme.displayMedium?.copyWith(
-              color: colorScheme.onBackground,
+            style: textTheme.headlineMedium?.copyWith(
+              color: colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             "Back2u is powered by a network of helpful individuals. Join our community to make a difference and help others reunite with their valuables.",
             style: textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onBackground.withOpacity(0.7),
+              color: colorScheme.secondary,
             ),
             textAlign: TextAlign.center,
           ),

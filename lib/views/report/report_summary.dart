@@ -13,6 +13,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:back2u/services/image_upload_service.dart';
 import 'package:back2u/services/update_report_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:back2u/components/image_gallery.dart';
 
 class SummaryPage extends StatefulWidget {
   final Report report;
@@ -47,6 +48,29 @@ class _SummaryPageState extends State<SummaryPage> {
   void initState() {
     super.initState();
     _submissionId = '${DateTime.now().millisecondsSinceEpoch}_${widget.report.hashCode}';
+  }
+
+  void _showImageGallery(BuildContext context, {int initialIndex = 0}) {
+    final List<String> currentDisplayImageUrls = widget.existingImageUrls
+        .where((url) => !widget.imagesToDelete.contains(url))
+        .toList();
+        
+    final List<String> allImages = [
+      ...currentDisplayImageUrls,
+      ...widget.localImageFiles.map((file) => file.path),
+    ];
+    
+    if (allImages.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ImageGallery(
+            images: allImages,
+            initialIndex: initialIndex,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -156,8 +180,101 @@ class _SummaryPageState extends State<SummaryPage> {
                         context,
                         title: 'Images',
                         children: [
+                          // Large featured image
+                          if (currentDisplayImageUrls.isNotEmpty || widget.localImageFiles.isNotEmpty) ...[
+                            Container(
+                              width: double.infinity,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: colorScheme.outline.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: GestureDetector(
+                                  onTap: () => _showImageGallery(context),
+                                  child: Stack(
+                                    children: [
+                                      currentDisplayImageUrls.isNotEmpty
+                                          ? CachedNetworkImage(
+                                              imageUrl: currentDisplayImageUrls.first,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                              placeholder: (context, url) => Container(
+                                                color: colorScheme.surfaceVariant,
+                                                child: Center(
+                                                  child: CircularProgressIndicator(
+                                                    color: colorScheme.primary,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                ),
+                                              ),
+                                              errorWidget: (context, url, error) => Container(
+                                                color: colorScheme.surfaceVariant,
+                                                child: const Center(child: Icon(Icons.broken_image)),
+                                              ),
+                                            )
+                                          : Image.file(
+                                              File(widget.localImageFiles.first.path),
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                            ),
+                                      // Image count overlay
+                                      if ((currentDisplayImageUrls.length + widget.localImageFiles.length) > 1)
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(0.7),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              '+${(currentDisplayImageUrls.length + widget.localImageFiles.length) - 1}',
+                                              style: textTheme.bodySmall?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      // Tap indicator
+                                      Positioned(
+                                        bottom: 8,
+                                        right: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.7),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.fullscreen,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          
+                          // Thumbnail grid for all images
                           SizedBox(
-                            height: 100,
+                            height: 80,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount: currentDisplayImageUrls.length + widget.localImageFiles.length,
@@ -166,15 +283,36 @@ class _SummaryPageState extends State<SummaryPage> {
                                   final imageUrl = currentDisplayImageUrls[index];
                                   return Padding(
                                     padding: const EdgeInsets.only(right: 8.0),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: CachedNetworkImage(
-                                        imageUrl: imageUrl,
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                        errorWidget: (context, url, error) =>
-                                            const Center(child: Icon(Icons.broken_image)),
+                                    child: GestureDetector(
+                                      onTap: () => _showImageGallery(context, initialIndex: index),
+                                      child: Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: colorScheme.outline.withOpacity(0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: CachedNetworkImage(
+                                            imageUrl: imageUrl,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) => Container(
+                                              color: colorScheme.surfaceVariant,
+                                              child: Center(
+                                                child: CircularProgressIndicator(
+                                                  color: colorScheme.primary,
+                                                  strokeWidth: 2,
+                                                ),
+                                              ),
+                                            ),
+                                            errorWidget: (context, url, error) =>
+                                                const Center(child: Icon(Icons.broken_image)),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   );
@@ -182,13 +320,25 @@ class _SummaryPageState extends State<SummaryPage> {
                                   final newImageIndex = index - currentDisplayImageUrls.length;
                                   return Padding(
                                     padding: const EdgeInsets.only(right: 8.0),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(
-                                        File(widget.localImageFiles[newImageIndex].path),
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
+                                    child: GestureDetector(
+                                      onTap: () => _showImageGallery(context, initialIndex: index),
+                                      child: Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: colorScheme.outline.withOpacity(0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.file(
+                                            File(widget.localImageFiles[newImageIndex].path),
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   );
@@ -469,14 +619,8 @@ class _SummaryPageState extends State<SummaryPage> {
     if (r.ownerName?.isNotEmpty == true) {
       keywords.add(r.ownerName!.toLowerCase());
     }
-
     for (var term in [
       r.ownerName,
-      // r.category,
-      // r.subcategory,
-      // r.locationLost,
-      // r.subLocationLost,
-      // r.type,
     ]) {
       if (term?.isNotEmpty == true) {
         final cleanedTerm = term!
@@ -492,7 +636,6 @@ class _SummaryPageState extends State<SummaryPage> {
         }
       }
     }
-
     if (r.notes.isNotEmpty) {
       keywords.addAll(r.notes
           .toLowerCase()
@@ -500,7 +643,6 @@ class _SummaryPageState extends State<SummaryPage> {
           .map((word) => word.replaceAll(RegExp(r'[^\w\s]'), ''))
           .where((word) => word.isNotEmpty));
     }
-
     return keywords.where((k) => k.isNotEmpty).toSet().toList();
   }
 

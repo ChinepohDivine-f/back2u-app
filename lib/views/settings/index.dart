@@ -10,6 +10,8 @@ import 'package:provider/provider.dart'; // Your KYC form page
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:back2u/l10n/app_localizations.dart';
 import 'package:back2u/main.dart';
+import 'package:back2u/views/settings/profile/edit_profile_page.dart';
+import 'package:back2u/views/settings/profile/phone_management_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final void Function(Locale)? onLocaleChanged;
@@ -153,47 +155,58 @@ class _SettingsPageState extends State<SettingsPage> {
                         : null,
                     onTap: userLoggedIn
                         ? () {
-                            // Navigate to Edit Profile Page
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content:
-                                      Text('Navigate to Edit Profile Page')),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EditProfilePage(
+                                  appUser: _appUser,
+                                  onProfileUpdated: () => _loadUserProfile(_currentUser!.uid),
+                                ),
+                              ),
                             );
-                            // Navigator.push(context, MaterialPageRoute(builder: (context) => EditProfilePage()));
                           }
                         : null,
                   ),
-                  // const Divider(indent: 16, endIndent: 16),
-                  // ListTile(
-                  //   leading: Icon(Icons.lock_outline,
-                  //       color: colors.onSurfaceVariant),
-                  //   title: Text('Change Password',
-                  //       style: theme.textTheme.bodyLarge),
-                  //   subtitle: Text(
-                  //     userLoggedIn
-                  //         ? 'Update your account password'
-                  //         : 'Sign in to change password',
-                  //     style: theme.textTheme.bodyMedium?.copyWith(
-                  //         color: colors.onSurfaceVariant.withOpacity(0.7)),
-                  //   ),
-                  //   trailing: userLoggedIn
-                  //       ? Icon(Icons.arrow_forward_ios,
-                  //           size: 16,
-                  //           color: colors.onSurfaceVariant.withOpacity(0.7))
-                  //       : null,
-                  //   onTap: userLoggedIn
-                  //       ? () {
-                  //           // Navigate to Change Password Page
-                  //           ScaffoldMessenger.of(context).showSnackBar(
-                  //             const SnackBar(
-                  //                 content: Text(
-                  //                     'Navigate to Change Password Page')),
-                  //           );
-                  //           // Navigator.push(context, MaterialPageRoute(builder: (context) => ChangePasswordPage()));
-                  //         }
-                  //       : null,
-                  // ),
-                  // // Add more account settings here, e.g., Delete Account
+                  if (userLoggedIn) ...[
+                    const Divider(indent: 16, endIndent: 16),
+                    ListTile(
+                      leading: Icon(Icons.phone_outlined,
+                          color: colors.onSurfaceVariant),
+                      title: Text('Phone Management',
+                          style: theme.textTheme.bodyLarge),
+                      subtitle: Text(
+                        _appUser?.phone ?? 'No phone number set',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant.withOpacity(0.7)),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_appUser?.verified == true)
+                            Icon(
+                              Icons.verified,
+                              size: 16,
+                              color: Colors.green,
+                            ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.arrow_forward_ios,
+                              size: 16,
+                              color: colors.onSurfaceVariant.withOpacity(0.7)),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PhoneManagementPage(
+                              appUser: _appUser,
+                              onPhoneUpdated: () => _loadUserProfile(_currentUser!.uid),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   if (userLoggedIn) ...[
                     const Divider(indent: 16, endIndent: 16),
                     ListTile(

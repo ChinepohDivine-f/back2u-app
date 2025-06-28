@@ -52,16 +52,47 @@ class _AppDrawerState extends State<AppDrawer> {
 
   // Handles user logout directly from the drawer
   Future<void> _signOut() async {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.logout, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            const Text('Log Out?'),
+          ],
+        ),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Log Out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      setState(() { _isLoading = false; });
+      return;
+    }
     setState(() {
       _isLoading = true;
     });
     try {
       await _authKycService.signOut();
-      // After logout, navigate to the login page
       if (mounted) {
-        // Pop the drawer first
         Navigator.pop(context);
-        // Then navigate, replacing the current route
         Navigator.pushReplacementNamed(context, '/splash');
       }
     } catch (e) {

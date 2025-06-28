@@ -298,41 +298,23 @@ Shared via Back2U''';
       }
   
       // If we reach here, user is authenticated and verified. Proceed to claim.
-      if (widget.report.type.toLowerCase() == 'lost') {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => _ClaimPhotoBottomSheet(
-            onSubmitted: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Photo submitted for verification!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            report: widget.report,
-          ),
-        );
-      } else {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => _ClaimMessageBottomSheet(
-            onSubmitted: (message) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Claim sent! The finder will review your message.'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            report: widget.report,
-          ),
-        );
-      }
+      // Show unified claim form for both lost and found items
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => _UnifiedClaimBottomSheet(
+          onSubmitted: (message) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Claim sent! The owner will review your message and images.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+          report: widget.report,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -546,37 +528,198 @@ Shared via Back2U''';
                 ),
               ),
               const SizedBox(height: 12),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 1,
-                ),
-                itemCount: widget.report.images.length,
-                itemBuilder: (context, index) {
-                  final imageUrl = widget.report.images[index];
-                  return GestureDetector(
-                    onTap: () => _showImageGallery(widget.report.images, index),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        errorWidget: (context, url, error) =>
-                            Container(
+              
+              // Large featured image display
+              if (widget.report.images.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.outline.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: GestureDetector(
+                      onTap: () => _showImageGallery(widget.report.images, 0),
+                      child: Stack(
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: widget.report.images.first,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            placeholder: (context, url) => Container(
                               color: colorScheme.surfaceVariant,
-                              child: const Icon(Icons.broken_image, size: 40),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: colorScheme.primary,
+                                  strokeWidth: 2,
+                                ),
+                              ),
                             ),
+                            errorWidget: (context, url, error) => Container(
+                              color: colorScheme.surfaceVariant,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.broken_image,
+                                    size: 48,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Image not available',
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Image count overlay
+                          if (widget.report.images.length > 1)
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '+${widget.report.images.length - 1}',
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          // Tap indicator
+                          Positioned(
+                            bottom: 12,
+                            right: 12,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.7),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.fullscreen,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Thumbnail grid for additional images
+                if (widget.report.images.length > 1) ...[
+                  Text(
+                    'All Images (${widget.report.images.length})',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 1,
+                    ),
+                    itemCount: widget.report.images.length,
+                    itemBuilder: (context, index) {
+                      final imageUrl = widget.report.images[index];
+                      return GestureDetector(
+                        onTap: () => _showImageGallery(widget.report.images, index),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colorScheme.outline.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Stack(
+                              children: [
+                                CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  placeholder: (context, url) => Container(
+                                    color: colorScheme.surfaceVariant,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: colorScheme.primary,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    color: colorScheme.surfaceVariant,
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      size: 24,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                                // Selected indicator for first image
+                                if (index == 0)
+                                  Positioned(
+                                    top: 4,
+                                    left: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'Main',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.onPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
               const SizedBox(height: 24),
             ],
 
@@ -650,10 +793,10 @@ Shared via Back2U''';
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: _isProcessing || _checkingClaim || _hasClaimed ? null : _startClaimProcess,
-                      icon: const Icon(Icons.shield_outlined),
+                      icon: const Icon(Icons.fact_check_outlined),
                       label: _checkingClaim
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text(_hasClaimed ? 'Already Claimed' : (widget.report.type.toLowerCase() == 'lost' ? 'I Have Found This' : 'Claim My Item')),
+                        : Text(_hasClaimed ? 'Already Claimed' : 'Claim this report'),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
@@ -681,20 +824,30 @@ Shared via Back2U''';
   }
 }
 
-// --- Claim Photo Bottom Sheet ---
-class _ClaimPhotoBottomSheet extends StatefulWidget {
-  final VoidCallback onSubmitted;
+// --- Unified Claim Bottom Sheet ---
+class _UnifiedClaimBottomSheet extends StatefulWidget {
+  final Function(String) onSubmitted;
   final Report report;
-  const _ClaimPhotoBottomSheet({required this.onSubmitted, required this.report});
+  const _UnifiedClaimBottomSheet({required this.onSubmitted, required this.report});
 
   @override
-  State<_ClaimPhotoBottomSheet> createState() => _ClaimPhotoBottomSheetState();
+  State<_UnifiedClaimBottomSheet> createState() => _UnifiedClaimBottomSheetState();
 }
 
-class _ClaimPhotoBottomSheetState extends State<_ClaimPhotoBottomSheet> {
-  bool _uploading = false;
+class _UnifiedClaimBottomSheetState extends State<_UnifiedClaimBottomSheet> {
+  final TextEditingController _messageController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   List<XFile> _selectedImages = [];
+  bool _uploading = false;
+  static const int minCharacters = 10;
+  static const int maxCharacters = 300;
+  static const int maxImages = 2;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
 
   void _showImageGallery(List<String> imagePaths, int initialIndex) {
     showModalBottomSheet(
@@ -733,78 +886,93 @@ class _ClaimPhotoBottomSheetState extends State<_ClaimPhotoBottomSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Selected Images (${_selectedImages.length})',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 1,
-          ),
-          itemCount: _selectedImages.length,
-          itemBuilder: (context, index) {
-            final image = _selectedImages[index];
-            return GestureDetector(
-              onTap: () => _showImageGallery(
-                _selectedImages.map((img) => img.path).toList(),
-                index,
+        Row(
+          children: [
+            Text(
+              'Images (${_selectedImages.length}/$maxImages)',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      File(image.path),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        shape: BoxShape.circle,
+            ),
+            const Spacer(),
+            if (_selectedImages.length < maxImages)
+              TextButton.icon(
+                onPressed: _pickImages,
+                icon: const Icon(Icons.add_photo_alternate, size: 16),
+                label: const Text('Add'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: _selectedImages.asMap().entries.map((entry) {
+            final index = entry.key;
+            final image = entry.value;
+            return Expanded(
+              child: Container(
+                margin: EdgeInsets.only(right: index < _selectedImages.length - 1 ? 8 : 0),
+                height: 80,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        File(image.path),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
                       ),
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 18),
-                        style: IconButton.styleFrom(
-                          padding: const EdgeInsets.all(4),
-                          minimumSize: const Size(24, 24),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          shape: BoxShape.circle,
                         ),
-                        onPressed: () => setState(() => _selectedImages.removeAt(index)),
+                        child: IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(4),
+                            minimumSize: const Size(20, 20),
+                          ),
+                          onPressed: () => setState(() => _selectedImages.removeAt(index)),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
-          },
+          }).toList(),
         ),
       ],
     );
   }
 
   Future<void> _pickImages() async {
+    if (_selectedImages.length >= maxImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Maximum $maxImages images allowed')),
+      );
+      return;
+    }
+
     try {
       final List<XFile> images = await _picker.pickMultiImage(
         maxWidth: 800,
         maxHeight: 800,
-        imageQuality: 35,
+        imageQuality: 70,
       );
       if (mounted && images.isNotEmpty) {
+        final remainingSlots = maxImages - _selectedImages.length;
+        final imagesToAdd = images.take(remainingSlots).toList();
         setState(() {
-          _selectedImages.addAll(images);
+          _selectedImages.addAll(imagesToAdd);
         });
       }
     } catch (e) {
@@ -817,13 +985,20 @@ class _ClaimPhotoBottomSheetState extends State<_ClaimPhotoBottomSheet> {
   }
 
   Future<void> _takePhoto() async {
+    if (_selectedImages.length >= maxImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Maximum $maxImages images allowed')),
+      );
+      return;
+    }
+
     try {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,
         preferredCameraDevice: CameraDevice.rear,
         maxWidth: 800,
         maxHeight: 800,
-        imageQuality: 35,
+        imageQuality: 70,
       );
       if (photo != null && mounted) {
         setState(() {
@@ -840,9 +1015,20 @@ class _ClaimPhotoBottomSheetState extends State<_ClaimPhotoBottomSheet> {
   }
 
   Future<void> _submitClaim() async {
-    if (_selectedImages.isEmpty) {
+    final message = _messageController.text.trim();
+    
+    if (message.isEmpty || message.length < minCharacters) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one image')),
+        SnackBar(content: Text('Please enter at least $minCharacters characters')),
+      );
+      return;
+    }
+
+    // Require at least one image for lost reports, optional for found reports
+    final isLostReport = widget.report.type.toLowerCase() == 'lost';
+    if (isLostReport && _selectedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one image for lost item claims')),
       );
       return;
     }
@@ -851,23 +1037,25 @@ class _ClaimPhotoBottomSheetState extends State<_ClaimPhotoBottomSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Submission'),
+        title: const Text('Confirm Claim'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Are you sure you want to submit this claim?'),
+            Text('Submit claim for ${widget.report.type} item?'),
             const SizedBox(height: 8),
             Text(
-              'You\'ve selected ${_selectedImages.length} image${_selectedImages.length > 1 ? 's' : ''} as proof.',
+              'Message: "${message.length > 30 ? '${message.substring(0, 30)}...' : message}"',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Once submitted, the report owner will review your claim and contact you if accepted.',
-              style: TextStyle(fontSize: 12),
+            const SizedBox(height: 4),
+            Text(
+              'Images: ${_selectedImages.length} photo${_selectedImages.length > 1 ? 's' : ''}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -878,7 +1066,7 @@ class _ClaimPhotoBottomSheetState extends State<_ClaimPhotoBottomSheet> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Submit Claim'),
+            child: const Text('Submit'),
           ),
         ],
       ),
@@ -907,11 +1095,12 @@ class _ClaimPhotoBottomSheetState extends State<_ClaimPhotoBottomSheet> {
         status: 'pending',
         createdAt: Timestamp.now(),
         photoUrls: photoUrls,
-        message: 'Photo evidence submitted',
+        message: message,
       );
+      
       await claimService.createClaim(claim);
       if (mounted) {
-        widget.onSubmitted();
+        widget.onSubmitted(message);
         Navigator.pop(context);
       }
     } catch (e) {
@@ -930,243 +1119,12 @@ class _ClaimPhotoBottomSheetState extends State<_ClaimPhotoBottomSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Handle
-                Center(
-                  child: Container(
-                    width: 32,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Header
-                Row(
-                  children: [
-                    Icon(Icons.camera_alt_outlined, color: colorScheme.primary, size: 24),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Claim Lost Item',
-                      style: textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Select photos of yourself with the item or relevant documents for verification.',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Image preview section
-                if (_selectedImages.isNotEmpty) ...[
-                  _buildImagePreviewGrid(),
-                  const SizedBox(height: 24),
-                ],
-
-                // Action buttons
-                if (_uploading) ...[
-                  const Center(child: CircularProgressIndicator()),
-                  const SizedBox(height: 16),
-                  const Center(
-                    child: Text('Uploading images...'),
-                  ),
-                ] else ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _pickImages,
-                          icon: const Icon(Icons.photo_library_outlined),
-                          label: const Text('Gallery'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _takePhoto,
-                          icon: const Icon(Icons.camera_alt_outlined),
-                          label: const Text('Camera'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_selectedImages.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _submitClaim,
-                        icon: const Icon(Icons.send_outlined),
-                        label: const Text('Submit Claim'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-
-                const SizedBox(height: 16),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// --- Claim Message Bottom Sheet ---
-class _ClaimMessageBottomSheet extends StatefulWidget {
-  final Function(String) onSubmitted;
-  final Report report;
-  const _ClaimMessageBottomSheet({required this.onSubmitted, required this.report});
-
-  @override
-  State<_ClaimMessageBottomSheet> createState() => _ClaimMessageBottomSheetState();
-}
-
-class _ClaimMessageBottomSheetState extends State<_ClaimMessageBottomSheet> {
-  final TextEditingController _controller = TextEditingController();
-  bool _sending = false;
-  static const int minCharacters = 15;
-  static const int maxCharacters = 500;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submitClaim() async {
-    final message = _controller.text.trim();
-    if (message.isEmpty || message.length < minCharacters) return;
-
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Submission'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Are you sure you want to submit this claim?'),
-            const SizedBox(height: 8),
-            Text(
-              'Your message: "${message.length > 50 ? '${message.substring(0, 50)}...' : message}"',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Once submitted, the report owner will review your claim and contact you if accepted.',
-              style: TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Submit Claim'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() => _sending = true);
-
-    try {
-      final authService = context.read<AuthKycService>();
-      final claimService = ClaimService();
-
-      // Create claim
-      final claim = Claim(
-        claimId: '', // Will be set by Firestore
-        reportId: widget.report.reportId,
-        claimerId: authService.currentUser!.uid,
-        ownerId: widget.report.reporterUid,
-        type: widget.report.type,
-        status: 'pending',
-        createdAt: Timestamp.now(),
-        message: message,
-      );
-
-      await claimService.createClaim(claim);
-
-      if (mounted) {
-        widget.onSubmitted(message);
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit claim: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _sending = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
     
-    final message = _controller.text.trim();
-    final isValid = message.length >= minCharacters && message.length <= maxCharacters;
+    final message = _messageController.text.trim();
+    final isLostReport = widget.report.type.toLowerCase() == 'lost';
+    final isValid = message.length >= minCharacters && 
+                   message.length <= maxCharacters && 
+                   (!isLostReport || _selectedImages.isNotEmpty); // Images required only for lost reports
     final isOverLimit = message.length > maxCharacters;
 
     return Container(
@@ -1176,13 +1134,13 @@ class _ClaimMessageBottomSheetState extends State<_ClaimMessageBottomSheet> {
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.6,
-        maxChildSize: 0.8,
+        maxChildSize: 0.85,
         minChildSize: 0.4,
         expand: false,
         builder: (context, scrollController) {
           return SingleChildScrollView(
             controller: scrollController,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1197,114 +1155,138 @@ class _ClaimMessageBottomSheetState extends State<_ClaimMessageBottomSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Header
                 Row(
                   children: [
-                    Icon(Icons.message_outlined, color: colorScheme.primary, size: 24),
-                    const SizedBox(width: 12),
+                    Icon(
+                      widget.report.type.toLowerCase() == 'lost' 
+                        ? Icons.search_outlined 
+                        : Icons.find_in_page_outlined,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      'Contact Finder',
-                      style: textTheme.headlineSmall?.copyWith(
+                      'Claim ${widget.report.type} Item',
+                      style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
-                  'Describe your lost items and why you think they\'re yours.',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Minimum $minCharacters characters, maximum $maxCharacters characters.',
+                  widget.report.type.toLowerCase() == 'lost'
+                    ? 'Provide proof that you found this item'
+                    : 'Provide proof that this item belongs to you',
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Message input
+                Text(
+                  'Message',
+                  style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
                 TextField(
-                  controller: _controller,
-                  maxLines: 6,
+                  controller: _messageController,
+                  maxLines: 3,
                   maxLength: maxCharacters,
                   decoration: InputDecoration(
-                    hintText: 'Enter your message...',
+                    hintText: widget.report.type.toLowerCase() == 'lost'
+                      ? 'Describe how you found the item...'
+                      : 'Describe the item and provide proof...',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     counterText: '${message.length}/$maxCharacters',
                     errorText: isOverLimit 
-                      ? 'Message is too long' 
+                      ? 'Too long' 
                       : message.isNotEmpty && message.length < minCharacters
-                        ? 'At least $minCharacters characters required'
+                        ? 'Min $minCharacters chars'
                         : null,
                   ),
                   onChanged: (value) => setState(() {}),
                 ),
+                const SizedBox(height: 16),
+
+                // Images section
+                Text(
+                  'Images (${_selectedImages.length}/$maxImages)${isLostReport ? ' *Required' : ' (Optional)'}',
+                  style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
-                
-                // Character count indicator
-                if (message.isNotEmpty) ...[
+
+                // Image preview
+                if (_selectedImages.isNotEmpty) ...[
+                  _buildImagePreviewGrid(),
+                  const SizedBox(height: 12),
+                ],
+
+                // Image selection buttons
+                if (_selectedImages.length < maxImages) ...[
                   Row(
                     children: [
-                      Icon(
-                        message.length >= minCharacters ? Icons.check_circle : Icons.error,
-                        size: 16,
-                        color: message.length >= minCharacters 
-                          ? Colors.green 
-                          : colorScheme.error,
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _pickImages,
+                          icon: const Icon(Icons.photo_library, size: 18),
+                          label: const Text('Gallery'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        message.length >= minCharacters 
-                          ? 'Minimum length met' 
-                          : '${minCharacters - message.length} more characters needed',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: message.length >= minCharacters 
-                            ? Colors.green 
-                            : colorScheme.error,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _takePhoto,
+                          icon: const Icon(Icons.camera_alt, size: 18),
+                          label: const Text('Camera'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                 ],
 
                 // Submit button
-                if (_sending) ...[
+                if (_uploading) ...[
                   const Center(child: CircularProgressIndicator()),
-                  const SizedBox(height: 16),
-                  const Center(
-                    child: Text('Sending claim...'),
-                  ),
+                  const SizedBox(height: 8),
+                  const Center(child: Text('Submitting...')),
                 ] else ...[
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: isValid ? _submitClaim : null,
-                      icon: const Icon(Icons.send_outlined),
-                      label: const Text('Send Claim'),
+                      icon: const Icon(Icons.send, size: 18),
+                      label: const Text('Submit Claim'),
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
                   ),
                 ],
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
               ],
             ),
           );
