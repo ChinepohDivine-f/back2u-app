@@ -1,17 +1,17 @@
 // lib/views/report/report_form.dart
 import 'dart:io';
 import 'package:back2u/views/report/contact.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+// import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:back2u/l10n/app_localizations.dart';
+// import 'package:back2u/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:back2u/models/report_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:path_provider/path_provider.dart'; // For creating dummy XFile for existing images
+// import 'package:path_provider/path_provider.dart'; // For creating dummy XFile for existing images
 import 'package:flutter/foundation.dart' hide Category;
-import 'package:cached_network_image/cached_network_image.dart';
+// import 'package:cached_network_image/cached_network_image.dart';
 
 // Import your category and location models
 import 'package:back2u/models/category_model.dart';

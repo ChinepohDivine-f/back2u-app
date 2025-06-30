@@ -12,6 +12,10 @@ import 'package:back2u/l10n/app_localizations.dart';
 import 'package:back2u/main.dart';
 import 'package:back2u/views/settings/profile/edit_profile_page.dart';
 import 'package:back2u/views/settings/profile/phone_management_page.dart';
+import 'package:back2u/views/settings/privacy_policy.dart';
+import 'package:back2u/views/settings/terms_of_service.dart';
+import 'package:back2u/views/settings/help_and_support.dart';
+import 'package:back2u/views/settings/feedback_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final void Function(Locale)? onLocaleChanged;
@@ -345,8 +349,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(
-                    leading: Icon(Icons.brightness_medium,
-                        color: colors.onSurfaceVariant),
+                    // leading: Icon(Icons.brightness_medium,
+                    //     color: colors.onSurfaceVariant),
                     // title: Text('Theme', style: theme.textTheme.bodyLarge),
                     trailing: SegmentedButton<ThemeMode>(
                       segments: const <ButtonSegment<ThemeMode>>[
@@ -402,7 +406,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         const SnackBar(
                             content: Text('Navigate to Privacy Policy')),
                       );
-                      // Navigator.push(context, MaterialPageRoute(builder: (context) => PrivacyPolicyPage()));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => PrivacyPolicyPage()));
                     },
                   ),
                   const Divider(indent: 16, endIndent: 16),
@@ -419,7 +423,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         const SnackBar(
                             content: Text('Navigate to Terms of Service')),
                       );
-                      // Navigator.push(context, MaterialPageRoute(builder: (context) => TermsOfServicePage()));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => TermsOfServicePage()));
                     },
                   ),
                   const Divider(indent: 16, endIndent: 16),
@@ -456,7 +460,33 @@ class _SettingsPageState extends State<SettingsPage> {
                         const SnackBar(
                             content: Text('Navigate to Help & Support')),
                       );
-                      // Navigator.push(context, MaterialPageRoute(builder: (context) => HelpAndSupportPage()));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => HelpAndSupportPage()));
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // --- Feedback Section ---
+            _buildSectionHeader(context, 'Feedback'),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.feedback,
+                        color: colors.onSurfaceVariant),
+                    title: Text('Give Feedback',
+                        style: theme.textTheme.bodyLarge),
+                    trailing: Icon(Icons.arrow_forward_ios,
+                        size: 16,
+                        color: colors.onSurfaceVariant.withOpacity(0.7)),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Navigate to Feedback')),
+                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => FeedbackPage()));
                     },
                   ),
                 ],

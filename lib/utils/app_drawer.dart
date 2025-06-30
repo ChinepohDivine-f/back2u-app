@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore if AppUser uses Timestamp, or for data fetching
+// import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore if AppUser uses Timestamp, or for data fetching
 import 'package:back2u/services/auth_kyc_service.dart'; // Your AuthKycService
 import 'package:back2u/models/user_model.dart'; // Your AppUser model
+// import 'package:back2u/views/settings/feedback_page.dart'; // Import feedback page
+// import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:back2u/l10n/app_localizations.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -12,10 +16,19 @@ class AppDrawer extends StatefulWidget {
 }
 
 class _AppDrawerState extends State<AppDrawer> {
+  late Locale _currentLocale;
   final AuthKycService _authKycService = AuthKycService();
   User? _currentUser; // Internal Firebase User object
   AppUser? _appUser; // Internal custom user profile object
   bool _isLoading = true; // Internal loading state
+
+  Future<void> _loadLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString('language') ?? 'en';
+    setState(() {
+      _currentLocale = languageCode == 'fr' ? const Locale('fr') : const Locale('en');
+    });
+  }
 
   @override
   void initState() {
@@ -160,7 +173,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 title: Text('My Reports', style: Theme.of(context).textTheme.bodyLarge),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, '/my_reports'); // New route for user's reports
+                  Navigator.pushReplacementNamed(context, '/my_reports');
                 },
               ),
               ListTile(
@@ -168,7 +181,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 title: Text('Saved Reports', style: Theme.of(context).textTheme.bodyLarge),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, '/saved_reports'); // New route for saved reports
+                  Navigator.pushReplacementNamed(context, '/saved_reports');
                 },
               ),
               ListTile(
@@ -176,7 +189,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 title: Text('Settings', style: Theme.of(context).textTheme.bodyLarge),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, '/settings'); // Navigate to Settings page
+                  Navigator.pushReplacementNamed(context, '/settings');
                 },
               ),
               ListTile(
@@ -184,14 +197,14 @@ class _AppDrawerState extends State<AppDrawer> {
                 title: Text('Notifications', style: Theme.of(context).textTheme.bodyLarge),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, '/notifications'); // New route for notifications
+                  Navigator.pushReplacementNamed(context, '/notifications');
                 },
               ),
               ListTile(
                 leading: Icon(Icons.logout, color: colorScheme.error),
                 title: Text('Logout', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.error)),
                 onTap: () {
-                  _signOut(); // Call the internal logout function
+                  _signOut();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Logging out...')),
                   );
@@ -201,12 +214,21 @@ class _AppDrawerState extends State<AppDrawer> {
           ] else ...[
             // --- Anonymous User Specific Menu Items ---
             const Divider(), // Separator
+            // Settings for anonymous users (restricted)
+            ListTile(
+              leading: Icon(Icons.settings_outlined, color: colorScheme.onSurfaceVariant),
+              title: Text('Settings', style: Theme.of(context).textTheme.bodyLarge),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/settings'); // Should navigate to restricted settings
+              },
+            ),
             ListTile(
               leading: Icon(Icons.login, color: colorScheme.primary),
               title: Text('Login / Sign Up', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold)),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/auth'); // Navigate to Login/Sign Up page
+                Navigator.pushReplacementNamed(context, '/auth');
               },
             ),
           ],
@@ -224,6 +246,19 @@ class _AppDrawerState extends State<AppDrawer> {
               Text('Developed in Cameroon.', style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
+          
+          // --- Feedback Section ---
+          // ListTile(
+          //   leading: Icon(Icons.feedback_outlined, color: colorScheme.onSurfaceVariant),
+          //   title: Text('Give Feedback', style: Theme.of(context).textTheme.bodyLarge),
+          //   onTap: () {
+          //     Navigator.pop(context); // Close drawer
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => const FeedbackPage()),
+          //     );
+          //   },
+          // ),
         ],
       ),
     );

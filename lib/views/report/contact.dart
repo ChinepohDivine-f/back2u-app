@@ -45,8 +45,12 @@ class _ContactPageState extends State<ContactPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize controller with existing report data or empty string
-    _phoneController = TextEditingController(text: widget.report.contactPhone);
+    // Remove '+237' prefix if present for display
+    String initialPhone = widget.report.contactPhone;
+    if (initialPhone.startsWith('+237')) {
+      initialPhone = initialPhone.substring(4).trim();
+    }
+    _phoneController = TextEditingController(text: initialPhone);
 
     _getCurrentUserAndFetchContactInfo();
   }
@@ -66,7 +70,11 @@ class _ContactPageState extends State<ContactPage> {
           // Only pre-fill from profile if the report's contact field is empty.
           // This way, if we're editing and number was already set, it persists.
           if (widget.report.contactPhone.isEmpty && appUser.phone != null) {
-            _phoneController.text = appUser.phone!;
+            String phone = appUser.phone!;
+            if (phone.startsWith('+237')) {
+              phone = phone.substring(4).trim();
+            }
+            _phoneController.text = phone;
             _isPhoneFromProfile = true;
           }
         });

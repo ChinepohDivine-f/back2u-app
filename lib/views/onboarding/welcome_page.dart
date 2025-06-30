@@ -1,3 +1,4 @@
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class WelcomePage extends StatelessWidget {
@@ -7,6 +8,7 @@ class WelcomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     return Container(
       color: colorScheme.background,
@@ -21,7 +23,7 @@ class WelcomePage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            "Welcome to Back2u!",
+            loc.welcomeToBack2uTitle,
             style: textTheme.headlineMedium?.copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -30,7 +32,7 @@ class WelcomePage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            "Your trusted partner in finding lost documents and connecting with owners.",
+            loc.welcomeToBack2uSubtitle,
             style: textTheme.bodyLarge?.copyWith(
               color: colorScheme.secondary,
             ),

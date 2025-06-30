@@ -20,6 +20,9 @@ class _SettingsPageState extends State<SettingsPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Detect if user is anonymous via route arguments (set in drawer)
+    final bool isAnonymous = ModalRoute.of(context)?.settings.arguments == 'anonymous';
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.settings),
@@ -29,7 +32,7 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Language Settings
+          // Language Settings (always visible)
           Container(
             decoration: BoxDecoration(
               color: colorScheme.surface,
@@ -85,114 +88,131 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Profile Settings
-          Container(
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_outline, color: colorScheme.primary),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Profile',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+          if (!isAnonymous) ...[
+            // Profile Settings (only for authenticated users)
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_outline, color: colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Profile',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.account_circle_outlined),
-                  title: const Text('Profile Information'),
-                  subtitle: const Text('Manage your account details'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ProfilePage(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.verified_outlined),
-                  title: const Text('Update KYC'),
-                  subtitle: const Text('Change phone number & verify'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const KycUpdatePage(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // App Info
-          Container(
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: colorScheme.primary),
-                      const SizedBox(width: 12),
-                      Text(
-                        'App Information',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.account_circle_outlined),
+                    title: const Text('Profile Information'),
+                    subtitle: const Text('Manage your account details'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfilePage(),
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.app_settings_alt_outlined),
-                  title: const Text('Version'),
-                  subtitle: const Text('1.0.0'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.description_outlined),
-                  title: const Text('Privacy Policy'),
-                  onTap: () {
-                    // Navigate to privacy policy
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.help_outline),
-                  title: const Text('Help & Support'),
-                  onTap: () {
-                    // Navigate to help page
-                  },
-                ),
-              ],
+                  ListTile(
+                    leading: const Icon(Icons.verified_outlined),
+                    title: const Text('Update KYC'),
+                    subtitle: const Text('Change phone number & verify'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const KycUpdatePage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 24),
+            // App Info (only for authenticated users)
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text(
+                          'App Information',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.app_settings_alt_outlined),
+                    title: const Text('Version'),
+                    subtitle: const Text('1.0.0'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.description_outlined),
+                    title: const Text('Privacy Policy'),
+                    onTap: () {
+                      // Navigate to privacy policy
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.help_outline),
+                    title: const Text('Help & Support'),
+                    onTap: () {
+                      // Navigate to help page
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // Anonymous user: show sign up button
+            Center(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.person_add_alt_1),
+                label: const Text('Sign Up or Log In'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                ),
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, '/auth');
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
