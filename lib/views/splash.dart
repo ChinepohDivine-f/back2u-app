@@ -127,7 +127,7 @@ class _SplashState extends State<Splash> {
 
     return Scaffold(
       backgroundColor: colorScheme.background,
-      body: Center(child: Image.asset('assets/images/2.png', width: 160)),
+      body: SafeArea(child:Center(child: Image.asset('assets/images/2.png', width: 160)),),
     );
   }
 

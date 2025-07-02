@@ -17,4 +17,11 @@ class FeedbackService {
       throw Exception('Failed to submit feedback. $e');
     }
   }
+
+  // Fetch feedback for a user, sorted by createdAt descending
+  Future<List<FeedbackModel>> getFeedbackForUser(String userId) async {
+    final userFeedbackCollection = _baseCollection.doc(userId).collection('feedback');
+    final query = await userFeedbackCollection.orderBy('createdAt', descending: true).get();
+    return query.docs.map((doc) => FeedbackModel.fromFirestore(doc)).toList();
+  }
 } 

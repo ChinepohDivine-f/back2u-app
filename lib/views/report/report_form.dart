@@ -498,6 +498,12 @@ class _ReportFormState extends State<ReportForm> {
     if (_isLoadingData) {
       return Scaffold(
         appBar: AppBar(
+          leading: widget.isEditing ? null : IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
           title: Text('${widget.report.type.toUpperCase()} ${loc.report} - ${loc.details}'),
           centerTitle: true,
         ),
@@ -540,7 +546,11 @@ class _ReportFormState extends State<ReportForm> {
         items: _allCategories.map((category) {
           return DropdownMenuItem<String>(
             value: category.nameEn,
-            child: Text(category.nameEn),
+            child: Text(
+              category.nameEn,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           );
         }).toList(),
         onChanged: (value) {
@@ -555,6 +565,7 @@ class _ReportFormState extends State<ReportForm> {
           }
           return null;
         },
+        isExpanded: true,
       ),
       const SizedBox(height: 16),
 
@@ -578,7 +589,11 @@ class _ReportFormState extends State<ReportForm> {
                 .map((subcat) {
                   return DropdownMenuItem<String>(
                     value: subcat.nameEn,
-                    child: Text(subcat.nameEn),
+                    child: Text(
+                      subcat.nameEn,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   );
                 }).toList()
             : [],
@@ -595,6 +610,7 @@ class _ReportFormState extends State<ReportForm> {
           }
           return null;
         },
+        isExpanded: true,
         disabledHint: Text(loc.selectCategoryFirst),
       ),
       const SizedBox(height: 16),
@@ -641,7 +657,11 @@ class _ReportFormState extends State<ReportForm> {
         items: _allLocations.map((location) {
           return DropdownMenuItem<String>(
             value: location.nameEn,
-            child: Text(location.nameEn),
+            child: Text(
+              location.nameEn,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           );
         }).toList(),
         onChanged: (value) {
@@ -656,13 +676,14 @@ class _ReportFormState extends State<ReportForm> {
           }
           return null;
         },
+        isExpanded: true,
       ),
       const SizedBox(height: 16),
 
-      // Sub-Location Dropdown (Required)
+      // Sub-Location Dropdown (Optional)
       DropdownButtonFormField<String>(
         decoration: InputDecoration(
-          labelText: '${loc.subLocation}*',
+          labelText: '${loc.subLocation} (${loc.optional})',
           border: const OutlineInputBorder(),
           prefixIcon: const Icon(Icons.location_city),
         ),
@@ -680,7 +701,11 @@ class _ReportFormState extends State<ReportForm> {
                 .map((subloc) {
                   return DropdownMenuItem<String>(
                     value: subloc.nameEn,
-                    child: Text(subloc.nameEn),
+                    child: Text(
+                      subloc.nameEn,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   );
                 }).toList()
             : [],
@@ -691,12 +716,7 @@ class _ReportFormState extends State<ReportForm> {
                 });
               }
             : null, // Disable if no main location selected
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return loc.pleaseSelectSubLocation;
-          }
-          return null;
-        },
+        isExpanded: true,
         disabledHint: Text(loc.selectMainLocationFirst),
       ),
       const SizedBox(height: 24),
@@ -944,6 +964,12 @@ class _ReportFormState extends State<ReportForm> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: widget.isEditing ? null : IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
         title: Text('${widget.report.type.toUpperCase()} ${loc.report} - ${loc.details}'),
         centerTitle: true,
         actions: [

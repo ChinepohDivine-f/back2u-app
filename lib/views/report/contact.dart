@@ -12,13 +12,14 @@ import 'package:back2u/l10n/app_localizations.dart';
 
 import 'package:back2u/services/form_data_fetch_service.dart';
 import 'package:back2u/utils/phone_number_formatter.dart';
+import 'package:back2u/views/settings/kyc_update_page.dart';
 
 class ContactPage extends StatefulWidget {
   final Report report;
-  final List<XFile> localImageFiles; // New images to upload
-  final List<String> existingImageUrls; // Original image URLs on the report
-  final Set<String> imagesToDelete; // URLs of images marked for deletion
-  final bool isEditing; // Flag to indicate if this is an edit flow
+  final List<XFile> localImageFiles;
+  final List<String> existingImageUrls;
+  final Set<String> imagesToDelete;
+  final bool isEditing;
 
   const ContactPage({
     super.key,
@@ -26,7 +27,7 @@ class ContactPage extends StatefulWidget {
     this.localImageFiles = const [],
     this.existingImageUrls = const [],
     this.imagesToDelete = const {},
-    this.isEditing = false, // Default to false for new reports
+    this.isEditing = false,
   });
 
   @override
@@ -36,106 +37,222 @@ class ContactPage extends StatefulWidget {
 class _ContactPageState extends State<ContactPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _phoneController;
-  bool _useSameForWhatsApp = false;
+  late TextEditingController _whatsappController;
+  bool _usePhoneAsWhatsapp = false;
   bool _isLoadingContactInfo = false;
   bool _isPhoneFromProfile = false;
 
   final DataFetchService _dataFetchService = DataFetchService();
   String? _currentUserId;
+  static const String _userCollectionPath = 'back2u/countries/cameroon/data/users';
+
+  String _stripCountryCode(String phone) {
+    if (phone.isEmpty) return '';
+    phone = phone.trim();
+    if (phone.startsWith('+237 ')) {
+      return phone.substring(5).trim();
+    }
+    if (phone.startsWith('+237')) {
+      return phone.substring(4).trim();
+    }
+    return phone;
+  }
+
+  String _addCountryCode(String phone) {
+    if (phone.isEmpty) return '';
+    phone = phone.trim();
+    if (phone.startsWith('+237 ')) return phone;
+    if (phone.startsWith('+237')) return '+237 ${phone.substring(4).trim()}';
+    return '+237 $phone';
+  }
 
   @override
   void initState() {
     super.initState();
-    // Remove '+237' prefix if present for display
-    String initialPhone = widget.report.contactPhone;
-    if (initialPhone.startsWith('+237')) {
-      initialPhone = initialPhone.substring(4).trim();
-    }
-    _phoneController = TextEditingController(text: initialPhone);
-
+    print('[ContactPage] Initializing contact page');
+    
+    // Initialize controllers with existing report data
+    _phoneController = TextEditingController(text: _stripCountryCode(widget.report.contactPhone));
+    _whatsappController = TextEditingController(text: _stripCountryCode(widget.report.whatsappNumber));
+    
+    // Check if numbers are the same to set checkbox
+    _usePhoneAsWhatsapp = widget.report.contactPhone.isNotEmpty && 
+                         widget.report.contactPhone == widget.report.whatsappNumber;
+    
     _getCurrentUserAndFetchContactInfo();
   }
 
   void _getCurrentUserAndFetchContactInfo() async {
+    print('[ContactPage] Fetching user contact info');
     setState(() {
       _isLoadingContactInfo = true;
     });
 
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      _currentUserId = user.uid;
-      final AppUser? appUser = await _dataFetchService.fetchUser(_currentUserId!);
+    try {
+      final User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        _currentUserId = user.uid;
+        try {
+          final userDoc = await FirebaseFirestore.instance
+              .doc('$_userCollectionPath/${user.uid}')
+              .get();
 
-      if (appUser != null) {
-        setState(() {
-          // Only pre-fill from profile if the report's contact field is empty.
-          // This way, if we're editing and number was already set, it persists.
-          if (widget.report.contactPhone.isEmpty && appUser.phone != null) {
-            String phone = appUser.phone!;
-            if (phone.startsWith('+237')) {
-              phone = phone.substring(4).trim();
-            }
-            _phoneController.text = phone;
-            _isPhoneFromProfile = true;
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          if (userData != null) {
+            print('[ContactPage] Found user profile with phone: ${userData['phone']}');
+            setState(() {
+              // Only pre-fill from profile if the report's contact field is empty
+              if (widget.report.contactPhone.isEmpty && userData['phone'] != null) {
+                String phone = _stripCountryCode(userData['phone']);
+                _phoneController.text = phone;
+                _isPhoneFromProfile = true;
+                
+                // Check if phone matches whatsapp number and both are not empty
+                if (userData['whatsappNumber'] != null && 
+                    userData['phone'] != null && 
+                    userData['whatsappNumber'] == userData['phone'] &&
+                    userData['phone'].isNotEmpty) {
+                  _usePhoneAsWhatsapp = true;
+                }
+                
+                print('[ContactPage] Pre-filled phone from profile: $phone');
+              }
+            });
           }
+        } else {
+          print('[ContactPage] No user profile found');
+        }
+        } catch (e) {
+          print('[ContactPage] Error accessing Firestore: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Network error: Please check your connection')),
+            );
+          }
+        }
+      } else {
+        print('[ContactPage] User is not logged in');
+      }
+    } catch (e) {
+      print('[ContactPage] Error fetching user data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading user data: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingContactInfo = false;
         });
       }
-    } else {
-      debugPrint('User is not logged in. Cannot fetch profile contact info.');
-      // Optionally, show a snackbar or guide the user to log in
     }
+  }
 
+  void _onUsePhoneAsWhatsappChanged(bool? value) {
+    print('[ContactPage] Use phone as WhatsApp changed to: $value');
+    if (value == null) return;
+    
     setState(() {
-      _isLoadingContactInfo = false;
+      _usePhoneAsWhatsapp = value;
     });
   }
 
-  // Validator to ensure phone number is provided
   String? _validatePhoneNumber(String? phone) {
     if (phone == null || phone.trim().isEmpty) {
       return 'Please provide a phone number.';
     }
     // Adjust validation to account for spaces from the formatter
     final digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digitsOnly.length < 9) {
-      return 'Number must be 9 digits.';
+    if (digitsOnly.length != 9) {
+      return 'Number must be exactly 9 digits.';
     }
     return null;
   }
 
-  void _navigateToSummary() async {
-    final String phoneText = _phoneController.text.trim();
-    final String whatsappText = _useSameForWhatsApp ? phoneText : '';
+  Future<void> _updateUserProfile(String uid, String phoneWithCode) async {
+    try {
+      final updates = {
+        'phone': phoneWithCode,
+        'whatsappNumber': _usePhoneAsWhatsapp ? phoneWithCode : '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      
+      await FirebaseFirestore.instance
+          .doc('$_userCollectionPath/$uid')
+          .update(updates);
+      print('[ContactPage] Successfully updated user profile');
+    } catch (e) {
+      print('[ContactPage] Error updating user profile: $e');
+      throw e; // Rethrow to handle in calling function
+    }
+  }
 
-    if (_formKey.currentState!.validate()) {
-      // Create a *copy* of the report object and update its contact properties
-      // Note: createdAt will be set in SummaryPage for new reports, not here.
+  void _navigateToSummary() async {
+    if (!_formKey.currentState!.validate()) {
+      print('[ContactPage] Form validation failed');
+      return;
+    }
+
+    try {
+      print('[ContactPage] Form validation passed');
+      final phoneWithCode = _addCountryCode(_phoneController.text);
+      
+      // Update user profile if logged in
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        print('[ContactPage] Updating user profile');
+        await _updateUserProfile(currentUser.uid, phoneWithCode);
+      }
+
+      // Update report
       final updatedReport = widget.report.copyWith(
-        contactPhone: phoneText,
-        whatsappNumber: whatsappText,
+        contactPhone: phoneWithCode,
+        whatsappNumber: _usePhoneAsWhatsapp ? phoneWithCode : '',
       );
 
-      // Pass all necessary data to the SummaryPage for final processing
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SummaryPage(
-              report: updatedReport,
-              localImageFiles: widget.localImageFiles,
-              existingImageUrls: widget.existingImageUrls,
-              imagesToDelete: widget.imagesToDelete,
-              isEditing: widget.isEditing,
-            ),
+      print('[ContactPage] Report updated with contact info:');
+      print('  - Phone: $phoneWithCode');
+      print('  - WhatsApp: ${_usePhoneAsWhatsapp ? phoneWithCode : ""}');
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SummaryPage(
+            report: updatedReport,
+            localImageFiles: widget.localImageFiles,
+            existingImageUrls: widget.existingImageUrls,
+            imagesToDelete: widget.imagesToDelete,
+            isEditing: widget.isEditing,
           ),
+        ),
+      );
+    } catch (e) {
+      print('[ContactPage] Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving contact information: $e')),
         );
       }
     }
   }
 
+  void _navigateToPhoneVerification() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const KycUpdatePage(),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _phoneController.dispose();
+    _whatsappController.dispose();
     super.dispose();
   }
 
@@ -161,19 +278,21 @@ class _ContactPageState extends State<ContactPage> {
                   children: <Widget>[
                     Text(
                       loc.provideContactDetails,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant
+                      ),
                     ),
                     const SizedBox(height: 24),
 
                     // Phone Number Field
                     TextFormField(
                       controller: _phoneController,
-                      readOnly: _isPhoneFromProfile, // Make read-only if from profile
+                      readOnly: true, // Always read-only
                       keyboardType: TextInputType.phone,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(9),
-                        PhoneNumberFormatter(), // Apply custom formatter
+                        PhoneNumberFormatter(),
                       ],
                       decoration: InputDecoration(
                         labelText: loc.phoneNumber,
@@ -181,63 +300,74 @@ class _ContactPageState extends State<ContactPage> {
                         prefixText: '+237 ',
                         prefixIcon: const Icon(Icons.phone),
                         border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: _navigateToPhoneVerification,
+                          tooltip: 'Update phone number',
+                        ),
                       ),
                       validator: _validatePhoneNumber,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
 
-                    // Info box if phone is from profile
-                    if (_isPhoneFromProfile)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                loc.verifiedPhoneFromProfile,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                    // Info text about phone verification
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
                       ),
-                    const SizedBox(height: 16),
-
-                    // Checkbox to use same number for WhatsApp
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _useSameForWhatsApp,
-                          onChanged: (bool? newValue) {
-                            setState(() {
-                              _useSameForWhatsApp = newValue ?? false;
-                            });
-                          },
-                          activeColor: colorScheme.primary,
-                        ),
-                        Expanded(
-                          child: Text(
-                            loc.useSameForWhatsApp,
-                            style: Theme.of(context).textTheme.bodyLarge,
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 20, color: colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Using verified phone number',
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  'To use a different number, please verify it first',
+                                  style: TextStyle(
+                                    color: colorScheme.primary.withOpacity(0.8),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          TextButton(
+                            onPressed: _navigateToPhoneVerification,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                            child: const Text('Update'),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 24),
 
-                    // Submit Button
+                    // Checkbox to use phone number as WhatsApp
+                    CheckboxListTile(
+                      title: Text('Use this number as WhatsApp number'),
+                      value: _usePhoneAsWhatsapp,
+                      onChanged: _onUsePhoneAsWhatsappChanged,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Next Button
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(

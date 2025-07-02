@@ -43,7 +43,7 @@ class FirestoreService {
 
   Future<List<Report>> getAllReports() async {
     try {
-      QuerySnapshot snapshot = await _db.collection('$_basePath/reports').get();
+      QuerySnapshot snapshot = await _db.collection('$_basePath/reports').orderBy('createdAt', descending: true).get();
       return snapshot.docs
           .map((doc) => Report.fromFirestore(doc))
           .toList();
@@ -153,8 +153,7 @@ class FirestoreService {
 
   Future<List<Category>> getAllCategories() async {
     try {
-      QuerySnapshot snapshot =
-          await _db.collection('$_basePath/categories').get();
+      QuerySnapshot snapshot = await _db.collection('$_basePath/categories').orderBy('createdAt', descending: true).get();
       return snapshot.docs
           .map((doc) => Category.fromFirestore(doc))
           .toList();
@@ -197,8 +196,7 @@ class FirestoreService {
 
   Future<List<Location>> getAllLocations() async {
     try {
-      QuerySnapshot snapshot =
-          await _db.collection('$_basePath/locations').get();
+      QuerySnapshot snapshot = await _db.collection('$_basePath/locations').orderBy('createdAt', descending: true).get();
       return snapshot.docs
           .map((doc) => Location.fromFirestore(doc))
           .toList();

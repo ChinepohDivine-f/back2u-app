@@ -17,6 +17,8 @@ import 'package:back2u/models/claim_model.dart';
 import 'package:back2u/services/image_upload_service.dart';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:back2u/l10n/app_localizations.dart';
+import 'package:back2u/constants/app_enums.dart';
 
 class ReportDetails extends StatefulWidget {
   final Report report;
@@ -40,6 +42,26 @@ class _ReportDetailsState extends State<ReportDetails> {
   bool _isProcessing = false;
   bool _hasClaimed = false;
   bool _checkingClaim = false;
+
+  String get localizedCategory => 
+    Localizations.localeOf(context).languageCode == 'fr' 
+      ? widget.report.categoryFr 
+      : widget.report.category;
+
+  String get localizedSubcategory => 
+    Localizations.localeOf(context).languageCode == 'fr' 
+      ? widget.report.subcategoryFr 
+      : widget.report.subcategory;
+
+  String get localizedLocation => 
+    Localizations.localeOf(context).languageCode == 'fr' 
+      ? widget.report.locationLostFr 
+      : widget.report.locationLost;
+
+  String get localizedSubLocation => 
+    Localizations.localeOf(context).languageCode == 'fr' 
+      ? widget.report.subLocationLostFr 
+      : widget.report.subLocationLost;
 
   @override
   void initState() {
@@ -79,11 +101,12 @@ class _ReportDetailsState extends State<ReportDetails> {
   Future<void> _toggleSave() async {
     final authService = context.read<AuthKycService>();
     final currentUserId = authService.currentUser?.uid;
+    final l10n = AppLocalizations.of(context);
 
     if (currentUserId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please sign in to save reports')),
+          SnackBar(content: Text(l10n.pleaseSignInToSave)),
         );
       }
       return;
@@ -96,8 +119,8 @@ class _ReportDetailsState extends State<ReportDetails> {
     if (!isCurrentlySaved && widget.report.reporterUid == currentUserId) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("You can't save your own report. View your reports in the 'My Reports' section."),
+          SnackBar(
+            content: Text(l10n.cannotSaveOwnReport),
           ),
         );
       }
@@ -114,7 +137,7 @@ class _ReportDetailsState extends State<ReportDetails> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(!isCurrentlySaved ? 'Report saved!' : 'Report removed'),
+            content: Text(!isCurrentlySaved ? l10n.reportSaved : l10n.reportRemoved),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -123,7 +146,7 @@ class _ReportDetailsState extends State<ReportDetails> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save: ${e.toString()}'),
+            content: Text(l10n.failedToSave(e.toString())),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -141,8 +164,8 @@ class _ReportDetailsState extends State<ReportDetails> {
     if (!isVerified) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please verify your phone number to share this report'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).pleaseVerifyPhoneToShare),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -150,22 +173,35 @@ class _ReportDetailsState extends State<ReportDetails> {
       return;
     }
     try {
-      // THIS IS THE KEY: The URL 'https://back2u.app/report/${widget.report.reportId}'
-      // MUST have Open Graph and Twitter Card meta tags on its HTML backend.
-      // The descriptive text you want in the share preview will come from those tags,
-      // not primarily from the 'text' variable here, though 'text' is used for apps
-      // that don't render rich previews.
-      final reportUrl = 'https://back2u.app/report/${widget.report.reportId}';
-      final text = '''
-${widget.report.type.toUpperCase()} Report
-Owner: ${widget.report.ownerName ?? 'Anonymous'}
-Category: ${widget.report.category} > ${widget.report.subcategory}
-Location: ${widget.report.locationLost}
-${widget.report.subLocationLost.isNotEmpty ? 'Sublocation: ${widget.report.subLocationLost}\n' : ''}
-View details: $reportUrl
-Shared via Back2U''';
+      final l10n = AppLocalizations.of(context);
+      final reportUrl = DeepLinks.getReportUrl(widget.report.reportId);
+      
+      // Create a friendly message based on report type
+      final isLostReport = widget.report.type.toLowerCase() == 'lost';
+      final message = isLostReport 
+          ? '''📢 LOST ITEM ALERT! Can you help?
 
-      Share.share(text, subject: '${widget.report.type} Report');
+🔍 ${widget.report.ownerName ?? 'Someone'} has lost their ${widget.report.subcategory.toLowerCase()}
+📍 Last seen: ${widget.report.locationLost}${widget.report.subLocationLost.isNotEmpty ? ' (${widget.report.subLocationLost})' : ''}
+📅 Date: ${DateFormat('MMM dd, yyyy').format(widget.report.reportedDate.toDate())}
+${widget.report.reward != '0' ? '💰 Reward offered: XAF ${widget.report.reward}\n' : ''}
+🙏 Please help us find it!
+
+📱 View full details: $reportUrl
+
+#Back2U #LostAndFound #HelpingOthers'''
+          : '''✨ FOUND ITEM ALERT!
+
+📦 A ${widget.report.subcategory.toLowerCase()} has been found
+📍 Location: ${widget.report.locationLost}${widget.report.subLocationLost.isNotEmpty ? ' (${widget.report.subLocationLost})' : ''}
+📅 Found on: ${DateFormat('MMM dd, yyyy').format(widget.report.reportedDate.toDate())}
+
+If this might be yours, please check the details:
+📱 $reportUrl
+
+#Back2U #LostAndFound #CommunitySupport''';
+
+      Share.share(message, subject: '${widget.report.type} Report - Back2U');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -356,13 +392,14 @@ Shared via Back2U''';
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     final authService = context.watch<AuthKycService>();
     final isSaved = authService.appUser?.savedReports.contains(widget.report.reportId) ?? false;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.report.type} Report'),
+        title: Text('${widget.report.type} ${l10n.report}'),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         actions: [
@@ -370,7 +407,7 @@ Shared via Back2U''';
             IconButton(
               onPressed: _shareReport,
               icon: const Icon(Icons.share),
-              tooltip: 'Share Report',
+              tooltip: l10n.shareReport,
             ),
         ],
       ),
@@ -410,7 +447,7 @@ Shared via Back2U''';
                       border: Border.all(color: colorScheme.primary),
                     ),
                     child: Text(
-                      'RESOLVED',
+                      l10n.resolved,
                       style: textTheme.bodyMedium?.copyWith(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -433,7 +470,7 @@ Shared via Back2U''';
 
             // --- Basic Information ---
             Text(
-              'Basic Information',
+              l10n.basicInformation,
               style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -442,19 +479,19 @@ Shared via Back2U''';
             const Divider(height: 24),
 
             _buildDetailRow(
-              'Category',
-              '${widget.report.category} • ${widget.report.subcategory}',
+              l10n.category,
+              '$localizedCategory • $localizedSubcategory',
               icon: Icons.category_outlined,
             ),
             // Conditionally display 'Document Owner' only if ownerName is not null/empty
             if (widget.report.ownerName?.isNotEmpty ?? false)
               _buildDetailRow(
-                'Document Owner',
+                l10n.documentOwner,
                 widget.report.ownerName!,
                 icon: Icons.person_outline,
               ),
             _buildDetailRow(
-              'Reward',
+              l10n.rewardOffered,
               formatReward(widget.report.reward),
               icon: Icons.monetization_on_outlined,
             ),
@@ -470,7 +507,7 @@ Shared via Back2U''';
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Location & Dates',
+                  l10n.locationAndDates,
                   style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
@@ -481,18 +518,18 @@ Shared via Back2U''';
             const Divider(height: 24),
 
             _buildDetailRow(
-              'Location',
-              '${widget.report.locationLost}${widget.report.subLocationLost.isNotEmpty ? ' • ${widget.report.subLocationLost}' : ''}',
+              l10n.location,
+              '$localizedLocation${localizedSubLocation.isNotEmpty ? ' • $localizedSubLocation' : ''}',
               icon: Icons.pin_drop_outlined,
             ),
             _buildDetailRow(
-              'Incident Date',
+              l10n.incidentDate,
               // Fixed the date format pattern
               DateFormat('MMM dd, yyyy').format(widget.report.reportedDate.toDate()),
               icon: Icons.calendar_today_outlined,
             ),
             _buildDetailRow(
-              'Reported On',
+              l10n.reportedOn,
               // Fixed the date format pattern
               DateFormat('MMM dd, yyyy').format(widget.report.createdAt.toDate()),
               icon: Icons.access_time_outlined,
@@ -502,7 +539,7 @@ Shared via Back2U''';
             // --- Notes ---
             if (widget.report.notes.isNotEmpty) ...[
               Text(
-                'Additional Notes',
+                l10n.additionalNotes,
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
@@ -521,7 +558,7 @@ Shared via Back2U''';
             // --- Images Section ---
             if (widget.report.images.isNotEmpty) ...[
               Text(
-                'Images',
+                l10n.images,
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,

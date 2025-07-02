@@ -65,6 +65,8 @@ class SavedReportService {
               // _userProfileService.removeMissingSavedReportId(userId, docSnapshot.id);
             }
           }
+          // Sort by createdAt descending
+          fetchedReports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           _savedReportsController.add(fetchedReports); // Emit the list of fetched reports
 
         } catch (e) {

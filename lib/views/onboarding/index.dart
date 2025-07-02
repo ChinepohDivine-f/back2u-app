@@ -52,7 +52,7 @@ class _OnboardingState extends State<Onboarding> {
     final loc = AppLocalizations.of(context);
 
     return Scaffold(
-      body: Stack(
+      body: SafeArea(child:Stack(
         children: [
           PageView(
             controller: _pageController,
@@ -137,6 +137,6 @@ class _OnboardingState extends State<Onboarding> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );}
 }

@@ -126,9 +126,10 @@ class _FeedbackPageState extends State<FeedbackPage> {
         }
       } catch (e) {
         if (mounted) {
+          print('Error: ' + e.toString());
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(loc.error),
+              content: Text(loc.error ),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );

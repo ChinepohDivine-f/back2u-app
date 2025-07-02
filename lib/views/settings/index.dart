@@ -350,34 +350,36 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(
-                    trailing: SegmentedButton<ThemeMode>(
-                      segments: <ButtonSegment<ThemeMode>>[
-                        ButtonSegment<ThemeMode>(
-                            value: ThemeMode.light,
-                            label: Text(loc.light),
-                            icon: const Icon(Icons.light_mode, size: 12,)),
-                        ButtonSegment<ThemeMode>(
-                            value: ThemeMode.dark,
-                            label: Text(loc.dark),
-                            icon: const Icon(Icons.dark_mode, size: 12,)),
-                        ButtonSegment<ThemeMode>(
-                            value: ThemeMode.system,
-                            label: Text(loc.system),
-                            icon: const Icon(Icons.settings_brightness, size: 12,)),
-                      ],
-                      selected: <ThemeMode>{_currentThemeMode},
-                      onSelectionChanged: (Set<ThemeMode> newSelection) {
-                        setState(() {
-                          _currentThemeMode = newSelection.first;
-                          _saveLocalSettings();
-                          // In a real app, you'd update your MaterialApp's themeMode
-                          Provider.of<ThemeProvider>(context, listen: false).setThemeMode(_currentThemeMode);
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('${loc.themeSetTo} ${_currentThemeMode.name}')),
-                        );
-                      },
+                   
+                    leading: SizedBox(
+                      child: SegmentedButton<ThemeMode>(
+                        segments: <ButtonSegment<ThemeMode>>[
+                          ButtonSegment<ThemeMode>(
+                              value: ThemeMode.light,
+                              label: Text(loc.light, style: TextStyle(fontSize: 12),),
+                              icon: const Icon(Icons.light_mode, size: 14)),
+                          ButtonSegment<ThemeMode>(
+                              value: ThemeMode.dark,
+                              label: Text(loc.dark, style: TextStyle(fontSize: 12),),
+                              icon: const Icon(Icons.dark_mode, size: 14)),
+                          ButtonSegment<ThemeMode>(
+                              value: ThemeMode.system,
+                              label: Text(loc.system, style: TextStyle(fontSize: 12),),
+                              icon: const Icon(Icons.settings_brightness, size: 14),
+                              ),
+                        ],
+                        selected: <ThemeMode>{_currentThemeMode},
+                        onSelectionChanged: (Set<ThemeMode> newSelection) {
+                          setState(() {
+                            _currentThemeMode = newSelection.first;
+                            _saveLocalSettings();
+                            Provider.of<ThemeProvider>(context, listen: false).setThemeMode(_currentThemeMode);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('${loc.themeSetTo} ${_currentThemeMode.name}')),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],

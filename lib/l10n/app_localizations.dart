@@ -169,6 +169,67 @@ class AppLocalizations {
       'noNotifications': 'No Notifications',
       'noNotificationsSubtitle': 'You don\'t have any notifications yet. They will appear here when you receive claims or status updates.',
       
+      // SimpleCard and ReportDetails translations
+      'resolved': 'RESOLVED',
+      'reported': 'Reported',
+      'ago': 'ago',
+      'editReport': 'Edit Report',
+      'markAsActive': 'Mark as Active',
+      'markAsResolved': 'Mark as Resolved',
+      'deleteReport': 'Delete Report',
+      'unsaveReport': 'Unsave Report',
+      'saveReport': 'Save Report',
+      'options': 'Options',
+      'basicInformation': 'Basic Information',
+      'documentOwner': 'Document Owner',
+      'locationAndDates': 'Location & Dates',
+      'reportedOn': 'Reported On',
+      'additionalNotes': 'Additional Notes',
+      'images': 'Images',
+      'allImages': 'All Images',
+      'main': 'Main',
+      'imageNotAvailable': 'Image not available',
+      'youCreatedThisReport': 'You created this report',
+      'saved': 'Saved',
+      'claimThisReport': 'Claim this report',
+      'alreadyClaimed': 'Already Claimed',
+      'alreadyClaimedMessage': 'You have already submitted a claim for this report.',
+      'shareReport': 'Share Report',
+      'pleaseSignInToSave': 'Please sign in to save reports',
+      'cannotSaveOwnReport': 'You can\'t save your own report. View your reports in the \'My Reports\' section.',
+      'reportSaved': 'Report saved!',
+      'reportRemoved': 'Report removed',
+      'failedToSave': 'Failed to save: {error}',
+      'pleaseVerifyPhoneToShare': 'Please verify your phone number to share this report',
+      'failedToShare': 'Failed to share: {error}',
+      'couldNotLaunch': 'Could not launch {url}',
+      'cannotClaimOwnReport': 'You cannot claim your own report.',
+      'pleaseSignInToContinue': 'Please sign in to continue.',
+      'pleaseCompleteProfile': 'Please complete your profile to continue.',
+      'claimSent': 'Claim sent! The owner will review your message and images.',
+      'claimItem': 'Claim {type} Item',
+      'provideProofFound': 'Provide proof that you found this item',
+      'provideProofBelongs': 'Provide proof that this item belongs to you',
+      'message': 'Message',
+      'describeHowFound': 'Describe how you found the item...',
+      'describeItemAndProof': 'Describe the item and provide proof...',
+      'tooLong': 'Too long',
+      'minChars': 'Min {count} chars',
+      'imagesRequired': 'Images *Required',
+      'imagesOptional': 'Images (Optional)',
+      'gallery': 'Gallery',
+      'camera': 'Camera',
+      'submitClaim': 'Submit Claim',
+      'submitting': 'Submitting...',
+      'confirmClaim': 'Confirm Claim',
+      'submitClaimForItem': 'Submit claim for {type} item?',
+      'maximumImagesAllowed': 'Maximum {count} images allowed',
+      'failedToPickImages': 'Failed to pick images: {error}',
+      'failedToTakePhoto': 'Failed to take photo: {error}',
+      'pleaseEnterMinChars': 'Please enter at least {count} characters',
+      'pleaseSelectImageForLost': 'Please select at least one image for lost item claims',
+      'failedToSubmitClaim': 'Failed to submit claim: {error}',
+      
       'close': 'Close',
       'done': 'Done',
       'skip': 'Skip',
@@ -183,7 +244,7 @@ class AppLocalizations {
       'connectionFailed': 'Connection failed',
       'checkYourConnection': 'Please check your internet connection',
       'searchLostFound': 'Search Lost & Found',
-      'searchByOwner': 'Search by owner, document, location...',
+      'searchByOwner': 'Search by owner',
       'filterSearch': 'Filter Search',
       'startTypingToSearch': 'Start typing to search for lost or found items, or use filters to narrow down results.',
       'fetchingReports': 'Fetching reports...',
@@ -315,6 +376,22 @@ class AppLocalizations {
       'type': 'Type',
       'ownerName': 'Owner Name',
       'submissionInProgressDescription': 'Your report is currently being processed. Please wait for the submission to complete.',
+      
+      // Notifications page translations
+      // 'deleteClaimTitle': 'Supprimer la réclamation',
+      // 'deleteClaimConfirm': 'Êtes-vous sûr de vouloir supprimer cette réclamation ? Cette action est irréversible.',
+      // 'signInRequired': 'Connexion requise',
+      // 'signInToViewNotifications': 'Veuillez vous connecter pour voir vos notifications.',
+      // 'errorLoading': 'Erreur de chargement',
+      // 'tryAgain': 'Réessayer',
+      // 'noNotifications': 'Aucune notification',
+      // 'noNotificationsSubtitle': 'Vous n\'avez pas encore de notifications. Elles apparaîtront ici lorsque vous recevrez des réclamations ou des mises à jour de statut.',
+      
+     
+     
+     
+      
+    
     },
     'fr': {
       'appTitle': 'Back2U',
@@ -413,7 +490,7 @@ class AppLocalizations {
       'connectionFailed': 'Échec de connexion',
       'checkYourConnection': 'Veuillez vérifier votre connexion internet',
       'searchLostFound': 'Rechercher Objets Perdus & Trouvés',
-      'searchByOwner': 'Rechercher par propriétaire, document, lieu...',
+      'searchByOwner': 'Rechercher par propriétaire',
       'filterSearch': 'Filtrer la recherche',
       'startTypingToSearch': 'Commencez à taper pour rechercher des objets perdus ou trouvés, ou utilisez les filtres pour affiner les résultats.',
       'fetchingReports': 'Récupération des rapports...',
@@ -555,6 +632,69 @@ class AppLocalizations {
       'tryAgain': 'Réessayer',
       'noNotifications': 'Aucune notification',
       'noNotificationsSubtitle': 'Vous n\'avez pas encore de notifications. Elles apparaîtront ici lorsque vous recevrez des réclamations ou des mises à jour de statut.',
+      
+      // SimpleCard and ReportDetails translations
+      'resolved': 'RÉSOLU',
+      'reported': 'Signalé',
+      'ago': 'il y a',
+      'editReport': 'Modifier le rapport',
+      'markAsActive': 'Marquer comme actif',
+      'markAsResolved': 'Marquer comme résolu',
+      'deleteReport': 'Supprimer le rapport',
+      'unsaveReport': 'Ne plus sauvegarder',
+      'saveReport': 'Sauvegarder le rapport',
+      // 'moreOptions': 'Plus d\'options',
+      'options': 'Options',
+      'basicInformation': 'Informations de base',
+      'documentOwner': 'Propriétaire du document',
+      'locationAndDates': 'Lieu et dates',
+      'reportedOn': 'Signalé le',
+      // 'additionalNotes': 'Notes supplémentaires',
+      // 'images': 'Images',
+      'allImages': 'Toutes les images',
+      'main': 'Principal',
+      'imageNotAvailable': 'Image non disponible',
+      'youCreatedThisReport': 'Vous avez créé ce rapport',
+      'saved': 'Sauvegardé',
+      // 'save': 'Sauvegarder',
+      'claimThisReport': 'Réclamer ce rapport',
+      'alreadyClaimed': 'Déjà réclamé',
+      'alreadyClaimedMessage': 'Vous avez déjà soumis une réclamation pour ce rapport.',
+      'shareReport': 'Partager le rapport',
+      'pleaseSignInToSave': 'Veuillez vous connecter pour sauvegarder les rapports',
+      'cannotSaveOwnReport': 'Vous ne pouvez pas sauvegarder votre propre rapport. Consultez vos rapports dans la section \'Mes rapports\'.',
+      'reportSaved': 'Rapport sauvegardé !',
+      'reportRemoved': 'Rapport supprimé',
+      'failedToSave': 'Échec de la sauvegarde : {error}',
+      'pleaseVerifyPhoneToShare': 'Veuillez vérifier votre numéro de téléphone pour partager ce rapport',
+      'failedToShare': 'Échec du partage : {error}',
+      'couldNotLaunch': 'Impossible de lancer {url}',
+      'cannotClaimOwnReport': 'Vous ne pouvez pas réclamer votre propre rapport.',
+      'pleaseSignInToContinue': 'Veuillez vous connecter pour continuer.',
+      'pleaseCompleteProfile': 'Veuillez compléter votre profil pour continuer.',
+      'claimSent': 'Réclamation envoyée ! Le propriétaire examinera votre message et vos images.',
+      'claimItem': 'Réclamer l\'objet {type}',
+      'provideProofFound': 'Fournissez une preuve que vous avez trouvé cet objet',
+      'provideProofBelongs': 'Fournissez une preuve que cet objet vous appartient',
+      'message': 'Message',
+      'describeHowFound': 'Décrivez comment vous avez trouvé l\'objet...',
+      'describeItemAndProof': 'Décrivez l\'objet et fournissez une preuve...',
+      'tooLong': 'Trop long',
+      'minChars': 'Min {count} caractères',
+      'imagesRequired': 'Images *Requis',
+      'imagesOptional': 'Images (Optionnel)',
+      'gallery': 'Galerie',
+      'camera': 'Caméra',
+      'submitClaim': 'Soumettre la réclamation',
+      'submitting': 'Soumission...',
+      'confirmClaim': 'Confirmer la réclamation',
+      'submitClaimForItem': 'Soumettre une réclamation pour l\'objet {type} ?',
+      'maximumImagesAllowed': 'Maximum {count} images autorisées',
+      'failedToPickImages': 'Échec de la sélection d\'images : {error}',
+      'failedToTakePhoto': 'Échec de la prise de photo : {error}',
+      'pleaseEnterMinChars': 'Veuillez entrer au moins {count} caractères',
+      'pleaseSelectImageForLost': 'Veuillez sélectionner au moins une image pour les réclamations d\'objets perdus',
+      'failedToSubmitClaim': 'Échec de la soumission de la réclamation : {error}',
     },
   };
 
@@ -819,6 +959,74 @@ String get signInToManage => _localizedValues[locale.languageCode]?['signInToMan
   String get tryAgain => _localizedValues[locale.languageCode]?['tryAgain'] ?? 'Try Again';
   String get noNotifications => _localizedValues[locale.languageCode]?['noNotifications'] ?? 'No Notifications';
   String get noNotificationsSubtitle => _localizedValues[locale.languageCode]?['noNotificationsSubtitle'] ?? 'You don\'t have any notifications yet. They will appear here when you receive claims or status updates.';
+
+  String get failedToSubmitClaim => _localizedValues[locale.languageCode]?['failedToSubmitClaim'] ?? 'Failed to submit claim: {error}';
+  
+  // SimpleCard and ReportDetails getters
+  String get resolved => _localizedValues[locale.languageCode]?['resolved'] ?? 'RESOLVED';
+  String get reported => _localizedValues[locale.languageCode]?['reported'] ?? 'Reported';
+  String get ago => _localizedValues[locale.languageCode]?['ago'] ?? 'ago';
+  String get editReport => _localizedValues[locale.languageCode]?['editReport'] ?? 'Edit Report';
+  String get markAsActive => _localizedValues[locale.languageCode]?['markAsActive'] ?? 'Mark as Active';
+  String get markAsResolved => _localizedValues[locale.languageCode]?['markAsResolved'] ?? 'Mark as Resolved';
+  String get deleteReport => _localizedValues[locale.languageCode]?['deleteReport'] ?? 'Delete Report';
+  String get unsaveReport => _localizedValues[locale.languageCode]?['unsaveReport'] ?? 'Unsave Report';
+  String get saveReport => _localizedValues[locale.languageCode]?['saveReport'] ?? 'Save Report';
+  // String get moreOptions => _localizedValues[locale.languageCode]?['moreOptions'] ?? 'More options';
+  String get options => _localizedValues[locale.languageCode]?['options'] ?? 'Options';
+  String get basicInformation => _localizedValues[locale.languageCode]?['basicInformation'] ?? 'Basic Information';
+  String get documentOwner => _localizedValues[locale.languageCode]?['documentOwner'] ?? 'Document Owner';
+  String get locationAndDates => _localizedValues[locale.languageCode]?['locationAndDates'] ?? 'Location & Dates';
+  // String get incidentDate => _localizedValues[locale.languageCode]?['incidentDate'] ?? 'Incident Date';
+  String get reportedOn => _localizedValues[locale.languageCode]?['reportedOn'] ?? 'Reported On';
+  // String get additionalNotes => _localizedValues[locale.languageCode]?['additionalNotes'] ?? 'Additional Notes';
+  // String get images => _localizedValues[locale.languageCode]?['images'] ?? 'Images';
+  String get allImages => _localizedValues[locale.languageCode]?['allImages'] ?? 'All Images';
+  String get main => _localizedValues[locale.languageCode]?['main'] ?? 'Main';
+  String get imageNotAvailable => _localizedValues[locale.languageCode]?['imageNotAvailable'] ?? 'Image not available';
+  String get youCreatedThisReport => _localizedValues[locale.languageCode]?['youCreatedThisReport'] ?? 'You created this report';
+  String get saved => _localizedValues[locale.languageCode]?['saved'] ?? 'Saved';
+  // String get save => _localizedValues[locale.languageCode]?['save'] ?? 'Save';
+  String get claimThisReport => _localizedValues[locale.languageCode]?['claimThisReport'] ?? 'Claim this report';
+  String get alreadyClaimed => _localizedValues[locale.languageCode]?['alreadyClaimed'] ?? 'Already Claimed';
+  String get alreadyClaimedMessage => _localizedValues[locale.languageCode]?['alreadyClaimedMessage'] ?? 'You have already submitted a claim for this report.';
+  String get shareReport => _localizedValues[locale.languageCode]?['shareReport'] ?? 'Share Report';
+  String get pleaseSignInToSave => _localizedValues[locale.languageCode]?['pleaseSignInToSave'] ?? 'Please sign in to save reports';
+  String get cannotSaveOwnReport => _localizedValues[locale.languageCode]?['cannotSaveOwnReport'] ?? 'You can\'t save your own report. View your reports in the \'My Reports\' section.';
+  String get reportSaved => _localizedValues[locale.languageCode]?['reportSaved'] ?? 'Report saved!';
+  String get reportRemoved => _localizedValues[locale.languageCode]?['reportRemoved'] ?? 'Report removed';
+  String get pleaseVerifyPhoneToShare => _localizedValues[locale.languageCode]?['pleaseVerifyPhoneToShare'] ?? 'Please verify your phone number to share this report';
+  String get couldNotLaunch => _localizedValues[locale.languageCode]?['couldNotLaunch'] ?? 'Could not launch {url}';
+  String get cannotClaimOwnReport => _localizedValues[locale.languageCode]?['cannotClaimOwnReport'] ?? 'You cannot claim your own report.';
+  String get pleaseSignInToContinue => _localizedValues[locale.languageCode]?['pleaseSignInToContinue'] ?? 'Please sign in to continue.';
+  String get pleaseCompleteProfile => _localizedValues[locale.languageCode]?['pleaseCompleteProfile'] ?? 'Please complete your profile to continue.';
+  String get claimSent => _localizedValues[locale.languageCode]?['claimSent'] ?? 'Claim sent! The owner will review your message and images.';
+  String get provideProofFound => _localizedValues[locale.languageCode]?['provideProofFound'] ?? 'Provide proof that you found this item';
+  String get provideProofBelongs => _localizedValues[locale.languageCode]?['provideProofBelongs'] ?? 'Provide proof that this item belongs to you';
+  String get message => _localizedValues[locale.languageCode]?['message'] ?? 'Message';
+  String get describeHowFound => _localizedValues[locale.languageCode]?['describeHowFound'] ?? 'Describe how you found the item...';
+  String get describeItemAndProof => _localizedValues[locale.languageCode]?['describeItemAndProof'] ?? 'Describe the item and provide proof...';
+  String get tooLong => _localizedValues[locale.languageCode]?['tooLong'] ?? 'Too long';
+  String get imagesRequired => _localizedValues[locale.languageCode]?['imagesRequired'] ?? 'Images *Required';
+  String get imagesOptional => _localizedValues[locale.languageCode]?['imagesOptional'] ?? 'Images (Optional)';
+  String get gallery => _localizedValues[locale.languageCode]?['gallery'] ?? 'Gallery';
+  String get camera => _localizedValues[locale.languageCode]?['camera'] ?? 'Camera';
+  String get submitClaim => _localizedValues[locale.languageCode]?['submitClaim'] ?? 'Submit Claim';
+  String get submitting => _localizedValues[locale.languageCode]?['submitting'] ?? 'Submitting...';
+  String get confirmClaim => _localizedValues[locale.languageCode]?['confirmClaim'] ?? 'Confirm Claim';
+  
+  // Parameterized methods for SimpleCard and ReportDetails
+  String failedToSave(String error) => _localizedValues[locale.languageCode]?['failedToSave']?.replaceAll('{error}', error) ?? 'Failed to save: $error';
+  String failedToShare(String error) => _localizedValues[locale.languageCode]?['failedToShare']?.replaceAll('{error}', error) ?? 'Failed to share: $error';
+  String couldNotLaunchUrl(String url) => _localizedValues[locale.languageCode]?['couldNotLaunch']?.replaceAll('{url}', url) ?? 'Could not launch $url';
+  String claimItem(String type) => _localizedValues[locale.languageCode]?['claimItem']?.replaceAll('{type}', type) ?? 'Claim $type Item';
+  String minChars(int count) => _localizedValues[locale.languageCode]?['minChars']?.replaceAll('{count}', count.toString()) ?? 'Min $count chars';
+  String submitClaimForItem(String type) => _localizedValues[locale.languageCode]?['submitClaimForItem']?.replaceAll('{type}', type) ?? 'Submit claim for $type item?';
+  String maximumImagesAllowed(int count) => _localizedValues[locale.languageCode]?['maximumImagesAllowed']?.replaceAll('{count}', count.toString()) ?? 'Maximum $count images allowed';
+  String failedToPickImages(String error) => _localizedValues[locale.languageCode]?['failedToPickImages']?.replaceAll('{error}', error) ?? 'Failed to pick images: $error';
+  String failedToTakePhoto(String error) => _localizedValues[locale.languageCode]?['failedToTakePhoto']?.replaceAll('{error}', error) ?? 'Failed to take photo: $error';
+  String pleaseEnterMinChars(int count) => _localizedValues[locale.languageCode]?['pleaseEnterMinChars']?.replaceAll('{count}', count.toString()) ?? 'Please enter at least $count characters';
+  // String failedToSubmitClaim(String error) => _localizedValues[locale.languageCode]?['failedToSubmitClaim']?.replaceAll('{error}', error) ?? 'Failed to submit claim: $error';
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

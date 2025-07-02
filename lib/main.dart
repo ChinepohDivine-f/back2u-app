@@ -17,6 +17,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:back2u/firebase_options.dart'; // Firebase options
 import 'package:back2u/services/auth_kyc_service.dart'; // <--- UPDATED: AuthKycService
 import 'package:back2u/services/get_reports_service.dart';
+import 'package:back2u/services/feedback_service.dart'; // <-- Add this import
 
 import 'package:back2u/views/splash.dart';
 import 'package:back2u/views/home/index.dart';
@@ -60,6 +61,9 @@ void main() async {
         Provider<ReportService>(
           create: (_) => ReportService(),
           dispose: (_, service) => service.dispose(),
+        ),
+        Provider<FeedbackService>(
+          create: (_) => FeedbackService(),
         ),
       ],
       child: const MyApp(),

@@ -5,8 +5,10 @@ import 'package:back2u/components/report_details.dart'; // Assuming this exists 
 import 'package:back2u/components/image_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart'; // For date formatting
+import 'package:back2u/l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-class SimpleCard extends StatelessWidget {
+class SimpleCard extends StatefulWidget {
   final Report report;
   final bool showActions; // Controls visibility of Edit, Delete, Resolve for owner
   final bool isSaved; // Controls bookmark icon state
@@ -31,25 +33,41 @@ class SimpleCard extends StatelessWidget {
     this.onTap, // Added for navigation
   });
 
+  @override
+  State<SimpleCard> createState() => _SimpleCardState();
+}
+
+class _SimpleCardState extends State<SimpleCard> {
+  String get localizedSubcategory => 
+    Localizations.localeOf(context).languageCode == 'fr' 
+      ? widget.report.subcategoryFr 
+      : widget.report.subcategory;
+
+  String get localizedSubLocation => 
+    Localizations.localeOf(context).languageCode == 'fr' 
+      ? widget.report.subLocationLostFr 
+      : widget.report.subLocationLost;
+
   // Helper method to format relative time
-  String _getRelativeTime(DateTime dateTime) {
+  String _getRelativeTime(DateTime dateTime, BuildContext context) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
+    final l10n = AppLocalizations.of(context);
 
     if (difference.inSeconds < 60) {
-      return '${difference.inSeconds}s ago';
+      return '${difference.inSeconds}s ${l10n.ago}';
     } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
+      return '${difference.inMinutes}m ${l10n.ago}';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
+      return '${difference.inHours}h ${l10n.ago}';
     } else if (difference.inDays < 30) {
-      return '${difference.inDays}d ago';
+      return '${difference.inDays}d ${l10n.ago}';
     } else if (difference.inDays < 365) {
       final months = (difference.inDays / 30).floor();
-      return '${months}mo ago';
+      return '${months}mo ${l10n.ago}';
     } else {
       final years = (difference.inDays / 365).floor();
-      return '${years}y ago';
+      return '${years}y ${l10n.ago}';
     }
   }
 
@@ -71,12 +89,12 @@ class SimpleCard extends StatelessWidget {
   }
 
   void _showImageGallery(BuildContext context) {
-    if (report.images.isNotEmpty) {
+    if (widget.report.images.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ImageGallery(
-            images: report.images,
+            images: widget.report.images,
             initialIndex: 0,
           ),
         ),
@@ -89,6 +107,7 @@ class SimpleCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final l10n = AppLocalizations.of(context);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -97,9 +116,9 @@ class SimpleCard extends StatelessWidget {
       shadowColor: colors.onPrimaryFixedVariant.withOpacity(0.2),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap ?? () => Navigator.push(
+        onTap: widget.onTap ?? () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ReportDetails(report: report,)),
+          MaterialPageRoute(builder: (context) => ReportDetails(report: widget.report,)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -115,12 +134,12 @@ class SimpleCard extends StatelessWidget {
                     spacing: 8,
                     children: [
                       InputChip(
-                        label: Text(report.type.toUpperCase()),                        
-                        backgroundColor: report.type.toLowerCase() == 'lost'
+                        label: Text(widget.report.type.toUpperCase()),                        
+                        backgroundColor: widget.report.type.toLowerCase() == 'lost'
                           ? colors.errorContainer.withOpacity(0.9)
                           : colors.tertiaryContainer.withOpacity(0.9),
                         labelStyle: textTheme.labelSmall?.copyWith(
-                          color: report.type.toLowerCase() == 'lost'
+                          color: widget.report.type.toLowerCase() == 'lost'
                             ? colors.error
                             : colors.tertiary,
                           fontWeight: FontWeight.w900,
@@ -128,7 +147,7 @@ class SimpleCard extends StatelessWidget {
                         ),
                         shape: const StadiumBorder(),
                         side: BorderSide(
-                          color: report.type.toLowerCase() == 'lost'
+                          color: widget.report.type.toLowerCase() == 'lost'
                             ? colors.error
                             : colors.tertiary,
                           width: 1.2,
@@ -137,9 +156,9 @@ class SimpleCard extends StatelessWidget {
                         shadowColor: colors.shadow,
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       ),
-                      if (report.resolved)
+                      if (widget.report.resolved)
                         InputChip(
-                          label: const Text('RESOLVED'),
+                          label: Text(l10n.resolved),
                           backgroundColor: colors.secondaryContainer,
                           labelStyle: textTheme.labelSmall?.copyWith(
                             color: colors.onSecondaryContainer,
@@ -150,8 +169,8 @@ class SimpleCard extends StatelessWidget {
                     ],
                   ),
                   // Actions
-                  if (showActions) _buildOwnerActions(colors)
-                  else if (onToggleSave != null) _buildSaveActionMenu(context, colors)
+                  if (widget.showActions) _buildOwnerActions(colors, l10n)
+                  else if (widget.onToggleSave != null) _buildSaveActionMenu(context, colors, l10n)
                 ],
               ),
 
@@ -163,14 +182,14 @@ class SimpleCard extends StatelessWidget {
                 children: [
                   // Owner name and subcategory
                   Text(
-                    report.ownerName ?? 'Anonymous',
+                    widget.report.ownerName ?? 'Anonymous',
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    report.subcategory,
+                    localizedSubcategory,
                     style: textTheme.titleMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -186,14 +205,14 @@ class SimpleCard extends StatelessWidget {
                       Chip(
                         backgroundColor: colors.surfaceVariant,
                         avatar: const Icon(Icons.location_on, size: 16),
-                        label: Text(report.subLocationLost),
+                        label: Text(localizedSubLocation),
                         labelStyle: textTheme.labelLarge,
                         visualDensity: VisualDensity.compact,
                       ),
                       Chip(
                         backgroundColor: colors.surfaceVariant,
                         avatar: const Icon(Icons.calendar_today, size: 16),
-                        label: Text(_formatDate(report.reportedDate.toDate())),
+                        label: Text(_formatDate(widget.report.reportedDate.toDate())),
                         labelStyle: textTheme.labelLarge,
                         visualDensity: VisualDensity.compact,
                       ),
@@ -201,7 +220,7 @@ class SimpleCard extends StatelessWidget {
                   ),
                   
                   // Image display
-                  if (report.images.isNotEmpty) ...[
+                  if (widget.report.images.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
@@ -220,7 +239,7 @@ class SimpleCard extends StatelessWidget {
                           child: Stack(
                             children: [
                               CachedNetworkImage(
-                                imageUrl: report.images.first,
+                                imageUrl: widget.report.images.first,
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 height: double.infinity,
@@ -243,7 +262,7 @@ class SimpleCard extends StatelessWidget {
                                 ),
                               ),
                               // Image count overlay
-                              if (report.images.length > 1)
+                              if (widget.report.images.length > 1)
                                 Positioned(
                                   top: 8,
                                   right: 8,
@@ -257,7 +276,7 @@ class SimpleCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
-                                      '+${report.images.length - 1}',
+                                      '+${widget.report.images.length - 1}',
                                       style: textTheme.bodySmall?.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -301,7 +320,7 @@ class SimpleCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Reported ${_getRelativeTime(report.createdAt.toDate())}',
+                        '${l10n.reported} ${_getRelativeTime(widget.report.createdAt.toDate(), context)}',
                         style: textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),
@@ -317,53 +336,53 @@ class SimpleCard extends StatelessWidget {
     );
   }
 
-  Widget _buildOwnerActions(ColorScheme colors) {
+  Widget _buildOwnerActions(ColorScheme colors, AppLocalizations l10n) {
     return PopupMenuButton<String>(
       onSelected: (value) {
-        if (value == 'edit' && onEdit != null) {
-          onEdit!();
-        } else if (value == 'delete' && onDelete != null) {
-          onDelete!();
-        } else if (value == 'toggle_status' && onToggleResolve != null) {
-          onToggleResolve!();
+        if (value == 'edit' && widget.onEdit != null) {
+          widget.onEdit!();
+        } else if (value == 'delete' && widget.onDelete != null) {
+          widget.onDelete!();
+        } else if (value == 'toggle_status' && widget.onToggleResolve != null) {
+          widget.onToggleResolve!();
         }
       },
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        if (onEdit != null)
-          const PopupMenuItem<String>(
+        if (widget.onEdit != null)
+          PopupMenuItem<String>(
             value: 'edit',
             child: ListTile(
-              leading: Icon(Icons.edit),
-              title: Text('Edit Report'),
+              leading: const Icon(Icons.edit),
+              title: Text(l10n.editReport),
             ),
           ),
-          if (onToggleResolve != null)
+          if (widget.onToggleResolve != null)
           PopupMenuItem<String>(
             value: 'toggle_status',
             child: ListTile(
               leading: Icon(
-                  report.status == 'resolved' ? Icons.undo : Icons.check_circle_outline,
-                  color: report.status == 'resolved' ? Colors.orange : Colors.green),
-              title: Text(report.status == 'resolved' ? 'Mark as Active' : 'Mark as Resolved'),
+                  widget.report.status == 'resolved' ? Icons.undo : Icons.check_circle_outline,
+                  color: widget.report.status == 'resolved' ? Colors.orange : Colors.green),
+              title: Text(widget.report.status == 'resolved' ? l10n.markAsActive : l10n.markAsResolved),
             ),
           ),
-        if (onDelete != null)
-          const PopupMenuItem<String>(
+        if (widget.onDelete != null)
+          PopupMenuItem<String>(
             value: 'delete',
             child: ListTile(
-              leading: Icon(Icons.delete_forever, color: Colors.red),
-              title: Text('Delete Report'),
+              leading: const Icon(Icons.delete_forever, color: Colors.red),
+              title: Text(l10n.deleteReport),
             ),
           ),
         
       ],
       icon: Icon(Icons.more_vert, color: colors.onSurfaceVariant),
-      tooltip: 'More options',
+      tooltip: 'More options', // Fallback value since moreOptions is commented out
     );
   }
 
-  Widget _buildSaveActionMenu(BuildContext context, ColorScheme colors) {
-    return loading
+  Widget _buildSaveActionMenu(BuildContext context, ColorScheme colors, AppLocalizations l10n) {
+    return widget.loading
         ? SizedBox(
             width: 28,
             height: 28,
@@ -374,8 +393,8 @@ class SimpleCard extends StatelessWidget {
           )
         : PopupMenuButton<String>(
             onSelected: (value) {
-              if (value == 'toggle_save' && onToggleSave != null) {
-                onToggleSave!();
+              if (value == 'toggle_save' && widget.onToggleSave != null) {
+                widget.onToggleSave!();
               }
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -383,15 +402,15 @@ class SimpleCard extends StatelessWidget {
                 value: 'toggle_save',
                 child: ListTile(
                   leading: Icon(
-                    isSaved ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined,
-                    color: isSaved ? colors.error : colors.primary,
+                    widget.isSaved ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined,
+                    color: widget.isSaved ? colors.error : colors.primary,
                   ),
-                  title: Text(isSaved ? 'Unsave Report' : 'Save Report'),
+                  title: Text(widget.isSaved ? l10n.unsaveReport : l10n.saveReport),
                 ),
               ),
             ],
             icon: const Icon(Icons.more_vert),
-            tooltip: 'Options',
+            tooltip: 'Options', // Fallback value since options might be missing
           );
   }
 }

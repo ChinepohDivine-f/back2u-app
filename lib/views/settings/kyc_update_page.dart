@@ -100,7 +100,7 @@ class _KycUpdatePageState extends State<KycUpdatePage> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Update KYC'),
+          title: const Text('Update Verification'),
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
         ),

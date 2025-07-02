@@ -14,7 +14,9 @@ class ClaimService {
         .collection(_collection)
         .where('claimerId', isEqualTo: userId)
         .get();
-    return query.docs.map((doc) => Claim.fromFirestore(doc)).toList();
+    final claims = query.docs.map((c) => Claim.fromFirestore(c)).toList();
+    claims.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return claims;
   }
 
   Future<List<Claim>> getClaimsForOwner(String ownerId) async {
@@ -22,7 +24,9 @@ class ClaimService {
         .collection(_collection)
         .where('ownerId', isEqualTo: ownerId)
         .get();
-    return query.docs.map((doc) => Claim.fromFirestore(doc)).toList();
+    final claims = query.docs.map((c) => Claim.fromFirestore(c)).toList();
+    claims.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return claims;
   }
 
   Future<void> updateClaimStatus(String claimId, String status, {String? reviewerId, String? decisionMessage}) async {
