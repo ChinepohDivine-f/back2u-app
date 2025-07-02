@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:back2u/l10n/app_localizations.dart';
+import 'package:back2u/views/settings/feedback_page.dart';
 import 'package:flutter/material.dart';
 import 'package:back2u/components/SimpleCard.dart'; // This will be updated to handle images
 import 'package:back2u/utils/app_drawer.dart';
@@ -338,14 +339,15 @@ class _HomeState extends State<Home> {
                             leading: const Icon(Icons.feedback_outlined),
                             title: Text(loc.sendFeedback),
                             onTap: () {
-                              Navigator.pop(context); // Close dialog
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    loc.feedbackComingSoon,
-                                  ),
-                                ),
-                              );
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const FeedbackPage())); // Close dialog
+                              // ScaffoldMessenger.of(context).showSnackBar(
+                              //  Navigato
+                              //   // SnackBar(
+                              //   //   content: Text(
+                              //   //     loc.sendFeedback,
+                              //   //   ),
+                              //   // ),
+                              // );
                             },
                           ),
                           ListTile(
