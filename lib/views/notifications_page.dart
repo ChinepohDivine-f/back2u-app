@@ -11,6 +11,7 @@ import 'package:back2u/components/report_details.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:back2u/models/user_model.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -378,7 +379,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 20),
                 onPressed: () => _deleteClaim(claim),
-                tooltip: 'Delete claim',
+                tooltip: AppLocalizations.of(context).deleteClaimTitle,
               ),
             if (isOwner && claim.status == 'pending')
               const Icon(Icons.chevron_right),
@@ -469,7 +470,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(AppLocalizations.of(context).notifications),
         actions: [
           // Sort button
           PopupMenuButton<String>(
@@ -569,11 +570,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (userId == null) {
       return _buildEmptyState(
         icon: Icons.login,
-        title: 'Sign In Required',
-        subtitle: 'Please sign in to view your notifications',
+        title: AppLocalizations.of(context).signInRequired,
+        subtitle: AppLocalizations.of(context).signInToViewNotifications,
         action: FilledButton(
           onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-          child: const Text('Sign In'),
+          child: Text(AppLocalizations.of(context).signIn),
         ),
       );
     }
@@ -587,11 +588,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (_error != null) {
       return _buildEmptyState(
         icon: Icons.error_outline,
-        title: 'Error Loading',
+        title: AppLocalizations.of(context).errorLoading,
         subtitle: _error!,
         action: FilledButton(
           onPressed: _refreshNotifications,
-          child: const Text('Try Again'),
+          child: Text(AppLocalizations.of(context).tryAgain),
         ),
       );
     }
@@ -599,8 +600,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (_claims.isEmpty) {
       return _buildEmptyState(
         icon: Icons.notifications_none,
-        title: 'No Notifications',
-        subtitle: 'You\'ll see updates here when there are new claims',
+        title: AppLocalizations.of(context).noNotifications,
+        subtitle: AppLocalizations.of(context).noNotificationsSubtitle,
       );
     }
 
@@ -702,12 +703,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Claim'),
-        content: const Text('Are you sure you want to delete this claim? This action cannot be undone.'),
+        title: Text(AppLocalizations.of(context).deleteClaimTitle),
+        content: Text(AppLocalizations.of(context).deleteClaimConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),

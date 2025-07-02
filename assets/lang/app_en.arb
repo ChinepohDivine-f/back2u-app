@@ -450,14 +450,63 @@
     "description": "Check internet connection message"
   },
   
-  "searchLostFound": "Search Lost & Found",
-  "@searchLostFound": {
-    "description": "Search page title"
+  "searchForAnItem": "Search for an item",
+  "@searchForAnItem": {
+    "description": "Placeholder for search input"
   },
+  "signInToManageProfile": "Sign in to manage profile",
+  "@signInToManageProfile": {},
+  "phoneManagement": "Phone Management",
+  "@phoneManagement": {},
+  "noPhoneNumberSet": "No phone number set",
+  "@noPhoneNumberSet": {},
+  "yourProfileIsAlreadyVerified": "Your profile is already verified.",
+  "@yourProfileIsAlreadyVerified": {},
+  "notificationsEnabled": "Notifications enabled",
+  "@notificationsEnabled": {},
+  "notificationsDisabled": "Notifications disabled",
+  "@notificationsDisabled": {},
+  "themeSetTo": "Theme set to",
+  "@themeSetTo": {},
+  "aboutBack2U": "About Back2U",
+  "@aboutBack2U": {},
+  "termsOfService": "Terms of Service",
+  "@termsOfService": {},
+  "aboutApp": "About App",
+  "@aboutApp": {},
+  "helpAndSupport": "Help & Support",
+  "@helpAndSupport": {},
+  "feedback": "Feedback",
+  "@feedback": {},
+  "sendFeedback": "Send Feedback",
+  "@sendFeedback": {},
+  "deleteAccountConfirmationTitle": "Are you sure you want to delete your account?",
+  "@deleteAccountConfirmationTitle": {},
+  "deleteAccountConfirmationContent": "This action is permanent and cannot be undone. All your data will be removed.",
+  "@deleteAccountConfirmationContent": {},
+  "delete": "Delete",
+  "@delete": {},
+  "accountDeleted": "Account Deleted",
+  "@accountDeleted": {},
+  "failedToDeleteAccount": "Failed to delete account.",
+  "@failedToDeleteAccount": {},
+  "notSet": "Not set",
+  "@notSet": {},
+  "light": "Light",
+  "@light": {},
+  "dark": "Dark",
+  "@dark": {},
+  "system": "System",
+  "@system": {},
   
   "searchByOwner": "Search by owner's name",
   "@searchByOwner": {
     "description": "Search field placeholder"
+  },
+  
+  "searchLostFound": "Search Lost & Found",
+  "@searchLostFound": {
+    "description": "Search page title"
   },
   
   "filterSearch": "Filter Search",

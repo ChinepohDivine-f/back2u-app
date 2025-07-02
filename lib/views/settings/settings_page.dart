@@ -21,7 +21,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final colorScheme = theme.colorScheme;
 
     // Detect if user is anonymous via route arguments (set in drawer)
-    final bool isAnonymous = ModalRoute.of(context)?.settings.arguments == 'anonymous';
+    final bool isAnonymous =
+        ModalRoute.of(context)?.settings.arguments == 'anonymous';
 
     return Scaffold(
       appBar: AppBar(
@@ -202,8 +203,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: const Icon(Icons.person_add_alt_1),
                 label: const Text('Sign Up or Log In'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
                 ),

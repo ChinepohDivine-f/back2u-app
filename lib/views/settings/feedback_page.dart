@@ -6,6 +6,10 @@ import 'package:back2u/components/app_text_field.dart';
 import 'package:back2u/components/button.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
+import 'package:back2u/services/auth_kyc_service.dart';
+import 'package:back2u/models/feedback_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FeedbackPage extends StatefulWidget {
   const FeedbackPage({super.key});
@@ -15,317 +19,268 @@ class FeedbackPage extends StatefulWidget {
 }
 
 class _FeedbackPageState extends State<FeedbackPage> {
-  final FeedbackService _feedbackService = FeedbackService();
   final _formKey = GlobalKey<FormState>();
-  
-  String _selectedType = 'general_feedback';
-  String _selectedCategory = 'other';
-  String _selectedPriority = 'medium';
-  String _title = '';
-  String _description = '';
-  int _rating = 0;
+  final _messageController = TextEditingController();
+  String _selectedType = 'general';
+  String _contactPreference = 'none';
   bool _isAnonymous = false;
-  String _contactPreference = 'email';
-  bool _isSubmitting = false;
-  String _deviceInfo = '';
-  String _appVersion = '';
+  bool _isLoading = false;
 
-  final List<Map<String, String>> _feedbackTypes = [
-    {'value': 'general_feedback', 'label': 'General Feedback'},
-    {'value': 'bug_report', 'label': 'Bug Report'},
-    {'value': 'feature_request', 'label': 'Feature Request'},
-    {'value': 'app_review', 'label': 'App Review'},
-  ];
-
-  final List<Map<String, String>> _categories = [
-    {'value': 'ui_ux', 'label': 'UI/UX'},
-    {'value': 'performance', 'label': 'Performance'},
-    {'value': 'functionality', 'label': 'Functionality'},
-    {'value': 'content', 'label': 'Content'},
-    {'value': 'other', 'label': 'Other'},
-  ];
-
-  final List<Map<String, String>> _priorities = [
-    {'value': 'low', 'label': 'Low'},
-    {'value': 'medium', 'label': 'Medium'},
-    {'value': 'high', 'label': 'High'},
-    {'value': 'critical', 'label': 'Critical'},
-  ];
+  // To hold device and app info
+  Map<String, dynamic> _deviceInfo = {};
+  Map<String, dynamic> _appInfo = {};
 
   @override
   void initState() {
     super.initState();
-    _loadDeviceInfo();
+    _getDeviceInfo();
   }
 
-  Future<void> _loadDeviceInfo() async {
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _getDeviceInfo() async {
     try {
-      final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      
-      String deviceInfoText = '';
-      
+      final deviceInfoPlugin = DeviceInfoPlugin();
+      final packageInfoPlugin = await PackageInfo.fromPlatform();
+
+      _appInfo = {
+        'appName': packageInfoPlugin.appName,
+        'packageName': packageInfoPlugin.packageName,
+        'version': packageInfoPlugin.version,
+        'buildNumber': packageInfoPlugin.buildNumber,
+      };
+
+      // Platform-specific device info
       if (Theme.of(context).platform == TargetPlatform.android) {
-        final androidInfo = await deviceInfo.androidInfo;
-        deviceInfoText = 'Android ${androidInfo.version.release} (${androidInfo.model})';
+        final androidInfo = await deviceInfoPlugin.androidInfo;
+        _deviceInfo = {
+          'platform': 'android',
+          'model': androidInfo.model,
+          'version': androidInfo.version.release,
+          'sdkInt': androidInfo.version.sdkInt,
+        };
       } else if (Theme.of(context).platform == TargetPlatform.iOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        deviceInfoText = 'iOS ${iosInfo.systemVersion} (${iosInfo.model})';
+        final iosInfo = await deviceInfoPlugin.iosInfo;
+        _deviceInfo = {
+          'platform': 'ios',
+          'model': iosInfo.model,
+          'systemVersion': iosInfo.systemVersion,
+        };
+      } else {
+        _deviceInfo = {'platform': 'other'};
       }
-      
-      setState(() {
-        _deviceInfo = deviceInfoText;
-        _appVersion = packageInfo.version;
-      });
     } catch (e) {
-      print('Error loading device info: $e');
+      // Handle error getting device info
+      print('Failed to get device info: $e');
+      _deviceInfo = {'error': 'Failed to get device info'};
     }
   }
 
-  Future<void> _submitFeedback() async {
-    if (!_formKey.currentState!.validate()) return;
+  void _submitFeedback() async {
+    final loc = AppLocalizations.of(context);
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+      });
 
-    setState(() {
-      _isSubmitting = true;
-    });
+      try {
+        final feedbackService = context.read<FeedbackService>();
+        final authService = context.read<AuthKycService>();
+        final user = authService.currentUser;
 
-    try {
-      final success = await _feedbackService.submitFeedback(
-        type: _selectedType,
-        category: _selectedCategory,
-        title: _title,
-        description: _description,
-        rating: _rating,
-        priority: _selectedPriority,
-        deviceInfo: _deviceInfo,
-        appVersion: _appVersion,
-        isAnonymous: _isAnonymous,
-        contactPreference: _contactPreference,
-        metadata: {
-          'submittedAt': DateTime.now().toIso8601String(),
-          'platform': Theme.of(context).platform.toString(),
-        },
-      );
+        final newFeedback = FeedbackModel(
+          feedbackId: '', // Will be set by service
+          userId: _isAnonymous ? 'anonymous' : user?.uid ?? 'unknown',
+          username:
+              _isAnonymous ? 'Anonymous' : authService.appUser?.username ?? 'Unknown',
+          type: _selectedType,
+          message: _messageController.text.trim(),
+          createdAt: DateTime.now(),
+          contactPreference: _contactPreference,
+          isAnonymous: _isAnonymous,
+          deviceInfo: _deviceInfo, // Add device info
+          appInfo: _appInfo, // Add app info
+        );
 
-      if (success) {
+        await feedbackService.submitFeedback(newFeedback);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Thank you for your feedback!'),
+            SnackBar(
+              content: Text(loc.success),
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context);
+          _formKey.currentState?.reset();
+          _messageController.clear();
+          setState(() {
+            _selectedType = 'general';
+            _contactPreference = 'none';
+            _isAnonymous = false;
+          });
+          Navigator.of(context).pop();
         }
-      } else {
+      } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to submit feedback. Please try again.'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: Text(loc.error),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthKycService>(context);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final loc = AppLocalizations.of(context);
+
+    final feedbackTypes = {
+      'general': loc.feedback,
+      'bug': loc.error,
+      'suggestion': loc.suggestion ?? 'Suggestion',
+      'other': loc.other ?? 'Other',
+    };
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Send Feedback'),
+        title: Text(loc.sendFeedback),
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          // Removed the Container (card) and replaced with Padding
-          child: Padding( 
-            padding: const EdgeInsets.all(16.0), // Consistent padding
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Feedback Type
-                  DropdownButtonFormField<String>(
-                    value: _selectedType,
-                    decoration: const InputDecoration(
-                      labelText: 'Feedback Type',
-                      border: OutlineInputBorder(), // Added border for consistent style
-                    ),
-                    items: _feedbackTypes.map((type) {
-                      return DropdownMenuItem(
-                        value: type['value'],
-                        child: Text(type['label']!),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedType = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Category
-                  DropdownButtonFormField<String>(
-                    value: _selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _categories.map((category) {
-                      return DropdownMenuItem(
-                        value: category['value'],
-                        child: Text(category['label']!),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Title
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a title';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      setState(() {
-                        _title = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Description
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 4,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a description';
-                      }
-                      if (value.trim().length < 10) {
-                        return 'Description must be at least 10 characters';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      setState(() {
-                        _description = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Rating (for app review type)
-                  if (_selectedType == 'app_review') ...[
-                    Row(
-                      children: List.generate(5, (index) {
-                        return IconButton(
-                          icon: Icon(
-                            index < _rating ? Icons.star : Icons.star_border,
-                            color: Colors.amber,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _rating = index + 1;
-                            });
-                          },
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  // Priority
-                  DropdownButtonFormField<String>(
-                    value: _selectedPriority,
-                    decoration: const InputDecoration(
-                      labelText: 'Priority',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _priorities.map((priority) {
-                      return DropdownMenuItem(
-                        value: priority['value'],
-                        child: Text(priority['label']!),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedPriority = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Anonymous option
-                  CheckboxListTile(
-                    title: const Text('Submit anonymously'),
-                    value: _isAnonymous,
-                    onChanged: (value) {
-                      setState(() {
-                        _isAnonymous = value ?? false;
-                      });
-                    },
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
-                  if (!_isAnonymous) ...[
-                    DropdownButtonFormField<String>(
-                      value: _contactPreference,
-                      decoration: const InputDecoration(
-                        labelText: 'Contact Preference',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'email', child: Text('Email')),
-                        DropdownMenuItem(value: 'in_app', child: Text('In-App')),
-                        DropdownMenuItem(value: 'none', child: Text('No Contact')),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _contactPreference = value!;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  ElevatedButton(
-                    onPressed: _isSubmitting ? null : _submitFeedback,
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Submit Feedback'),
-                  ),
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                loc.feedbackComingSoon,
+                style: theme.textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                loc.pleaseEnterValidData,
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: colors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
+
+              // Feedback type using ChoiceChips
+              Text(loc.feedback, style: theme.textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8.0,
+                children: feedbackTypes.keys.map((String key) {
+                  return ChoiceChip(
+                    label: Text(feedbackTypes[key]!),
+                    selected: _selectedType == key,
+                    onSelected: (bool selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedType = key;
+                        });
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // Feedback message
+              TextFormField(
+                controller: _messageController,
+                decoration: InputDecoration(
+                  labelText: loc.sendFeedback,
+                  hintText: loc.pleaseEnterValidData,
+                  border: const OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 5,
+                maxLength: 1000,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return loc.invalidInput;
+                  }
+                  if (value.trim().length < 10) {
+                    return loc.pleaseEnterValidData;
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              if (authService.isAuthenticated)
+                CheckboxListTile(
+                  title: Text(loc.signInAnonymously),
+                  value: _isAnonymous,
+                  onChanged: (value) {
+                    setState(() {
+                      _isAnonymous = value ?? false;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+
+              // Contact preference (if not anonymous)
+              if (!_isAnonymous && authService.isAuthenticated)
+                DropdownButtonFormField<String>(
+                  value: _contactPreference,
+                  decoration: InputDecoration(
+                    labelText: loc.contactInformation,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.contact_mail_outlined),
+                  ),
+                  items: [
+                    DropdownMenuItem(value: 'email', child: Text(loc.email)),
+                    DropdownMenuItem(value: 'in_app', child: Text(loc.inAppMessage ?? 'In-app Message')),
+                    DropdownMenuItem(value: 'none', child: Text(loc.doNotContactMe ?? 'Do not contact me')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _contactPreference = value ?? 'none';
+                    });
+                  },
+                ),
+              const SizedBox(height: 32),
+
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _isLoading ? null : _submitFeedback,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send),
+                  label: Text(_isLoading ? loc.loading : loc.sendFeedback),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

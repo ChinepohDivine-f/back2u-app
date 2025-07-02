@@ -133,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // --- User Account Settings ---
-            _buildSectionHeader(context, loc?.accountSettings ?? 'Account Settings'),
+            _buildSectionHeader(context, loc.accountSettings),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Column(
@@ -141,14 +141,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.person_outline,
                         color: colors.onSurfaceVariant),
-                    title: Text(loc?.profileInformation ?? 'Profile Information',
+                    title: Text(loc.profileInformation,
                         style: theme.textTheme.bodyLarge),
                     subtitle: Text(
                       userLoggedIn
                           ? (_appUser?.username ??
                               _currentUser?.displayName ??
-                              'Not set')
-                          : (loc?.signInToManage ?? 'Sign in to manage profile'),
+                              loc.notSet)
+                          : loc.signInToManageProfile,
                       style: theme.textTheme.bodyMedium?.copyWith(
                           color: colors.onSurfaceVariant.withOpacity(0.7)),
                     ),
@@ -176,10 +176,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     ListTile(
                       leading: Icon(Icons.phone_outlined,
                           color: colors.onSurfaceVariant),
-                      title: Text('Phone Management',
+                      title: Text(loc.phoneManagement,
                           style: theme.textTheme.bodyLarge),
                       subtitle: Text(
-                        _appUser?.phone ?? 'No phone number set',
+                        _appUser?.phone ?? loc.noPhoneNumberSet,
                         style: theme.textTheme.bodyMedium?.copyWith(
                             color: colors.onSurfaceVariant.withOpacity(0.7)),
                       ),
@@ -216,11 +216,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     ListTile(
                       leading:
                           Icon(Icons.delete_outline, color: colors.error),
-                      title: Text(loc?.deleteAccount ?? 'Delete Account',
+                      title: Text(loc.deleteAccount,
                           style: theme.textTheme.bodyLarge
                               ?.copyWith(color: colors.error)),
                       onTap: () {
-                        _showDeleteAccountDialog(context);
+                        _showDeleteAccountDialog(context, loc, colors);
                       },
                     ),
                   ],
@@ -229,7 +229,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             // --- KYC Settings ---
-            _buildSectionHeader(context, loc?.kycSettings ?? 'KYC Settings'),
+            _buildSectionHeader(context, loc.kycSettings),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Column(
@@ -237,14 +237,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.verified_user_outlined,
                         color: colors.onSurfaceVariant),
-                    title: Text(loc?.kycVerificationStatus ?? 'KYC Verification Status',
+                    title: Text(loc.kycVerificationStatus,
                         style: theme.textTheme.bodyLarge),
                     subtitle: Text(
                       userLoggedIn
                           ? (_appUser?.verified == true
-                              ? (loc?.verified ?? 'Verified')
-                              : (loc?.notVerified ?? 'Not Verified'))
-                          : (loc?.signInToViewKyc ?? 'Sign in to view KYC status'),
+                              ? loc.verified
+                              : loc.notVerified)
+                          : loc.signInToViewKyc,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: userLoggedIn &&
                                 (_appUser?.verified == true)
@@ -269,15 +269,14 @@ class _SettingsPageState extends State<SettingsPage> {
                                   .uid)); // Reload user data after KYC
                             },
                             icon: const Icon(Icons.how_to_reg),
-                            label: Text(loc?.completeKyc ?? 'Complete KYC'),
+                            label: Text(loc.completeKyc),
                           )
                         : null,
                     onTap: userLoggedIn && (_appUser?.verified == true)
                         ? () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Your profile is already verified.')),
+                              SnackBar(
+                                  content: Text(loc.yourProfileIsAlreadyVerified)),
                             );
                           }
                         : null,
@@ -287,7 +286,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             // --- System Settings ---
-            _buildSectionHeader(context, loc?.systemSettings ?? 'System Settings'),
+            _buildSectionHeader(context, loc.systemSettings),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Column(
@@ -295,7 +294,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.notifications_none,
                         color: colors.onSurfaceVariant),
-                    title: Text('Notifications',
+                    title: Text(loc.notifications,
                         style: theme.textTheme.bodyLarge),
                     trailing: Switch(
                       value: _notificationsEnabled,
@@ -306,8 +305,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                              content: Text(
-                                  'Notifications ${value ? 'enabled' : 'disabled'}')),
+                              content: Text(value
+                                  ? loc.notificationsEnabled
+                                  : loc.notificationsDisabled)),
                         );
                       },
                       activeColor: colors.primary,
@@ -319,15 +319,16 @@ class _SettingsPageState extends State<SettingsPage> {
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content: Text(
-                                'Notifications ${_notificationsEnabled ? 'enabled' : 'disabled'}')),
+                            content: Text(_notificationsEnabled
+                                ? loc.notificationsEnabled
+                                : loc.notificationsDisabled)),
                       );
                     },
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(
                     leading: Icon(Icons.language, color: colors.onSurfaceVariant),
-                    title: Text(loc?.language ?? 'Language', style: theme.textTheme.bodyLarge),
+                    title: Text(loc.language, style: theme.textTheme.bodyLarge),
                     trailing: DropdownButton<Locale>(
                       value: Localizations.localeOf(context),
                       items: AppLocalizations.supportedLocales.map((locale) {
@@ -335,8 +336,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           value: locale,
                           child: Text(
                             locale.languageCode == 'en' 
-                              ? (loc?.english ?? 'English') 
-                              : (loc?.french ?? 'French'),
+                              ? loc.english
+                              : loc.french,
                           ),
                         );
                       }).toList(),
@@ -349,23 +350,20 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(
-                    // leading: Icon(Icons.brightness_medium,
-                    //     color: colors.onSurfaceVariant),
-                    // title: Text('Theme', style: theme.textTheme.bodyLarge),
                     trailing: SegmentedButton<ThemeMode>(
-                      segments: const <ButtonSegment<ThemeMode>>[
+                      segments: <ButtonSegment<ThemeMode>>[
                         ButtonSegment<ThemeMode>(
                             value: ThemeMode.light,
-                            label: Text('Light'),
-                            icon: Icon(Icons.light_mode)),
+                            label: Text(loc.light),
+                            icon: const Icon(Icons.light_mode, size: 12,)),
                         ButtonSegment<ThemeMode>(
                             value: ThemeMode.dark,
-                            label: Text('Dark'),
-                            icon: Icon(Icons.dark_mode)),
+                            label: Text(loc.dark),
+                            icon: const Icon(Icons.dark_mode, size: 12,)),
                         ButtonSegment<ThemeMode>(
                             value: ThemeMode.system,
-                            label: Text('System'),
-                            icon: Icon(Icons.settings_brightness)),
+                            label: Text(loc.system),
+                            icon: const Icon(Icons.settings_brightness, size: 12,)),
                       ],
                       selected: <ThemeMode>{_currentThemeMode},
                       onSelectionChanged: (Set<ThemeMode> newSelection) {
@@ -377,8 +375,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                              content: Text(
-                                  'Theme set to ${_currentThemeMode.name}')),
+                              content: Text('${loc.themeSetTo} ${_currentThemeMode.name}')),
                         );
                       },
                     ),
@@ -388,7 +385,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             // --- Other Important Stuff ---
-            _buildSectionHeader(context, 'About Back2U'),
+            _buildSectionHeader(context, loc.about),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Column(
@@ -396,15 +393,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.policy_outlined,
                         color: colors.onSurfaceVariant),
-                    title: Text('Privacy Policy',
+                    title: Text(loc.privacyPolicy,
                         style: theme.textTheme.bodyLarge),
                     trailing: Icon(Icons.arrow_forward_ios,
                         size: 16,
                         color: colors.onSurfaceVariant.withOpacity(0.7)),
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Navigate to Privacy Policy')),
+                        SnackBar(
+                            content: Text(loc.privacyPolicy)),
                       );
                       Navigator.push(context, MaterialPageRoute(builder: (context) => PrivacyPolicyPage()));
                     },
@@ -413,15 +410,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.description_outlined,
                         color: colors.onSurfaceVariant),
-                    title: Text('Terms of Service',
+                    title: Text(loc.termsOfService,
                         style: theme.textTheme.bodyLarge),
                     trailing: Icon(Icons.arrow_forward_ios,
                         size: 16,
                         color: colors.onSurfaceVariant.withOpacity(0.7)),
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Navigate to Terms of Service')),
+                        SnackBar(
+                            content: Text(loc.termsOfService)),
                       );
                       Navigator.push(context, MaterialPageRoute(builder: (context) => TermsOfServicePage()));
                     },
@@ -430,35 +427,35 @@ class _SettingsPageState extends State<SettingsPage> {
                   AboutListTile(
                     icon: Icon(Icons.info_outline,
                         color: colors.onSurfaceVariant),
-                    applicationName: 'Back2U',
+                    applicationName: loc.appTitle,
                     applicationVersion:
                         '1.0.0', // Update your app version here
                     applicationLegalese:
-                        '© 2025 Back2U. All rights reserved.',
+                        '© 2025 Back2U. ${loc.all ?? 'All rights reserved.'}',
                     aboutBoxChildren: [
                       Text(
-                          'Back2U helps you find your lost documents and items, and report found ones.',
+                          loc.aboutApp ?? 'Back2U helps you find your lost documents and items, and report found ones.',
                           style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 8),
                       Text('Developed in Cameroon.',
                           style: Theme.of(context).textTheme.bodySmall),
                     ],
                     child:
-                        Text('About App', style: theme.textTheme.bodyLarge),
+                        Text(loc.about, style: theme.textTheme.bodyLarge),
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(
                     leading: Icon(Icons.support_agent,
                         color: colors.onSurfaceVariant),
-                    title: Text('Help & Support',
+                    title: Text(loc.helpAndSupport,
                         style: theme.textTheme.bodyLarge),
                     trailing: Icon(Icons.arrow_forward_ios,
                         size: 16,
                         color: colors.onSurfaceVariant.withOpacity(0.7)),
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Navigate to Help & Support')),
+                        SnackBar(
+                            content: Text(loc.helpAndSupport)),
                       );
                       Navigator.push(context, MaterialPageRoute(builder: (context) => HelpAndSupportPage()));
                     },
@@ -468,7 +465,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             // --- Feedback Section ---
-            _buildSectionHeader(context, 'Feedback'),
+            _buildSectionHeader(context, loc.feedback),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Column(
@@ -476,15 +473,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: Icon(Icons.feedback,
                         color: colors.onSurfaceVariant),
-                    title: Text('Give Feedback',
+                    title: Text(loc.sendFeedback,
                         style: theme.textTheme.bodyLarge),
                     trailing: Icon(Icons.arrow_forward_ios,
                         size: 16,
                         color: colors.onSurfaceVariant.withOpacity(0.7)),
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Navigate to Feedback')),
+                        SnackBar(
+                            content: Text(loc.sendFeedback)),
                       );
                       Navigator.push(context, MaterialPageRoute(builder: (context) => FeedbackPage()));
                     },
@@ -510,55 +507,41 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+  Future<void> _showDeleteAccountDialog(BuildContext context, AppLocalizations loc, ColorScheme colors) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Delete Account'),
-          content: const Text(
-              'Are you sure you want to delete your account? This action cannot be undone.'),
+          title: Text(loc.deleteAccountConfirmationTitle),
+          content: Text(loc.deleteAccountConfirmationContent),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              child: Text(loc.cancel),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error),
+                backgroundColor: colors.error,
+              ),
               onPressed: () async {
                 Navigator.of(dialogContext).pop(); // Close dialog
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Attempting to delete account...')),
-                );
-                // TODO: Implement actual account deletion logic
-                // This usually involves:
-                // 1. Re-authenticating the user for security.
-                // 2. Deleting user data from Firestore.
-                // 3. Deleting the Firebase Auth user.
-                try {
-                  // Example: await _authKycService.deleteAccount();
-                  // Navigator.pushReplacementNamed(context, '/login'); // Redirect to login
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content:
-                            Text('Account deletion is not yet implemented.')),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete account: $e')),
-                  );
-                }
+                await _deleteAccount(context);
               },
-              child: const Text('Delete'),
+              child: Text(loc.delete),
             ),
           ],
         );
       },
+    );
+  }
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    // TODO: Implement account deletion logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Account deletion not implemented.')),
     );
   }
 }

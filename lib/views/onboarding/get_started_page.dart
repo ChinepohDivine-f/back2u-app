@@ -1,3 +1,4 @@
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class GetStartedPage extends StatelessWidget {
@@ -7,6 +8,7 @@ class GetStartedPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     return Container(
       color: colorScheme.background,
@@ -21,7 +23,7 @@ class GetStartedPage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            "Ready to Get Started?",
+            'Ready to get started?',
             style: textTheme.headlineMedium?.copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -30,7 +32,7 @@ class GetStartedPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            "Let's help you find what's lost or return what's found. Your journey to peace of mind starts now.",
+            "Ready to get started?",
             style: textTheme.bodyLarge?.copyWith(
               color: colorScheme.secondary,
             ),

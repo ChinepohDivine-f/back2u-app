@@ -106,6 +106,69 @@ class AppLocalizations {
       'yes': 'Yes',
       'no': 'No',
       'ok': 'OK',
+      'rewardOffered': 'Reward Offered',
+      'amount': 'Amount',
+      'reward': 'Reward',
+      'notAvailable': 'Not Available',
+      'update': 'Update',
+      'updatingReport': 'Updating Report',
+      'reportUpdated': 'Report Updated',
+      'confirmAndUpdate': 'Confirm and Update',
+      'confirmAndSubmit': 'Confirm and Submit',
+      'submittingReport': 'Submitting Report',
+      'reportSubmitted': 'Report Submitted',
+      'updateReport': 'Update Report',
+      'submitReport': 'Submit Report',
+      'updatingYourReport': 'Updating Your Report',
+      'submittingYourReport': 'Submitting Your Report',
+      'pleaseDoNotCloseApp': 'Please do not close the app until the report is submitted.',
+      'submissionInProgress': 'Submission in Progress',
+      'submissionInProgressMessage': 'Please wait while we process your submission.',
+      'submissionFailed': 'Submission Failed',
+      'submissionFailedMessage': 'Please try again later.',
+      'submissionSuccess': 'Submission Successful',
+      'submissionSuccessMessage': 'Your report has been submitted successfully.',
+      'reportSubmittedSuccess': 'Report submitted successfully',
+      'reportUpdatedSuccess': 'Report updated successfully',
+      'reportDeletedSuccess': 'Report deleted successfully',
+      'reportMarkedAs': 'Report marked as {status}',
+      'failedToUpdateStatus': 'Failed to update status: {error}',
+      'deleteReportTitle': 'Delete Report',
+      'deleteReportConfirm': 'Are you sure you want to delete this report? This action cannot be undone.',
+      'updateTimedOut': 'Update timed out',
+      'submissionTimedOut': 'Submission timed out',
+      'submissionTimedOutMessage': 'Please try again later.',
+      'noInternetConnection': 'No internet connection',
+      'serverUnreachable': 'Server unreachable',
+      'permissionDenied': 'Permission denied',
+      'unauthenticated': 'Unauthenticated',
+      'firebaseError': 'Firebase error: {error}',
+      'failedToUpdateReportGeneric': 'Failed to update report',
+      'failedToSubmitReportGeneric': 'Failed to submit report',
+      'noActiveNetwork': 'No active network',
+      'authenticationExpired': 'Authentication expired',
+      'authenticationExpiredMessage': 'Please sign in again to continue.',
+      'authenticationExpiredTitle': 'Authentication Expired',
+      'authenticationExpiredDescription': 'Please sign in again to continue.',
+      'authenticationExpiredButton': 'Sign In',
+      'authenticationExpiredButtonText': 'Sign In',
+      'serverUnreachableMessage': 'Please try again later.',
+      'serverUnreachableTitle': 'Server Unreachable',
+      'serverUnreachableDescription': 'Please try again later.',
+      'serverUnreachableButton': 'Try Again',
+      'serverUnreachableButtonText': 'Try Again',
+      'reviewReportCarefully': 'Review report carefully',
+      
+      // Notifications page translations
+      'deleteClaimTitle': 'Delete Claim',
+      'deleteClaimConfirm': 'Are you sure you want to delete this claim? This action cannot be undone.',
+      'signInRequired': 'Sign In Required',
+      'signInToViewNotifications': 'Please sign in to view your notifications.',
+      'errorLoading': 'Error Loading',
+      'tryAgain': 'Try Again',
+      'noNotifications': 'No Notifications',
+      'noNotificationsSubtitle': 'You don\'t have any notifications yet. They will appear here when you receive claims or status updates.',
+      
       'close': 'Close',
       'done': 'Done',
       'skip': 'Skip',
@@ -139,7 +202,28 @@ class AppLocalizations {
       'all': 'All',
       'lost': 'Lost',
       'found': 'Found',
-      'offlineDataMightBeOutdated': 'You are offline. Data might be outdated.',
+      'notSet':"Not Set",
+      'signInToManageProfile':"Sign in to manage profile",
+      'phoneManagement':"Phone Management",
+      'noPhoneNumberSet':"No phone number set",
+      'phoneNumberSet':"Phone number set",
+      'phoneNumberNotSet':"Phone number not set",
+      'yourProfileIsAlreadyVerified':"Your profile is already verified",
+      'yourProfileIsNotVerified':"Your profile is not verified",
+      'yourProfileIsNotFullyVerified':"Your profile is not fully verified",
+      'yourProfileIsFullyVerified':"Your profile is fully verified",
+      'yourProfileIsNotVerifiedWarning':"Your profile is not fully verified. Consider completing KYC for full trust.",
+      'yourProfileIsNotVerifiedWarningDescription':"Your profile is not fully verified. Consider completing KYC for full trust.",
+      'yourProfileIsNotVerifiedWarningButton':"CompletenotificationsEnabled    KYC",
+'notificationsDisabled':"Notifications disabled",
+'themeSetTo':'Theme set to',
+'notificationsEnabled':"Notifications enabled",
+'notificationsDisabledDescription':"Notifications are disabled. You can enable them in the settings.",
+'notificationsEnabledDescription':"Notifications are enabled. You can disable them in the settings.",
+'notificationsDisabledButton':"Disable Notifications",
+'notificationsEnabledButton':"Enable Notifications",
+'notificationsDisabledButtonText':"Disable Notifications",
+      'offlineDataMightBeOutdated': 'You are offline. Data might  be outdated.',
       'makeAReport': 'Make a Report',
       'createNewReportTooltip': 'Create a new lost or found report',
       'loadingReports': 'Loading reports...',
@@ -154,13 +238,8 @@ class AppLocalizations {
       'scrollDownToLoadMore': 'Scroll down to load more',
       'noMoreReports': 'No more reports',
       'myReportsTitle': 'My Reports',
-      'reportUpdatedSuccess': 'Report updated successfully',
+      
       'failedToDeleteReport': 'Failed to delete report: {error}',
-      'reportDeletedSuccess': 'Report deleted successfully',
-      'reportMarkedAs': 'Report marked as {status}',
-      'failedToUpdateStatus': 'Failed to update status: {error}',
-      'deleteReportTitle': 'Delete Report',
-      'deleteReportConfirm': 'Are you sure you want to delete this report? This action cannot be undone.',
       'loadingAuthStatus': 'Loading authentication status...',
       'signInToViewReports': 'Sign in to view your reports',
       'trackAndManageReports': 'Track and manage all your submitted reports in one place',
@@ -179,13 +258,63 @@ class AppLocalizations {
       'pleaseLogInToSave': 'Please log in to save reports.',
       'reportRemovedFromSaved': 'Report removed from saved.',
       'reportAddedToSaved': 'Report added to saved.',
+      'confirmUnsave': 'Confirm Unsave',
+      'confirmUnsaveDescription': 'Are you sure you want to remove this report from your saved items?',
+      'unsave': 'Unsave',
       'mySavedReportsTitle': 'My Saved Reports',
       'logInToViewSaved': 'Please log in to view your saved reports.',
       'loadingSavedReports': 'Loading your saved reports...',
       'errorLoadingSavedReports': 'Error loading saved reports',
       'noSavedReportsYet': 'No saved reports yet',
       'browseAndSaveReports': 'Browse reports and tap the bookmark icon to save them here.',
-      'browseReports': 'Browse Reports'
+      'browseReports': 'Browse Reports',
+      'termsOfService': 'Terms of Service',
+      'aboutApp': 'About App',
+      'helpAndSupport': 'Help & Support',
+      'feedback': 'Feedback',
+      'deleteAccountConfirmationTitle': 'Delete Account',
+      'deleteAccountConfirmationContent': 'Are you sure you want to delete your account? This action cannot be undone.',
+      'suggestion': 'Suggestion',
+      'other': 'Other',
+      'inAppMessage': 'In-app Message',
+      'doNotContactMe': 'Do not contact me',
+      'verifiedPhoneFromProfile': 'This is the verified phone number from your profile.',
+      'pleaseSelectIncidentDate': 'Please select the incident date.',
+      'pleaseFillRequiredFields': 'Please fill in all required fields and fix errors.',
+      'similarReportFound': 'Similar Report Found',
+      'similarReportDescription': 'A report with very similar details already exists in our system. Please review it to avoid creating a duplicate.',
+      'otherSimilarReportsFound': '+{count} other similar reports found.',
+      'viewExistingReport': 'View Existing Report',
+      'report': 'Report',
+      'details': 'Details',
+      'ownerNameRequired': 'Owner\'s Name (or Name on Item)*',
+      'pleaseEnterOwnerName': 'Please enter the owner\'s name or name on the item',
+      'pleaseSelectCategory': 'Please select a category',
+      'subcategory': 'Subcategory',
+      'pleaseSelectSubcategory': 'Please select a subcategory',
+      'selectCategoryFirst': 'Select a category first',
+      'incidentDate': 'Incident Date',
+      'selectDate': 'Select Date',
+      'mainLocation': 'Main Location',
+      'pleaseSelectMainLocation': 'Please select a main location',
+      'subLocation': 'Sub-Location',
+      'pleaseSelectSubLocation': 'Please select a sub-location',
+      'selectMainLocationFirst': 'Select a main location first',
+      'additionalNotesOptional': 'Additional Notes (Optional)',
+      'enterExtraInformation': 'Enter any extra information here...',
+      'offerReward': 'Offer Reward?',
+      'rewardAmountXAF': 'Reward Amount (XAF)',
+      'pleaseEnterRewardAmount': 'Please enter the reward amount',
+      'pleaseEnterValidNumber': 'Please enter a valid number',
+      'amountMustBeGreaterThanZero': 'Amount must be greater than zero',
+      'nextContactInformation': 'NEXT: Contact Information',
+      'resetFormToOriginal': 'Reset Form to Original',
+      'summary': 'Summary',
+      'reviewReportDetails': 'Please review your report details carefully before submitting.',
+      'itemDetails': 'Item Details',
+      'type': 'Type',
+      'ownerName': 'Owner Name',
+      'submissionInProgressDescription': 'Your report is currently being processed. Please wait for the submission to complete.',
     },
     'fr': {
       'appTitle': 'Back2U',
@@ -205,6 +334,7 @@ class AppLocalizations {
       'email': 'Email',
       'password': 'Mot de passe',
       'phoneNumber': 'Numéro de téléphone',
+      'otherSimilarReportsFound': '+{count} autres rapports similaires trouvés.',
       'fullName': 'Nom complet',
       'fullNameAsOnId': 'Nom complet (comme sur la carte d\'identité)',
       'whatsappNumber': 'Numéro WhatsApp',
@@ -341,13 +471,90 @@ class AppLocalizations {
       'pleaseLogInToSave': 'Veuillez vous connecter pour enregistrer les rapports.',
       'reportRemovedFromSaved': 'Rapport supprimé des favoris.',
       'reportAddedToSaved': 'Rapport ajouté aux favoris.',
+      'confirmUnsave': 'Confirmer la suppression',
+      'confirmUnsaveDescription': 'Êtes-vous sûr de vouloir supprimer ce rapport de vos éléments sauvegardés ?',
+      'unsave': 'Supprimer',
       'mySavedReportsTitle': 'Mes rapports enregistrés',
       'logInToViewSaved': 'Veuillez vous connecter pour voir vos rapports enregistrés.',
       'loadingSavedReports': 'Chargement de vos rapports enregistrés...',
       'errorLoadingSavedReports': 'Erreur lors du chargement des rapports enregistrés',
       'noSavedReportsYet': 'Aucun rapport enregistré pour le moment',
       'browseAndSaveReports': 'Parcourez les rapports et appuyez sur l\'icône de signet pour les enregistrer ici.',
-      'browseReports': 'Parcourir les rapports'
+      'browseReports': 'Parcourir les rapports',
+      'termsOfService': 'Conditions d\'utilisation',
+      'aboutApp': 'À propos de l\'application',
+      'helpAndSupport': 'Aide et Support',
+      'feedback': 'Retour d\'information',
+      'deleteAccountConfirmationTitle': 'Supprimer le compte',
+      'deleteAccountConfirmationContent': 'Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.',
+      'suggestion': 'Suggestion',
+      'other': 'Autre',
+      'inAppMessage': 'Message dans l\'application',
+      'doNotContactMe': 'Ne pas me contacter',
+      'verifiedPhoneFromProfile': 'Ceci est le numéro de téléphone vérifié de votre profil.',
+      'pleaseSelectIncidentDate': 'Veuillez sélectionner la date de l\'incident.',
+      'pleaseFillRequiredFields': 'Veuillez remplir tous les champs requis et corriger les erreurs.',
+      'similarReportFound': 'Rapport similaire trouvé',
+      'similarReportDescription': 'Un rapport avec des détails très similaires existe déjà dans notre système. Veuillez l\'examiner pour éviter de créer un doublon.',
+      // 'otherSimilarReportsFound': '+{count} autres rapports similaires trouvés.',
+      'viewExistingReport': 'Voir le rapport existant',
+      'report': 'Rapport',
+      'details': 'Détails',
+      'ownerNameRequired': 'Nom du propriétaire (ou nom sur l\'objet)*',
+      'pleaseEnterOwnerName': 'Veuillez entrer le nom du propriétaire ou le nom sur l\'objet',
+      'pleaseSelectCategory': 'Veuillez sélectionner une catégorie',
+      'subcategory': 'Sous-catégorie',
+      'pleaseSelectSubcategory': 'Veuillez sélectionner une sous-catégorie',
+      'selectCategoryFirst': 'Sélectionnez d\'abord une catégorie',
+      'incidentDate': 'Date de l\'incident',
+      'selectDate': 'Sélectionner la date',
+      'mainLocation': 'Emplacement principal',
+      'pleaseSelectMainLocation': 'Veuillez sélectionner un emplacement principal',
+      'subLocation': 'Sous-emplacement',
+      'pleaseSelectSubLocation': 'Veuillez sélectionner un sous-emplacement',
+      'selectMainLocationFirst': 'Sélectionnez d\'abord un emplacement principal',
+      'additionalNotesOptional': 'Notes supplémentaires (optionnel)',
+      'enterExtraInformation': 'Entrez ici toute information supplémentaire...',
+      'offerReward': 'Offrir une récompense ?',
+      'rewardAmountXAF': 'Montant de la récompense (XAF)',
+      'pleaseEnterRewardAmount': 'Veuillez entrer le montant de la récompense',
+      'pleaseEnterValidNumber': 'Veuillez entrer un nombre valide',
+      'amountMustBeGreaterThanZero': 'Le montant doit être supérieur à zéro',
+      'nextContactInformation': 'SUIVANT: Informations de contact',
+      'resetFormToOriginal': 'Réinitialiser le formulaire à l\'original',
+      'summary': 'Résumé',
+      'reviewReportDetails': 'Veuillez examiner attentivement les détails de votre rapport avant de le soumettre.',
+      'itemDetails': 'Détails de l\'objet',
+      'type': 'Type',
+      'ownerName': 'Nom du propriétaire',
+      'notAvailable': 'N/A',
+      'category': 'Catégorie',
+      'location': 'Emplacement',
+      'additionalNotes': 'Notes supplémentaires',
+      'images': 'Images',
+      'rewardOffered': 'Récompense offerte',
+      'amount': 'Montant',
+      'updatingReport': 'Mise à jour du rapport...',
+      'submittingReport': 'Soumission du rapport...',
+      'reportUpdated': 'Rapport mis à jour !',
+      'reportSubmitted': 'Rapport soumis !',
+      'confirmAndUpdateReport': 'Confirmer et mettre à jour le rapport',
+      'confirmAndSubmitReport': 'Confirmer et soumettre le rapport',
+      'updatingYourReport': 'Mise à jour de votre rapport...',
+      'submittingYourReport': 'Soumission de votre rapport...',
+      'pleaseDoNotCloseApp': 'Veuillez ne pas fermer l\'application ou naviguer ailleurs.',
+      'submissionInProgress': 'Soumission en cours',
+      'submissionInProgressDescription': 'Votre rapport est actuellement en cours de traitement. Veuillez attendre que la soumission soit terminée.',
+      
+      // Notifications page translations
+      'deleteClaimTitle': 'Supprimer la réclamation',
+      'deleteClaimConfirm': 'Êtes-vous sûr de vouloir supprimer cette réclamation ? Cette action est irréversible.',
+      'signInRequired': 'Connexion requise',
+      'signInToViewNotifications': 'Veuillez vous connecter pour voir vos notifications.',
+      'errorLoading': 'Erreur de chargement',
+      'tryAgain': 'Réessayer',
+      'noNotifications': 'Aucune notification',
+      'noNotificationsSubtitle': 'Vous n\'avez pas encore de notifications. Elles apparaîtront ici lorsque vous recevrez des réclamations ou des mises à jour de statut.',
     },
   };
 
@@ -460,6 +667,7 @@ String get signInToManage => _localizedValues[locale.languageCode]?['signInToMan
   String reportMarkedAs(String status) => _localizedValues[locale.languageCode]?['reportMarkedAs']?.replaceAll('{status}', status) ?? 'Report marked as {status}'.replaceAll('{status}', status);
   String failedToDeleteReport(String error) => _localizedValues[locale.languageCode]?['failedToDeleteReport']?.replaceAll('{error}', error) ?? 'Failed to delete report: {error}'.replaceAll('{error}', error);
   String failedToUpdateStatus(String error) => _localizedValues[locale.languageCode]?['failedToUpdateStatus']?.replaceAll('{error}', error) ?? 'Failed to update status: {error}'.replaceAll('{error}', error);
+  String otherSimilarReportsFound(int count) => _localizedValues[locale.languageCode]?['otherSimilarReportsFound']?.replaceAll('{count}', count.toString()) ?? '+$count other similar reports found.';
 
   String reportsCount(int count) {
     if (locale.languageCode == 'fr') {
@@ -520,6 +728,9 @@ String get signInToManage => _localizedValues[locale.languageCode]?['signInToMan
   String get pleaseLogInToSave => _localizedValues[locale.languageCode]?['pleaseLogInToSave'] ?? 'Please log in to save reports.';
   String get reportRemovedFromSaved => _localizedValues[locale.languageCode]?['reportRemovedFromSaved'] ?? 'Report removed from saved.';
   String get reportAddedToSaved => _localizedValues[locale.languageCode]?['reportAddedToSaved'] ?? 'Report added to saved.';
+  String get confirmUnsave => _localizedValues[locale.languageCode]?['confirmUnsave'] ?? 'Confirm Unsave';
+  String get confirmUnsaveDescription => _localizedValues[locale.languageCode]?['confirmUnsaveDescription'] ?? 'Are you sure you want to remove this report from your saved items?';
+  String get unsave => _localizedValues[locale.languageCode]?['unsave'] ?? 'Unsave';
   String get mySavedReportsTitle => _localizedValues[locale.languageCode]?['mySavedReportsTitle'] ?? 'My Saved Reports';
   String get logInToViewSaved => _localizedValues[locale.languageCode]?['logInToViewSaved'] ?? 'Please log in to view your saved reports.';
   String get loadingSavedReports => _localizedValues[locale.languageCode]?['loadingSavedReports'] ?? 'Loading your saved reports...';
@@ -527,6 +738,87 @@ String get signInToManage => _localizedValues[locale.languageCode]?['signInToMan
   String get noSavedReportsYet => _localizedValues[locale.languageCode]?['noSavedReportsYet'] ?? 'No saved reports yet';
   String get browseAndSaveReports => _localizedValues[locale.languageCode]?['browseAndSaveReports'] ?? 'Browse reports and tap the bookmark icon to save them here.';
   String get browseReports => _localizedValues[locale.languageCode]?['browseReports'] ?? 'Browse Reports';
+  String get notSet => _localizedValues[locale.languageCode]?['notSet'] ?? 'Not Set';
+  String get signInToManageProfile => _localizedValues[locale.languageCode]?['signInToManageProfile'] ?? 'Sign in to manage profile';
+  String get noPhoneNumberSet => _localizedValues[locale.languageCode]?['noPhoneNumberSet'] ?? 'No phone number set';
+  String get notificationsEnabled => _localizedValues[locale.languageCode]?['notificationsEnabled'] ?? 'Notifications enabled';
+  String get notificationsDisabled => _localizedValues[locale.languageCode]?['notificationsDisabled'] ?? 'Notifications disabled';
+  String get phoneManagement => _localizedValues[locale.languageCode]?['phoneManagement'] ?? 'Phone Management';
+  String get yourProfileIsAlreadyVerified => _localizedValues[locale.languageCode]?['yourProfileIsAlreadyVerified'] ?? 'Your profile is already verified';
+  String get themeSetTo => _localizedValues[locale.languageCode]?['themeSetTo'] ?? 'Theme set to';
+  String get termsOfService => _localizedValues[locale.languageCode]?['termsOfService'] ?? 'Terms of Service';
+  String get aboutApp => _localizedValues[locale.languageCode]?['aboutApp'] ?? 'About App';
+  String get helpAndSupport => _localizedValues[locale.languageCode]?['helpAndSupport'] ?? 'Help & Support';
+  String get feedback => _localizedValues[locale.languageCode]?['feedback'] ?? 'Feedback';
+  String get deleteAccountConfirmationTitle => _localizedValues[locale.languageCode]?['deleteAccountConfirmationTitle'] ?? 'Delete Account';
+  String get deleteAccountConfirmationContent => _localizedValues[locale.languageCode]?['deleteAccountConfirmationContent'] ?? 'Are you sure you want to delete your account? This action cannot be undone.';
+  String get suggestion => _localizedValues[locale.languageCode]?['suggestion'] ?? 'Suggestion';
+  String get other => _localizedValues[locale.languageCode]?['other'] ?? 'Other';
+  String get inAppMessage => _localizedValues[locale.languageCode]?['inAppMessage'] ?? 'In-app Message';
+  String get doNotContactMe => _localizedValues[locale.languageCode]?['doNotContactMe'] ?? 'Do not contact me';
+  String get verifiedPhoneFromProfile => _localizedValues[locale.languageCode]?['verifiedPhoneFromProfile'] ?? 'This is the verified phone number from your profile.';
+  String get pleaseSelectIncidentDate => _localizedValues[locale.languageCode]?['pleaseSelectIncidentDate'] ?? 'Please select the incident date.';
+  String get pleaseFillRequiredFields => _localizedValues[locale.languageCode]?['pleaseFillRequiredFields'] ?? 'Please fill in all required fields and fix errors.';
+  String get similarReportFound => _localizedValues[locale.languageCode]?['similarReportFound'] ?? 'Similar Report Found';
+  String get similarReportDescription => _localizedValues[locale.languageCode]?['similarReportDescription'] ?? 'A report with very similar details already exists in our system. Please review it to avoid creating a duplicate.';
+  String get viewExistingReport => _localizedValues[locale.languageCode]?['viewExistingReport'] ?? 'View Existing Report';
+  String get report => _localizedValues[locale.languageCode]?['report'] ?? 'Report';
+  String get details => _localizedValues[locale.languageCode]?['details'] ?? 'Details';
+  String get ownerNameRequired => _localizedValues[locale.languageCode]?['ownerNameRequired'] ?? 'Owner\'s Name (or Name on Item)*';
+  String get pleaseEnterOwnerName => _localizedValues[locale.languageCode]?['pleaseEnterOwnerName'] ?? 'Please enter the owner\'s name or name on the item';
+  String get pleaseSelectCategory => _localizedValues[locale.languageCode]?['pleaseSelectCategory'] ?? 'Please select a category';
+  String get subcategory => _localizedValues[locale.languageCode]?['subcategory'] ?? 'Subcategory';
+  String get pleaseSelectSubcategory => _localizedValues[locale.languageCode]?['pleaseSelectSubcategory'] ?? 'Please select a subcategory';
+  String get selectCategoryFirst => _localizedValues[locale.languageCode]?['selectCategoryFirst'] ?? 'Select a category first';
+  String get incidentDate => _localizedValues[locale.languageCode]?['incidentDate'] ?? 'Incident Date';
+  String get selectDate => _localizedValues[locale.languageCode]?['selectDate'] ?? 'Select Date';
+  String get mainLocation => _localizedValues[locale.languageCode]?['mainLocation'] ?? 'Main Location';
+  String get pleaseSelectMainLocation => _localizedValues[locale.languageCode]?['pleaseSelectMainLocation'] ?? 'Please select a main location';
+  String get subLocation => _localizedValues[locale.languageCode]?['subLocation'] ?? 'Sub-Location';
+  String get pleaseSelectSubLocation => _localizedValues[locale.languageCode]?['pleaseSelectSubLocation'] ?? 'Please select a sub-location';
+  String get selectMainLocationFirst => _localizedValues[locale.languageCode]?['selectMainLocationFirst'] ?? 'Select a main location first';
+  String get additionalNotesOptional => _localizedValues[locale.languageCode]?['additionalNotesOptional'] ?? 'Additional Notes (Optional)';
+  String get enterExtraInformation => _localizedValues[locale.languageCode]?['enterExtraInformation'] ?? 'Enter any extra information here...';
+  String get offerReward => _localizedValues[locale.languageCode]?['offerReward'] ?? 'Offer Reward?';
+  String get rewardAmountXAF => _localizedValues[locale.languageCode]?['rewardAmountXAF'] ?? 'Reward Amount (XAF)';
+  String get pleaseEnterRewardAmount => _localizedValues[locale.languageCode]?['pleaseEnterRewardAmount'] ?? 'Please enter the reward amount';
+  String get pleaseEnterValidNumber => _localizedValues[locale.languageCode]?['pleaseEnterValidNumber'] ?? 'Please enter a valid number';
+  String get amountMustBeGreaterThanZero => _localizedValues[locale.languageCode]?['amountMustBeGreaterThanZero'] ?? 'Amount must be greater than zero';
+  String get nextContactInformation => _localizedValues[locale.languageCode]?['nextContactInformation'] ?? 'NEXT: Contact Information';
+  String get resetFormToOriginal => _localizedValues[locale.languageCode]?['resetFormToOriginal'] ?? 'Reset Form to Original';
+  String get summary => _localizedValues[locale.languageCode]?['summary'] ?? 'Summary';
+  String get reviewReportDetails => _localizedValues[locale.languageCode]?['reviewReportDetails'] ?? 'Please review your report details carefully before submitting.';
+  String get itemDetails => _localizedValues[locale.languageCode]?['itemDetails'] ?? 'Item Details';
+  String get type => _localizedValues[locale.languageCode]?['type'] ?? 'Type';
+  String get ownerName => _localizedValues[locale.languageCode]?['ownerName'] ?? 'Owner Name';
+  String get notAvailable => _localizedValues[locale.languageCode]?['notAvailable'] ?? 'N/A';
+  String get category => _localizedValues[locale.languageCode]?['category'] ?? 'Category';
+  String get location => _localizedValues[locale.languageCode]?['location'] ?? 'Location';
+  String get additionalNotes => _localizedValues[locale.languageCode]?['additionalNotes'] ?? 'Additional Notes';
+  String get images => _localizedValues[locale.languageCode]?['images'] ?? 'Images';
+  String get rewardOffered => _localizedValues[locale.languageCode]?['rewardOffered'] ?? 'Reward Offered';
+  String get amount => _localizedValues[locale.languageCode]?['amount'] ?? 'Amount';
+  String get updatingReport => _localizedValues[locale.languageCode]?['updatingReport'] ?? 'Updating Report...';
+  String get submittingReport => _localizedValues[locale.languageCode]?['submittingReport'] ?? 'Submitting Report...';
+  String get reportUpdated => _localizedValues[locale.languageCode]?['reportUpdated'] ?? 'Report Updated!';
+  String get reportSubmitted => _localizedValues[locale.languageCode]?['reportSubmitted'] ?? 'Report Submitted!';
+  String get confirmAndUpdateReport => _localizedValues[locale.languageCode]?['confirmAndUpdateReport'] ?? 'Confirm and Update Report';
+  String get confirmAndSubmitReport => _localizedValues[locale.languageCode]?['confirmAndSubmitReport'] ?? 'Confirm and Submit Report';
+  String get updatingYourReport => _localizedValues[locale.languageCode]?['updatingYourReport'] ?? 'Updating your report...';
+  String get submittingYourReport => _localizedValues[locale.languageCode]?['submittingYourReport'] ?? 'Submitting your report...';
+  String get pleaseDoNotCloseApp => _localizedValues[locale.languageCode]?['pleaseDoNotCloseApp'] ?? 'Please do not close the app or navigate away.';
+  String get submissionInProgress => _localizedValues[locale.languageCode]?['submissionInProgress'] ?? 'Submission in Progress';
+  String get submissionInProgressDescription => _localizedValues[locale.languageCode]?['submissionInProgressDescription'] ?? 'Your report is currently being processed. Please wait for the submission to complete.';
+  
+  // Notifications page getters
+  String get deleteClaimTitle => _localizedValues[locale.languageCode]?['deleteClaimTitle'] ?? 'Delete Claim';
+  String get deleteClaimConfirm => _localizedValues[locale.languageCode]?['deleteClaimConfirm'] ?? 'Are you sure you want to delete this claim? This action cannot be undone.';
+  String get signInRequired => _localizedValues[locale.languageCode]?['signInRequired'] ?? 'Sign In Required';
+  String get signInToViewNotifications => _localizedValues[locale.languageCode]?['signInToViewNotifications'] ?? 'Please sign in to view your notifications.';
+  String get errorLoading => _localizedValues[locale.languageCode]?['errorLoading'] ?? 'Error Loading';
+  String get tryAgain => _localizedValues[locale.languageCode]?['tryAgain'] ?? 'Try Again';
+  String get noNotifications => _localizedValues[locale.languageCode]?['noNotifications'] ?? 'No Notifications';
+  String get noNotificationsSubtitle => _localizedValues[locale.languageCode]?['noNotificationsSubtitle'] ?? 'You don\'t have any notifications yet. They will appear here when you receive claims or status updates.';
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -215,9 +215,112 @@
     "description": "Search page title"
   },
   
-  "searchByOwner": "Rechercher par propriétaire",
-  "@searchByOwner": {
-    "description": "Search field placeholder"
+  "searchForAnItem": "Rechercher un article",
+  "@searchForAnItem": {
+    "description": "Placeholder for search input"
+  },
+  
+  "signInToManageProfile": "Connectez-vous pour gérer votre profil",
+  "@signInToManageProfile": {
+    "description": "Sign in to manage profile text"
+  },
+  
+  "phoneManagement": "Gestion du téléphone",
+  "@phoneManagement": {
+    "description": "Phone management text"
+  },
+  
+  "noPhoneNumberSet": "Aucun numéro de téléphone défini",
+  "@noPhoneNumberSet": {
+    "description": "No phone number set text"
+  },
+  
+  "yourProfileIsAlreadyVerified": "Votre profil est déjà vérifié.",
+  "@yourProfileIsAlreadyVerified": {
+    "description": "Your profile is already verified text"
+  },
+  
+  "notificationsEnabled": "Notifications activées",
+  "@notificationsEnabled": {
+    "description": "Notifications enabled text"
+  },
+  
+  "notificationsDisabled": "Notifications désactivées",
+  "@notificationsDisabled": {
+    "description": "Notifications disabled text"
+  },
+  
+  "themeSetTo": "Thème défini sur",
+  "@themeSetTo": {
+    "description": "Theme set to text"
+  },
+  
+  "aboutBack2U": "À propos de Back2U",
+  "@aboutBack2U": {
+    "description": "About Back2U text"
+  },
+  
+  "termsOfService": "Conditions d'utilisation",
+  "@termsOfService": {
+    "description": "Terms of service text"
+  },
+  
+  "aboutApp": "À propos de l'application",
+  "@aboutApp": {
+    "description": "About app text"
+  },
+  
+  "helpAndSupport": "Aide et support",
+  "@helpAndSupport": {
+    "description": "Help and support text"
+  },
+  
+  "feedback": "Commentaires",
+  "@feedback": {
+    "description": "Feedback text"
+  },
+  
+  "sendFeedback": "Envoyer des commentaires",
+  "@sendFeedback": {
+    "description": "Send feedback text"
+  },
+  
+  "deleteAccountConfirmationTitle": "Êtes-vous sûr de vouloir supprimer votre compte ?",
+  "@deleteAccountConfirmationTitle": {
+    "description": "Delete account confirmation title text"
+  },
+  
+  "deleteAccountConfirmationContent": "Cette action est permanente et ne peut être annulée. Toutes vos données seront supprimées.",
+  "@deleteAccountConfirmationContent": {
+    "description": "Delete account confirmation content text"
+  },
+  
+  "delete": "Supprimer",
+  "@delete": {
+    "description": "Delete text"
+  },
+  "accountDeleted": "Compte supprimé",
+  "@accountDeleted": {
+    "description": "Account deleted text"
+  },
+  "failedToDeleteAccount": "Échec de la suppression du compte.",
+  "@failedToDeleteAccount": {
+    "description": "Failed to delete account text"
+  },
+  
+  "accountDeleted": "Compte supprimé",
+  "@accountDeleted": {
+    "description": "Account deleted text"
+  },
+  
+  "failedToDeleteAccount": "Échec de la suppression du compte.",
+  "@failedToDeleteAccount": {
+    "description": "Failed to delete account text"
+  },
+  
+  "notSet": "Non défini",
+  "@notSet": {
+    "description": "Not set text"
   },
   
   "filterSearch": "Filtrer la recherche",

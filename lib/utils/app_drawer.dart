@@ -6,7 +6,7 @@ import 'package:back2u/models/user_model.dart'; // Your AppUser model
 // import 'package:back2u/views/settings/feedback_page.dart'; // Import feedback page
 // import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:back2u/l10n/app_localizations.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -66,6 +66,7 @@ class _AppDrawerState extends State<AppDrawer> {
   // Handles user logout directly from the drawer
   Future<void> _signOut() async {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -74,14 +75,14 @@ class _AppDrawerState extends State<AppDrawer> {
           children: [
             Icon(Icons.logout, color: colorScheme.primary),
             const SizedBox(width: 8),
-            const Text('Log Out?'),
+            Text(loc.signOut),
           ],
         ),
-        content: const Text('Are you sure you want to log out?'),
+        content: Text(loc.deleteAccountConfirmationContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -90,7 +91,7 @@ class _AppDrawerState extends State<AppDrawer> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Log Out'),
+            child: Text(loc.signOut),
           ),
         ],
       ),
@@ -126,6 +127,7 @@ class _AppDrawerState extends State<AppDrawer> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     // Determine login status based on internal _currentUser
     final bool userLoggedIn = _currentUser != null && !_currentUser!.isAnonymous;
@@ -135,12 +137,12 @@ class _AppDrawerState extends State<AppDrawer> {
         children: <Widget>[
           // --- Drawer Header Section ---
           // SizedBox(height: 10),
-          _buildDrawerHeader(context, colorScheme, userLoggedIn),
+          _buildDrawerHeader(context, colorScheme, userLoggedIn, loc),
 
           // --- Common Menu Items ---
           ListTile(
             leading: Icon(Icons.home, color: colorScheme.onSurfaceVariant),
-            title: Text('Home', style: Theme.of(context).textTheme.bodyLarge),
+            title: Text(loc.home, style: Theme.of(context).textTheme.bodyLarge),
             onTap: () {
               Navigator.pop(context); // Close the drawer
               Navigator.pushReplacementNamed(context, '/home'); // Navigate to Home page
@@ -170,7 +172,7 @@ class _AppDrawerState extends State<AppDrawer> {
             else ...[
               ListTile(
                 leading: Icon(Icons.description_outlined, color: colorScheme.onSurfaceVariant),
-                title: Text('My Reports', style: Theme.of(context).textTheme.bodyLarge),
+                title: Text(loc.myReports, style: Theme.of(context).textTheme.bodyLarge),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/my_reports');
@@ -178,7 +180,7 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
               ListTile(
                 leading: Icon(Icons.bookmark_outline, color: colorScheme.onSurfaceVariant),
-                title: Text('Saved Reports', style: Theme.of(context).textTheme.bodyLarge),
+                title: Text(loc.savedReports, style: Theme.of(context).textTheme.bodyLarge),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/saved_reports');
@@ -186,7 +188,7 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
               ListTile(
                 leading: Icon(Icons.settings_outlined, color: colorScheme.onSurfaceVariant),
-                title: Text('Settings', style: Theme.of(context).textTheme.bodyLarge),
+                title: Text(loc.settings, style: Theme.of(context).textTheme.bodyLarge),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/settings');
@@ -194,7 +196,7 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
               ListTile(
                 leading: Icon(Icons.notifications_active_outlined, color: colorScheme.onSurfaceVariant),
-                title: Text('Notifications', style: Theme.of(context).textTheme.bodyLarge),
+                title: Text(loc.notifications, style: Theme.of(context).textTheme.bodyLarge),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/notifications');
@@ -202,11 +204,11 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
               ListTile(
                 leading: Icon(Icons.logout, color: colorScheme.error),
-                title: Text('Logout', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.error)),
+                title: Text(loc.signOut, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.error)),
                 onTap: () {
                   _signOut();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Logging out...')),
+                    SnackBar(content: Text(loc.signOut)),
                   );
                 },
               ),
@@ -217,7 +219,7 @@ class _AppDrawerState extends State<AppDrawer> {
             // Settings for anonymous users (restricted)
             ListTile(
               leading: Icon(Icons.settings_outlined, color: colorScheme.onSurfaceVariant),
-              title: Text('Settings', style: Theme.of(context).textTheme.bodyLarge),
+              title: Text(loc.settings, style: Theme.of(context).textTheme.bodyLarge),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushReplacementNamed(context, '/settings'); // Should navigate to restricted settings
@@ -225,7 +227,7 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
             ListTile(
               leading: Icon(Icons.login, color: colorScheme.primary),
-              title: Text('Login / Sign Up', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+              title: Text(loc.signIn, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushReplacementNamed(context, '/auth');
@@ -237,11 +239,11 @@ class _AppDrawerState extends State<AppDrawer> {
           // --- About/Info Section (Common to both) ---
           AboutListTile(
             icon: Icon(Icons.info_outline, color: colorScheme.onSurfaceVariant),
-            applicationName: 'Back2U',
+            applicationName: loc.appTitle,
             applicationVersion: '1.0.0',
-            applicationLegalese: '© 2025 Back2U. All rights reserved.',
+            applicationLegalese: '© 2025 Back2U. ${loc.all ?? 'All rights reserved.'}',
             aboutBoxChildren: [
-              Text('Back2U helps you find your lost documents and items, and report found ones.', style: Theme.of(context).textTheme.bodyMedium),
+              Text(loc.aboutApp, style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 8),
               Text('Developed in Cameroon.', style: Theme.of(context).textTheme.bodySmall),
             ],
@@ -265,11 +267,11 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   // Helper method to build the appropriate drawer header
-  Widget _buildDrawerHeader(BuildContext context, ColorScheme colorScheme, bool userLoggedIn) {
+  Widget _buildDrawerHeader(BuildContext context, ColorScheme colorScheme, bool userLoggedIn, AppLocalizations loc) {
     if (userLoggedIn) {
       return UserAccountsDrawerHeader(
         accountName: Text(
-          _appUser?.username ?? _currentUser?.displayName ?? 'User Name', // Fallback name
+          _appUser?.username ?? _currentUser?.displayName ?? loc.profileInformation, // Fallback name
           style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.onPrimary),
         ),
         accountEmail: Text(
@@ -305,7 +307,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Welcome, Anonymous!',
+                    loc.welcome + ', ' + loc.signInAnonymously + '!',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
@@ -317,7 +319,7 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Sign in for personalized features.',
+              loc.pleaseSignIn,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onPrimary.withOpacity(0.8),
                   ),

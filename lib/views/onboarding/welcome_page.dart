@@ -23,7 +23,7 @@ class WelcomePage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            loc.welcomeToBack2uTitle,
+            "Welcome to Back2U",
             style: textTheme.headlineMedium?.copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -32,7 +32,7 @@ class WelcomePage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            loc.welcomeToBack2uSubtitle,
+            "Welcome to Back2U",
             style: textTheme.bodyLarge?.copyWith(
               color: colorScheme.secondary,
             ),

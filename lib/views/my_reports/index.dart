@@ -156,7 +156,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(loc.failedToUpdateStatus(e.toString())),
+            content: Text('${loc.failedToUpdateStatus}: ${e.toString()}'),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
           ),

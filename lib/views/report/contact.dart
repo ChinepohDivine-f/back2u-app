@@ -8,6 +8,7 @@ import 'package:back2u/views/report/report_summary.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 
 import 'package:back2u/services/form_data_fetch_service.dart';
 import 'package:back2u/utils/phone_number_formatter.dart';
@@ -141,10 +142,11 @@ class _ContactPageState extends State<ContactPage> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Contact Information'),
+        title: Text(loc.contactInformation),
         centerTitle: true,
       ),
       body: _isLoadingContactInfo
@@ -158,7 +160,7 @@ class _ContactPageState extends State<ContactPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      'Provide your contact details for people to reach you.',
+                      loc.provideContactDetails,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 24),
@@ -174,7 +176,7 @@ class _ContactPageState extends State<ContactPage> {
                         PhoneNumberFormatter(), // Apply custom formatter
                       ],
                       decoration: InputDecoration(
-                        labelText: 'Phone Number',
+                        labelText: loc.phoneNumber,
                         hintText: '671 234 567',
                         prefixText: '+237 ',
                         prefixIcon: const Icon(Icons.phone),
@@ -202,7 +204,7 @@ class _ContactPageState extends State<ContactPage> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'This is the verified phone number from your profile.',
+                                loc.verifiedPhoneFromProfile,
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                                 ),
@@ -227,7 +229,7 @@ class _ContactPageState extends State<ContactPage> {
                         ),
                         Expanded(
                           child: Text(
-                            'Use the same number for WhatsApp',
+                            loc.useSameForWhatsApp,
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
@@ -241,7 +243,7 @@ class _ContactPageState extends State<ContactPage> {
                       child: FilledButton.icon(
                         onPressed: _navigateToSummary,
                         icon: const Icon(Icons.arrow_forward),
-                        label: const Text('NEXT: Review Report'),
+                        label: Text(loc.nextReviewReport),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           textStyle: const TextStyle(fontSize: 18),

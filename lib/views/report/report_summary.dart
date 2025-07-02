@@ -9,6 +9,7 @@ import 'package:back2u/views/home/index.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 
 import 'package:back2u/services/image_upload_service.dart';
 import 'package:back2u/services/update_report_service.dart';
@@ -77,6 +78,7 @@ class _SummaryPageState extends State<SummaryPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final loc = AppLocalizations.of(context);
 
     final List<String> currentDisplayImageUrls = widget.existingImageUrls
         .where((url) => !widget.imagesToDelete.contains(url))
@@ -92,7 +94,7 @@ class _SummaryPageState extends State<SummaryPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('${widget.report.type} Report - Summary'),
+          title: Text('${widget.report.type} ${loc.report} - ${loc.summary}'),
           centerTitle: true,
           // Disable back button when submitting
           automaticallyImplyLeading: !_isSubmitting,
@@ -105,7 +107,7 @@ class _SummaryPageState extends State<SummaryPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Please review your report details carefully before submitting.',
+                      loc.reviewReportDetails,
                       style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                       textAlign: TextAlign.start,
                     ),
@@ -114,29 +116,29 @@ class _SummaryPageState extends State<SummaryPage> {
                     // Item/Document Details
                     _buildSection(
                       context,
-                      title: 'Item Details',
+                      title: loc.itemDetails,
                       children: [
                         _buildInfoRow(
                             context,
-                            'Type',
+                            loc.type,
                             widget.report.type,
                             icon: widget.report.type == 'Lost'
                                 ? Icons.search_off
                                 : Icons.volunteer_activism),
                         _buildInfoRow(
                             context,
-                            'Owner Name',
+                            loc.ownerName,
                             // Handle null safety for ownerName here
                             widget.report.ownerName?.isNotEmpty == true
                                 ? widget.report.ownerName!
-                                : 'N/A',
+                                : loc.notAvailable,
                             icon: Icons.person_outline),
-                        _buildInfoRow(context, 'Category',
+                        _buildInfoRow(context, loc.category,
                             '${widget.report.category} > ${widget.report.subcategory}',
                             icon: Icons.category_outlined),
                         _buildInfoRow(
                             context,
-                            'Incident Date',
+                            loc.incidentDate,
                             DateFormat('MMM dd, yyyy')
                                 .format(widget.report.reportedDate.toDate()),
                             icon: Icons.event_note_outlined),
@@ -147,17 +149,17 @@ class _SummaryPageState extends State<SummaryPage> {
                     // Location Details
                     _buildSection(
                       context,
-                      title: 'Location',
+                      title: loc.location,
                       children: [
                         _buildInfoRow(
-                            context, 'Main Location', widget.report.locationLost,
+                            context, loc.mainLocation, widget.report.locationLost,
                             icon: Icons.location_on_outlined),
                         _buildInfoRow(
                             context,
-                            'Sub-Location',
+                            loc.subLocation,
                             widget.report.subLocationLost.isNotEmpty
                                 ? widget.report.subLocationLost
-                                : 'N/A',
+                                : loc.notAvailable,
                             icon: Icons.location_city_outlined),
                       ],
                     ),
@@ -167,7 +169,7 @@ class _SummaryPageState extends State<SummaryPage> {
                     if (widget.report.notes.isNotEmpty)
                       _buildSection(
                         context,
-                        title: 'Additional Notes',
+                        title: loc.additionalNotes,
                         children: [
                           Text(widget.report.notes, style: textTheme.bodyLarge),
                         ],
@@ -178,7 +180,7 @@ class _SummaryPageState extends State<SummaryPage> {
                     if (currentDisplayImageUrls.isNotEmpty || widget.localImageFiles.isNotEmpty)
                       _buildSection(
                         context,
-                        title: 'Images',
+                        title: loc.images,
                         children: [
                           // Large featured image
                           if (currentDisplayImageUrls.isNotEmpty || widget.localImageFiles.isNotEmpty) ...[
@@ -354,11 +356,11 @@ class _SummaryPageState extends State<SummaryPage> {
                     if (widget.report.reward.isNotEmpty && widget.report.reward != '0')
                       _buildSection(
                         context,
-                        title: 'Reward Offered',
+                        title: loc.rewardOffered,
                         titleColor: colorScheme.primary,
                         children: [
                           _buildInfoRow(
-                              context, 'Amount', 'XAF ${widget.report.reward}',
+                              context, loc.amount, 'XAF ${widget.report.reward}',
                               icon: Icons.monetization_on_outlined),
                         ],
                       ),
@@ -368,21 +370,21 @@ class _SummaryPageState extends State<SummaryPage> {
                     // Contact Information
                     _buildSection(
                       context,
-                      title: 'Contact Information',
+                      title: loc.contactInformation,
                       children: [
                         _buildInfoRow(
                             context,
-                            'Phone Number',
+                            loc.phoneNumber,
                             widget.report.contactPhone.isNotEmpty
                                 ? widget.report.contactPhone
-                                : 'N/A',
+                                : loc.notAvailable,
                             icon: Icons.phone_outlined),
                         _buildInfoRow(
                             context,
-                            'WhatsApp Number',
+                            loc.whatsappNumber,
                             widget.report.whatsappNumber.isNotEmpty
                                 ? widget.report.whatsappNumber
-                                : 'N/A',
+                                : loc.notAvailable,
                             icon: Icons.message),
                       ],
                     ),
@@ -431,17 +433,19 @@ class _SummaryPageState extends State<SummaryPage> {
 
   // Dynamically changes the button text
   String _getButtonText() {
+    final loc = AppLocalizations.of(context);
     if (_isSubmitting) {
-      return widget.isEditing ? 'Updating Report...' : 'Submitting Report...';
+      return widget.isEditing ? loc.updatingReport : loc.submittingReport;
     }
     if (_hasSubmittedSuccessfully) {
-      return widget.isEditing ? 'Report Updated!' : 'Report Submitted!';
+      return widget.isEditing ? loc.reportUpdated : loc.reportSubmitted;
     }
-    return widget.isEditing ? 'Confirm and Update Report' : 'Confirm and Submit Report';
+    return widget.isEditing ? loc.confirmAndUpdateReport : loc.confirmAndSubmitReport;
   }
 
   // A dedicated loading widget for the body when submitting
   Widget _buildSubmissionLoadingWidget() {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -452,12 +456,12 @@ class _SummaryPageState extends State<SummaryPage> {
           ),
           const SizedBox(height: 24),
           Text(
-            widget.isEditing ? 'Updating your report...' : 'Submitting your report...',
+            widget.isEditing ? loc.updatingYourReport : loc.submittingYourReport,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 12),
           Text(
-            'Please do not close the app or navigate away.',
+            loc.pleaseDoNotCloseApp,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -470,18 +474,17 @@ class _SummaryPageState extends State<SummaryPage> {
 
   // Dialog to show if user tries to go back during submission
   void _showSubmissionInProgressDialog() {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Submission in Progress'),
-        content: const Text(
-          'Your report is currently being processed. Please wait for the submission to complete.',
-        ),
+        title: Text(loc.submissionInProgress),
+        content: Text(loc.submissionInProgressDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: Text(loc.ok),
           ),
         ],
       ),

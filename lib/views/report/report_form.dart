@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:back2u/views/report/contact.dart';
 // import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:back2u/l10n/app_localizations.dart';
+import 'package:back2u/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -284,8 +284,8 @@ class _ReportFormState extends State<ReportForm> {
     // Validate incident date manually since it's not a TextFormField
     if (_incidentDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select the incident date.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).pleaseSelectIncidentDate),
           backgroundColor: Colors.red,
         ),
       );
@@ -341,8 +341,8 @@ class _ReportFormState extends State<ReportForm> {
         print('[ReportForm] Form validation failed.');
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all required fields and fix errors.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).pleaseFillRequiredFields),
           backgroundColor: Colors.red,
         ),
       );
@@ -354,22 +354,23 @@ class _ReportFormState extends State<ReportForm> {
       context: context,
       builder: (BuildContext context) {
         final theme = Theme.of(context);
+        final loc = AppLocalizations.of(context);
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: theme.colorScheme.primary),
               const SizedBox(width: 10),
-              const Expanded(child: Text('Similar Report Found')),
+              Expanded(child: Text(loc.similarReportFound)),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'A report with very similar details already exists in our system. Please review it to avoid creating a duplicate.',
-                style: TextStyle(fontSize: 15),
+              Text(
+                loc.similarReportDescription,
+                style: const TextStyle(fontSize: 15),
               ),
               const SizedBox(height: 20),
               _buildDuplicateTile(context, duplicates.first),
@@ -377,7 +378,7 @@ class _ReportFormState extends State<ReportForm> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
-                    '+${duplicates.length - 1} other similar reports found.',
+                    loc.otherSimilarReportsFound(duplicates.length - 1),
                     style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
                   ),
                 ),
@@ -385,14 +386,14 @@ class _ReportFormState extends State<ReportForm> {
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Continue Anyway'),
+              child: Text(loc.continueAnyway),
               onPressed: () {
                 Navigator.of(context).pop();
                 _proceedToContactPage(newReport);
               },
             ),
             FilledButton(
-              child: const Text('View Existing Report'),
+              child: Text(loc.viewExistingReport),
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
                 Navigator.push(
@@ -492,14 +493,15 @@ class _ReportFormState extends State<ReportForm> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     if (_isLoadingData) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('${widget.report.type.toUpperCase()} Report - Details'),
+          title: Text('${widget.report.type.toUpperCase()} ${loc.report} - ${loc.details}'),
           centerTitle: true,
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator(color: colorScheme.primary)),
       );
     }
 
@@ -514,14 +516,14 @@ class _ReportFormState extends State<ReportForm> {
       // Owner's Name Field (Required)
       TextFormField(
         controller: _ownerNameController,
-        decoration: const InputDecoration(
-          labelText: "Owner's Name (or Name on Item)*",
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: loc.ownerNameRequired,
+          border: const OutlineInputBorder(),
         ),
         textInputAction: TextInputAction.next,
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'Please enter the owner\'s name or name on the item';
+            return loc.pleaseEnterOwnerName;
           }
           return null;
         },
@@ -530,9 +532,9 @@ class _ReportFormState extends State<ReportForm> {
 
       // Category Dropdown (Required)
       DropdownButtonFormField<String>(
-        decoration: const InputDecoration(
-          labelText: 'Category*',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: '${loc.category}*',
+          border: const OutlineInputBorder(),
         ),
         value: _selectedCategoryName,
         items: _allCategories.map((category) {
@@ -549,7 +551,7 @@ class _ReportFormState extends State<ReportForm> {
         },
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'Please select a category';
+            return loc.pleaseSelectCategory;
           }
           return null;
         },
@@ -558,9 +560,9 @@ class _ReportFormState extends State<ReportForm> {
 
       // Subcategory Dropdown (Required)
       DropdownButtonFormField<String>(
-        decoration: const InputDecoration(
-          labelText: 'Subcategory*',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: '${loc.subcategory}*',
+          border: const OutlineInputBorder(),
         ),
         value: _selectedSubcategoryName,
         // Filter subcategories based on the selected category
@@ -589,11 +591,11 @@ class _ReportFormState extends State<ReportForm> {
             : null, // Disable if no category selected
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'Please select a subcategory';
+            return loc.pleaseSelectSubcategory;
           }
           return null;
         },
-        disabledHint: const Text('Select a category first'),
+        disabledHint: Text(loc.selectCategoryFirst),
       ),
       const SizedBox(height: 16),
 
@@ -602,12 +604,12 @@ class _ReportFormState extends State<ReportForm> {
         onTap: () => _selectDate(context),
         child: InputDecorator(
           decoration: InputDecoration(
-            labelText: 'Incident Date*',
+            labelText: '${loc.incidentDate}*',
             border: const OutlineInputBorder(),
             prefixIcon: const Icon(Icons.calendar_today_rounded),
             // Only show error if incidentDate is null AND form has been validated (tried to submit)
             errorText: (_incidentDate == null && (_formKey.currentState?.validate() ?? false))
-                ? 'Please select the incident date'
+                ? loc.pleaseSelectIncidentDate
                 : null,
           ),
           child: Row(
@@ -616,7 +618,7 @@ class _ReportFormState extends State<ReportForm> {
               Text(
                 _incidentDate != null
                     ? DateFormat('MMM dd, yyyy').format(_incidentDate!) // Corrected date format
-                    : 'Select Date',
+                    : loc.selectDate,
                 style: _incidentDate == null
                     ? TextStyle(color: Colors.grey[600])
                     : null,
@@ -630,10 +632,10 @@ class _ReportFormState extends State<ReportForm> {
 
       // Location Dropdown (Required)
       DropdownButtonFormField<String>(
-        decoration: const InputDecoration(
-          labelText: 'Main Location*',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.location_on),
+        decoration: InputDecoration(
+          labelText: '${loc.mainLocation}*',
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.location_on),
         ),
         value: _selectedLocationName,
         items: _allLocations.map((location) {
@@ -650,7 +652,7 @@ class _ReportFormState extends State<ReportForm> {
         },
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'Please select a main location';
+            return loc.pleaseSelectMainLocation;
           }
           return null;
         },
@@ -659,10 +661,10 @@ class _ReportFormState extends State<ReportForm> {
 
       // Sub-Location Dropdown (Required)
       DropdownButtonFormField<String>(
-        decoration: const InputDecoration(
-          labelText: 'Sub-Location*',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.location_city),
+        decoration: InputDecoration(
+          labelText: '${loc.subLocation}*',
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.location_city),
         ),
         value: _selectedSubLocationName,
         // Filter sublocations based on the selected location
@@ -691,11 +693,11 @@ class _ReportFormState extends State<ReportForm> {
             : null, // Disable if no main location selected
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'Please select a sub-location';
+            return loc.pleaseSelectSubLocation;
           }
           return null;
         },
-        disabledHint: const Text('Select a main location first'),
+        disabledHint: Text(loc.selectMainLocationFirst),
       ),
       const SizedBox(height: 24),
 
@@ -847,10 +849,10 @@ class _ReportFormState extends State<ReportForm> {
       TextFormField(
         controller: _notesController,
         maxLines: 5,
-        decoration: const InputDecoration(
-          labelText: 'Additional Notes (Optional)',
-          border: OutlineInputBorder(),
-          hintText: 'Enter any extra information here...',
+        decoration: InputDecoration(
+          labelText: loc.additionalNotesOptional,
+          border: const OutlineInputBorder(),
+          hintText: loc.enterExtraInformation,
           alignLabelWithHint: true,
         ),
         textInputAction: TextInputAction.newline,
@@ -880,7 +882,7 @@ class _ReportFormState extends State<ReportForm> {
                   ),
                   const SizedBox(width: 5),
                   Text(
-                    'Offer Reward?',
+                    loc.offerReward,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -891,7 +893,7 @@ class _ReportFormState extends State<ReportForm> {
                   controller: _rewardAmountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Reward Amount (XAF)',
+                    labelText: loc.rewardAmountXAF,
                     border: const OutlineInputBorder(),
                     prefixText: 'XAF ',
                     filled: true,
@@ -900,13 +902,13 @@ class _ReportFormState extends State<ReportForm> {
                   validator: (value) {
                     if (_addReward) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter the reward amount';
+                        return loc.pleaseEnterRewardAmount;
                       }
                       if (double.tryParse(value) == null) {
-                        return 'Please enter a valid number';
+                        return loc.pleaseEnterValidNumber;
                       }
                       if (double.parse(value) <= 0) {
-                        return 'Amount must be greater than zero';
+                        return loc.amountMustBeGreaterThanZero;
                       }
                     }
                     return null;
@@ -926,7 +928,7 @@ class _ReportFormState extends State<ReportForm> {
         child: FilledButton.icon(
           onPressed: _navigateToContactPage,
           icon: const Icon(Icons.arrow_forward),
-          label: const Text('NEXT: Contact Information'),
+          label: Text(loc.nextContactInformation),
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 15),
             textStyle: const TextStyle(fontSize: 18),
@@ -937,18 +939,18 @@ class _ReportFormState extends State<ReportForm> {
     ];
 
     if (_isLoading) {
-      children.insert(0, const LinearProgressIndicator());
+      children.insert(0, LinearProgressIndicator(color: colorScheme.primary));
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.report.type.toUpperCase()} Report - Details'),
+        title: Text('${widget.report.type.toUpperCase()} ${loc.report} - ${loc.details}'),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _resetForm,
-            tooltip: 'Reset Form to Original',
+            tooltip: loc.resetFormToOriginal,
           ),
         ],
       ),
